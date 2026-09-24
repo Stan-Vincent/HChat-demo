@@ -1,6 +1,7 @@
 ﻿#include "registerdialog.h"
 #include "ui_registerdialog.h"
 #include "global.h"
+#include "httpmgr.h"
 
 RegisterDialog::RegisterDialog(QWidget *parent)
     : QDialog(parent)
@@ -12,6 +13,7 @@ RegisterDialog::RegisterDialog(QWidget *parent)
     ui->confirm_edit->setEchoMode(QLineEdit::Password);
     ui->err_tip->setProperty("state","normal");
     repolish(ui->err_tip);
+    connect(HttpMgr::GetInstance().get(),&HttpMgr::sig_reg_mod_finish,this, &RegisterDialog::slot_reg_mod_finish);
 }
 
 RegisterDialog::~RegisterDialog()
@@ -35,6 +37,35 @@ void RegisterDialog::on_grt_code_clicked()
     else{
         showTip(tr("邮箱地址错误"),false);
     }
+}
+
+void RegisterDialog::slot_reg_mod_finish(ReqId req_id, QString res, ErrorCodes err)
+{
+    if(err != ErrorCodes::SUCCESS){
+        showTip(tr("网络请求错误"),false);
+        return ;
+    }
+    //解析json字符串 res 转化为 QByteArray
+    QJsonDocument jsonDoc = QJsonDocument::fromJson(res.toUtf8());
+    //json解析错误
+    if(jsonDoc.isNull()){
+        showTip(tr("json解析错误"),false);
+        return;
+    }
+
+    //json解析错误
+    if(!jsonDoc.isObject()){
+        showTip(tr("json解析错误"),false);
+        return;
+    }
+
+    QJsonObject jsonObj = jsonDoc.object();
+
+    //调用对应的逻辑 待完成...
+
+    return;
+
+
 }
 
 void RegisterDialog::showTip(QString str,bool b_ok)

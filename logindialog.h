@@ -1,13 +1,17 @@
-﻿#ifndef LOGINDIALOG_H
+﻿
+/******************************************************************************
+ *
+ * @file       logindialog.h
+ * @brief      登录窗口
+ *
+ * @author     CEACI_XXL
+ * @date       2026/09/21
+ * @history
+ *****************************************************************************/
+#ifndef LOGINDIALOG_H
 #define LOGINDIALOG_H
 
 #include <QDialog>
-
-/*
- *      logindialog.h
- *
- *      登录窗口
- */
 
 namespace Ui {
 class LoginDialog;

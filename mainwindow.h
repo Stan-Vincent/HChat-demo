@@ -1,15 +1,18 @@
-﻿#ifndef MAINWINDOW_H
+﻿/******************************************************************************
+ *
+ * @file       mainwindow.h
+ * @brief      主窗口
+ *
+ * @author     CEACI_XXL
+ * @date       2026/09/21
+ * @history
+ *****************************************************************************/
+#ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
 #include <QMainWindow>
 #include "logindialog.h"
 #include "registerdialog.h"
-
-/*
- *      mianwindows.h
- *
- *      主窗口
- */
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
