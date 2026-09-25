@@ -1,4 +1,13 @@
-﻿#ifndef HTTPMGR_H
+﻿/******************************************************************************
+ *
+ * @file       httpmgr.h
+ * @brief      Http管理者：网络请求类要做成一个单例类，这样方便在任何需要发送http请求的时候调用
+ *
+ * @author     CEACI_XXL
+ * @date       2026/09/25
+ * @history
+ *****************************************************************************/
+#ifndef HTTPMGR_H
 #define HTTPMGR_H
 #include "singleton.h"
 #include <QString>
