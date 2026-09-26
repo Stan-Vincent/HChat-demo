@@ -23,6 +23,7 @@ qrc_*.cpp
 # 本地设置或数据库文件（如果有）
 *.db
 *.sqlite
+<<<<<<< HEAD
 settings.ini
 
 # ========== Visual Studio ==========
@@ -43,3 +44,6 @@ Release/
 *.lib
 *.log
 
+=======
+settings.ini
+>>>>>>> f30ae5fac18ce9ffcf5bc5e2f8ba2dbadb70e76c
