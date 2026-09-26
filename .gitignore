@@ -20,10 +20,9 @@ ui_*.h
 qrc_*.cpp
 *.pdb
 
-# 本地设置或数据库文件（如果有）
+# 本地设置或数据库文件
 *.db
 *.sqlite
-<<<<<<< HEAD
 settings.ini
 
 # ========== Visual Studio ==========
@@ -43,7 +42,3 @@ Release/
 *.exp
 *.lib
 *.log
-
-=======
-settings.ini
->>>>>>> f30ae5fac18ce9ffcf5bc5e2f8ba2dbadb70e76c
