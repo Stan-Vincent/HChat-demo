@@ -1,0 +1,45 @@
+# Qt Creator 本地配置
+.qtcreator/
+*.user
+*.user.*
+
+# 编译产物
+build/
+debug/
+release/
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+
+# 编译生成的中间文件
+moc_*.cpp
+moc_*.h
+ui_*.h
+qrc_*.cpp
+*.pdb
+
+# 本地设置或数据库文件（如果有）
+*.db
+*.sqlite
+settings.ini
+
+# ========== Visual Studio ==========
+.vs/
+x64/
+Debug/
+Release/
+*.vcxproj.user
+*.vcxproj.filter
+*.sln.docstates
+
+# C++ 编译产物
+*.obj
+*.pdb
+*.ilk
+*.idb
+*.exp
+*.lib
+*.log
+
