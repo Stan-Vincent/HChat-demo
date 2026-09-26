@@ -1,0 +1,39 @@
+﻿/******************************************************************************
+ *
+ * @file       httpmgr.h
+ * @brief      Http管理者：网络请求类要做成一个单例类，这样方便在任何需要发送http请求的时候调用
+ *
+ * @author     CEACI_XXL
+ * @date       2026/09/25
+ * @history
+ *****************************************************************************/
+#ifndef HTTPMGR_H
+#define HTTPMGR_H
+#include "singleton.h"
+#include <QString>
+#include <QUrl>
+#include <QObject>
+#include <QNetworkAccessManager>
+#include <QJsonObject>
+#include <QJsonDocument>
+
+class HttpMgr:public QObject,public Singleton<HttpMgr>, public std::enable_shared_from_this<HttpMgr>
+{
+    Q_OBJECT
+public:
+    ~HttpMgr();
+private:
+    friend class Singleton<HttpMgr>;
+    HttpMgr();
+    QNetworkAccessManager _manager;
+    void PostHttpReq(QUrl url, QJsonObject json ,ReqId req_id, Modules mod);
+
+private slots:
+    void slot_http_finish(ReqId req_id, QString res ,ErrorCodes err, Modules mod);
+
+signals:
+    void sig_http_finish(ReqId req_id, QString res ,ErrorCodes err, Modules mod);
+    void sig_reg_mod_finish(ReqId req_id, QString res ,ErrorCodes err);
+};
+
+#endif // HTTPMGR_H
