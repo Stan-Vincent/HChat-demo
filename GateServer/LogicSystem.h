@@ -10,7 +10,8 @@ class LogicSystem :public Singleton<LogicSystem>
 public:
     ~LogicSystem();
     bool HandleGet(std::string, std::shared_ptr<HttpConnection>);
-    void RegGet(std::string, HttpHandler handler);
+    void RegGet(std::string url, HttpHandler handler);
+    void RegPost(std::string url, HttpHandler handler);
 private:
     LogicSystem();
 

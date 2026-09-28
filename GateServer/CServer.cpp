@@ -11,8 +11,10 @@ void CServer::Start() {
 	auto self = shared_from_this();
 	_acceptor.async_accept(_socket, [self](beast::error_code ec) {
 		try {
+			std::cout << "Async_accept...(Cserver:Start())\n\n";
 			//出错就放弃这个连接，接续监听其他连接
 			if (ec) {
+				std::cout << "Async_wait error.\n\n";
 				self->Start();
 				return;
 			}
