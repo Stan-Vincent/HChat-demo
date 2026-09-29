@@ -24,6 +24,7 @@ qrc_*.cpp
 *.db
 *.sqlite
 settings.ini
+.workbuddy/
 
 # ========== Visual Studio ==========
 .vs/
@@ -42,3 +43,5 @@ Release/
 *.exp
 *.lib
 *.log
+
+node_modules/

@@ -3,9 +3,13 @@
 #include <json/value.h>
 #include <json/reader.h>
 #include "CServer.h"
+#include "ConfigMgr.h"
 
 int main()
 {
+    ConfigMgr gCfgMgr;
+    std::string gate_post_str = gCfgMgr["GateServer"]["port"];
+    unsigned short gate_port = atoi(gate_post_str.c_str());
     try
     {
         unsigned short port = static_cast<unsigned short>(8080);
@@ -21,7 +25,7 @@ int main()
             ioc.stop();
             });
         std::make_shared<CServer>(ioc, port)->Start();
-        std::cout << "Gate Server listen on por:"<< port <<"\n\n";
+        std::cout << "Gate Server listen on port:"<< port <<"\n\n";
         ioc.run();
     }
     catch (std::exception const& e)
