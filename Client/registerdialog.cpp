@@ -25,14 +25,21 @@ RegisterDialog::~RegisterDialog()
 
 void RegisterDialog::on_grt_code_clicked()
 {
+    //获取用户输入的Email
     auto email = ui->email_edit->text();
 
     //判断验证码格式是否符合规范 （正则表达式）
     QRegularExpression regex(R"(^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$)");
     bool match = regex.match(email.trimmed()).hasMatch();
     if(match){
-        //发送验证码
-        //待实现...
+        //发送http验证码
+        QJsonObject json_obj;
+        json_obj["email"]= email;
+        //通过HttpMgr发送Post请求
+        HttpMgr::GetInstance()->PostHttpReq(QUrl(gate_url_prefix+"/get_varifycode"),
+                                            json_obj,
+                                            ReqId::ID_GET_VARIFY_CODE,
+                                            Modules::REGISTERMOD);
 
         showTip(tr("正在发送验证码"),true);
     }

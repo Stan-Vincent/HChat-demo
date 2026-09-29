@@ -22,11 +22,12 @@ class HttpMgr:public QObject,public Singleton<HttpMgr>, public std::enable_share
     Q_OBJECT
 public:
     ~HttpMgr();
+    void PostHttpReq(QUrl url, QJsonObject json ,ReqId req_id, Modules mod);
 private:
     friend class Singleton<HttpMgr>;
     HttpMgr();
     QNetworkAccessManager _manager;
-    void PostHttpReq(QUrl url, QJsonObject json ,ReqId req_id, Modules mod);
+
 
 private slots:
     void slot_http_finish(ReqId req_id, QString res ,ErrorCodes err, Modules mod);

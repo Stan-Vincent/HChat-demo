@@ -14,10 +14,13 @@
 #include <QRegularExpression>//正则表达式
 #include "QStyle"
 #include <QJsonArray>
+#include <QJsonObject>
 #include <QNetworkReply>
 #include <memory>
 #include <iostream>
 #include <mutex>
+#include <QDir>
+#include <QSettings>
 
 //声明 用于刷新 qss样式表 的函数  (接收 QWidget*，返回 void)
 extern std::function<void(QWidget*)> repolish;
@@ -40,5 +43,7 @@ enum ErrorCodes{
     ERR_NETWORK = 2,    //网络错误
 
 };
+
+extern QString gate_url_prefix;
 
 #endif // GLOBAL_H

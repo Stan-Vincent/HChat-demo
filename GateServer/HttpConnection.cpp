@@ -134,8 +134,10 @@ void HttpConnection::HandleReq() {
     //ÉèÖÃÎª¶ÌÁ´½Ó
     _response.keep_alive(false);
 
+    PreParseGetParam();
+
     if (_request.method() == http::verb::get) {
-        PreParseGetParam();
+        
         bool success = LogicSystem::GetInstance()->HandleGet(_get_url, shared_from_this());
         if (!success) {
             _response.result(http::status::not_found);
@@ -150,6 +152,23 @@ void HttpConnection::HandleReq() {
         _response.result(http::status::ok);
         _response.set(http::field::server, "GateServer");
 
+        WriteResponse();
+        return;
+    }
+
+    if (_request.method() == http::verb::post) {
+        bool success = LogicSystem::GetInstance()->HandlePost(_request.target(), shared_from_this());
+        if (!success) {
+            _response.result(http::status::not_found);
+            _response.set(http::field::content_type, "text/plain");
+            beast::ostream(_response.body()) << "url not found\r\n";
+            WriteResponse();
+            return;
+        }
+
+        std::cout << "HttpConnection::HandlePost() success...\n\n";
+        _response.result(http::status::ok);
+        _response.set(http::field::server, "GateServer");
         WriteResponse();
         return;
     }
