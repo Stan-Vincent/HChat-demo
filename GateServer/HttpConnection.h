@@ -4,8 +4,11 @@ class HttpConnection :public std::enable_shared_from_this<HttpConnection>
 {
 public:
     friend class LogicSystem;
-	HttpConnection(tcp::socket socket);
+	HttpConnection(boost::asio::io_context& ioc);
 	void Start();
+    tcp::socket& GetSocket() {
+        return _socket;
+    }
 
 private:
     //启动60秒倒计时如果期间没有新请求，就关闭连接

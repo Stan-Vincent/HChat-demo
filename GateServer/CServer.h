@@ -11,6 +11,5 @@ public:
 private:
     tcp::acceptor  _acceptor;   //接收器
     net::io_context& _ioc;      //上下文
-    tcp::socket   _socket;      //套接字
 };
 
