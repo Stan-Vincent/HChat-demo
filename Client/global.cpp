@@ -1,6 +1,6 @@
 ﻿#include "global.h"
 
-QString gate_url_prefix = "";
+QString gate_url_prefix = "";   //在main函数实现完整url
 
 std::function<void(QWidget*)> repolish = [](QWidget* w){
     if (!w) return;

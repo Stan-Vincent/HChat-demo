@@ -1,13 +1,4 @@
-﻿/******************************************************************************
- *
- * @file       singleton.h
- * @brief      单例模板类
- *
- * @author     CEACI_XXL
- * @date       2026/09/23
- * @history
- *****************************************************************************/
-#ifndef SINGLETON_H
+﻿#ifndef SINGLETON_H
 #define SINGLETON_H
 
 #include <global.h>

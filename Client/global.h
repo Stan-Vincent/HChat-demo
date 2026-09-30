@@ -1,13 +1,4 @@
-﻿/******************************************************************************
- *
- * @file       global.h
- * @brief      全局头文件
- *
- * @author     CEACI_XXL
- * @date       2026/09/23
- * @history
- *****************************************************************************/
-#ifndef GLOBAL_H
+﻿#ifndef GLOBAL_H
 #define GLOBAL_H
 #include <QWidget>
 #include <functional>
@@ -22,10 +13,10 @@
 #include <QDir>
 #include <QSettings>
 
-//声明 用于刷新 qss样式表 的函数  (接收 QWidget*，返回 void)
+//声明 用于刷新qss样式表的函数(接收类型:QWidget*，返回类型:void)
 extern std::function<void(QWidget*)> repolish;
 
-//请求枚举
+//枚举请求Id类型
 enum ReqId{
     ID_GET_VARIFY_CODE = 1001, //获取验证码
     ID_REG_USER = 1002, //注册用户
@@ -36,14 +27,15 @@ enum Modules{
     REGISTERMOD = 0,
 };
 
-//错误枚举
+//错误类型枚举
 enum ErrorCodes{
-    SUCCESS = 0,
+    SUCCESS = 0,    //无错误
     ERR_JSON =1,    //json解析失败
     ERR_NETWORK = 2,    //网络错误
 
 };
 
+//网关(GateServer)的url前缀
 extern QString gate_url_prefix;
 
 #endif // GLOBAL_H

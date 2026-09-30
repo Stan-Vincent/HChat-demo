@@ -1,13 +1,4 @@
-﻿/******************************************************************************
- *
- * @file       mainwindow.h
- * @brief      主窗口
- *
- * @author     CEACI_XXL
- * @date       2026/09/21
- * @history
- *****************************************************************************/
-#ifndef MAINWINDOW_H
+﻿#ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
 #include <QMainWindow>

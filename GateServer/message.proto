@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+//定义了 GateServer 能调什么方法、传什么、返回什么。C++ 和 Node.js 两端都按它生成代码，保证格式一致、字段对齐。
+
 package message;
 
 service VarifyService {

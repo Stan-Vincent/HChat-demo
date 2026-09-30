@@ -1,13 +1,4 @@
-﻿/******************************************************************************
- *
- * @file       logindialog.h
- * @brief      注册窗口
- *
- * @author     CEACI_XXL
- * @date       2026/09/21
- * @history
- *****************************************************************************/
-#ifndef REGISTERDIALOG_H
+﻿#ifndef REGISTERDIALOG_H
 #define REGISTERDIALOG_H
 
 #include <QDialog>
@@ -30,10 +21,17 @@ private slots:
     void slot_reg_mod_finish(ReqId req_id, QString res ,ErrorCodes err);
 
 private:
-    void initHttpHandlers();
-    void showTip(QString str, bool b_ok); //验证码是否发送tip信息
     Ui::RegisterDialog *ui;
-    QMap<ReqId ,std::function<void(const QJsonObject&)>> _handlers; //对RegisterDialog注册消息处理
+
+    //初始化_handles
+    void initHttpHandlers();
+
+    //对 验证码信息Label 进行处理展示
+    void showTip(QString str, bool b_ok);
+
+    ///注册验证码对应的处理
+    //initHttpHandlers()后，_handlers[ID_GET_VARIFY_CODE] --> 调用获取Json验证码数据并分析的函数
+    QMap<ReqId ,std::function<void(const QJsonObject&)>> _handlers;
 };
 
 #endif // REGISTERDIALOG_H

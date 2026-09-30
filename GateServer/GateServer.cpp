@@ -7,30 +7,37 @@
 
 int main()
 {
+    //ConfigMgr:从config,ini文件里读取GateServer的端口号
     ConfigMgr gCfgMgr;
-    std::string gate_post_str = gCfgMgr["GateServer"]["port"];
+    std::string gate_post_str = gCfgMgr["GateServer"]["Port"];
+    //std::cout <<"gate_post_str:"<< gate_post_str << std::endl;
     unsigned short gate_port = atoi(gate_post_str.c_str());
+    
     try
     {
-        unsigned short port = static_cast<unsigned short>(8080);
+        unsigned short port = static_cast<unsigned short>(gate_port);
         net::io_context ioc{ 1 };
-        boost::asio::signal_set signals(ioc, SIGINT, SIGTERM);
 
+        ///创建一个信号集合对象，把 SIGINT 和 SIGTERM 两个信号注册进去，以后可以异步等待这两个退出信号
+        //SIGINT	Ctrl+C 发出的中断信号
+        //SIGTERM	系统终止进程的信号
+        boost::asio::signal_set signals(ioc, SIGINT, SIGTERM);
         signals.async_wait([&ioc](const boost::system::error_code& error, int signal_number) {
-            std::cout << "Async_wait...\n\n";
+            std::cout << "收到 "<<signal_number<<" 退出信号，正在关闭服务器..." << std::endl;
             if (error) {
-                std::cout << "Async_wait error.\n\n";
                 return;
             }
             ioc.stop();
-            });
+        });
+
+        //上下文和端口号构造CServer，并调用Start();
         std::make_shared<CServer>(ioc, port)->Start();
-        std::cout << "Gate Server listen on port:"<< port <<"\n\n";
+        std::cout << "Gate Server listen on port:"<< port <<"\n";
         ioc.run();
     }
     catch (std::exception const& e)
     {
-        std::cerr << "Error: " << e.what() << std::endl;
+        std::cerr << "Gate Server Error: " << e.what() << std::endl;
         return EXIT_FAILURE;
     }
 }

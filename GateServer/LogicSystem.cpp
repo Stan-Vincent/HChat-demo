@@ -6,6 +6,7 @@ LogicSystem::~LogicSystem()
 {
 }
 
+///typedef std::function<void(std::shared_ptr<HttpConnection>)> HttpHandler;
 void LogicSystem::RegGet(std::string url, HttpHandler handler) {
     _get_handlers.insert(make_pair(url, handler));
 }
@@ -16,7 +17,7 @@ void LogicSystem::RegPost(std::string url, HttpHandler handler) {
 LogicSystem::LogicSystem() {
 
     RegGet("/get_test", [](std::shared_ptr<HttpConnection> connection) {
-        beast::ostream(connection->_response.body()) << "receive get_test req.\n"<<std::endl;
+        beast::ostream(connection->_response.body()) << "receive get_test req."<<std::endl;
         int i = 0;
         for (auto& elem : connection->_get_params) {
             i++;
@@ -26,13 +27,19 @@ LogicSystem::LogicSystem() {
     });
 
     RegPost("/get_varifycode", [](std::shared_ptr<HttpConnection> connection) {
+        ///读出请求体 _request.body() 是 dynamic_body（multi_buffer）。
+        //buffers_to_string 把它转成 std::string
         auto body_str = boost::beast::buffers_to_string(connection->_request.body().data());
         std::cout << "receive body is " << body_str << std::endl;
+
+        //设置响应类型为Json
         connection->_response.set(http::field::content_type, "text/json");
-        Json::Value root;
-        Json::Reader reader;
-        Json::Value src_root;
-        bool parse_success = reader.parse(body_str, src_root);
+
+        //解析Json
+        Json::Value root;   
+        Json::Reader reader;    //负责解析
+        Json::Value src_root;   //解析后的根对象
+        bool parse_success = reader.parse(body_str, src_root);  //表示是否成功
 
         if (!parse_success) {
             std::cout << "Failed to parse JSON data!" << std::endl;
@@ -49,10 +56,13 @@ LogicSystem::LogicSystem() {
             beast::ostream(connection->_response.body()) << jsonstr;
             return true;
         }
-
+        //从Json中提取出email
         auto email = src_root["email"].asString();
 
+        //调用 gRPC 服务,和 VarifyServer 通过 gRPC 通信
         GetVarifyRsp rsp = VerifyGrpcClient::GetInstance()->GetVarifyCode(email);
+
+        //把 gRPC 返回的错误码和 email 写进 JSON,序列化后写进响应 body。
         std::cout << "email is " << email << std::endl;
         root["error"] = rsp.error();
         root["email"] = src_root["email"];

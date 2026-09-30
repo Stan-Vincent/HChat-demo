@@ -1,6 +1,7 @@
 #pragma once
 #include "const.h"
 
+//封装config.ini的子map
 struct SectionInfo {
     SectionInfo() {
     }
@@ -8,10 +9,10 @@ struct SectionInfo {
         _section_datas.clear();
     }
 
+    //复制构造
     SectionInfo(const SectionInfo& src) {
         _section_datas = src._section_datas;
     }
-
     SectionInfo& operator = (const SectionInfo& src) {
         if (&src == this) {
             return *this;
@@ -31,6 +32,7 @@ struct SectionInfo {
     }
 };
 
+//封装封装config.ini的主map
 class ConfigMgr
 {
 public:
@@ -58,6 +60,7 @@ public:
         this->_config_map = src._config_map;
     }
 
+    //默认构造函数(.cpp)
     ConfigMgr();
 private:
 

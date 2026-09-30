@@ -20,8 +20,9 @@ void HttpMgr::PostHttpReq(QUrl url, QJsonObject json, ReqId req_id, Modules mod)
     request.setHeader(QNetworkRequest::ContentTypeHeader,"application/json");
     request.setHeader(QNetworkRequest::ContentLengthHeader,QByteArray::number(data.length()));
 
-    //发送请求，并处理响应, 获取自己的智能指针，构造伪闭包并增加智能指针引用计数
+    //获取自己的智能指针，构造伪闭包并增加智能指针引用计数
     auto self = shared_from_this();
+    //发送post请求，等待网关处理并处理响应
     QNetworkReply *reply = _manager.post(request,data);
 
     //设置信号和槽等待发送完成
@@ -37,7 +38,7 @@ void HttpMgr::PostHttpReq(QUrl url, QJsonObject json, ReqId req_id, Modules mod)
 
         //无错误
         QString res = reply->readAll();
-        //发送成功信号
+        //发送成功信号 --> 调用HttpMgr::slot_http_finish
         emit self->sig_http_finish(req_id, res, ErrorCodes::SUCCESS ,mod);
         reply->deleteLater();
         return ;
@@ -47,7 +48,7 @@ void HttpMgr::PostHttpReq(QUrl url, QJsonObject json, ReqId req_id, Modules mod)
 void HttpMgr::slot_http_finish(ReqId req_id, QString res, ErrorCodes err, Modules mod)
 {
     if(mod == Modules::REGISTERMOD){
-        //发送信号通知指定模块http响应结束
+        //发送信号通知指定模块http响应结束 -->调用RegisterDialog::slot_reg_mod_finish
         emit sig_reg_mod_finish(req_id, res, err);
     }
 }

@@ -13,6 +13,8 @@ RegisterDialog::RegisterDialog(QWidget *parent)
     ui->confirm_edit->setEchoMode(QLineEdit::Password);
     ui->err_tip->setProperty("state","normal");
     repolish(ui->err_tip);
+
+    ///连接信号:HttpMgr::sig_reg_mod_finish -> 槽:RegisterDialog::slot_reg_mod_finish
     connect(HttpMgr::GetInstance().get(),&HttpMgr::sig_reg_mod_finish,this, &RegisterDialog::slot_reg_mod_finish);
 
     initHttpHandlers();
@@ -23,6 +25,7 @@ RegisterDialog::~RegisterDialog()
     delete ui;
 }
 
+//点击获取验证码按钮（自动连接信号与槽）
 void RegisterDialog::on_grt_code_clicked()
 {
     //获取用户输入的Email
@@ -32,10 +35,11 @@ void RegisterDialog::on_grt_code_clicked()
     QRegularExpression regex(R"(^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$)");
     bool match = regex.match(email.trimmed()).hasMatch();
     if(match){
-        //发送http验证码
+        //用户email打包成Json
         QJsonObject json_obj;
         json_obj["email"]= email;
-        //通过HttpMgr发送Post请求
+
+        //通过调用HttpMgr的PostHttpReq()发送Post请求(/get_varifycode)
         HttpMgr::GetInstance()->PostHttpReq(QUrl(gate_url_prefix+"/get_varifycode"),
                                             json_obj,
                                             ReqId::ID_GET_VARIFY_CODE,
@@ -54,7 +58,7 @@ void RegisterDialog::slot_reg_mod_finish(ReqId id, QString res, ErrorCodes err)
         showTip(tr("网络请求错误"),false);
         return ;
     }
-    //解析json字符串 res 转化为 QByteArray
+    //解析json: 传回的字符串转化为 QByteArray
     QJsonDocument jsonDoc = QJsonDocument::fromJson(res.toUtf8());
     //json解析错误
     if(jsonDoc.isNull()){
@@ -70,6 +74,7 @@ void RegisterDialog::slot_reg_mod_finish(ReqId id, QString res, ErrorCodes err)
 
     QJsonObject jsonObj = jsonDoc.object();
 
+    //_handlers[ID_GET_VARIFY_CODE] --> 调用获取Json验证码数据并分析的函数
     _handlers[id](jsonDoc.object());
 
     return;
@@ -83,7 +88,7 @@ void RegisterDialog::initHttpHandlers()
     _handlers.insert(ReqId::ID_GET_VARIFY_CODE,[this](const QJsonObject& jsonObj){
         int error = jsonObj["error"].toInt();
         if(error != ErrorCodes::SUCCESS){
-            showTip(tr("参数错误"),false);
+            showTip(tr("发送错误"),false);
             return ;
         }
         auto email = jsonObj["email"].toString();

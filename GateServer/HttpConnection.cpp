@@ -7,34 +7,39 @@ HttpConnection::HttpConnection(tcp::socket socket)
 
 void HttpConnection::Start()
 {
+    //当前对象的shared_ptr 捕获进 lambda，保证异步读完成前，当前对象不会被销毁
     auto self = shared_from_this();
     http::async_read(_socket, _buffer, _request, 
         [self](beast::error_code ec,std::size_t bytes_transferred) 
         {
             try {
-                std::cout << "Async_read...(HttpConnection:Start())\n\n";
+                std::cout << "HttpConnection Async_read...\n";
                 if (ec) {
-                    std::cout << "http read err is " << ec.what() << std::endl;
+                    std::cout << "Http read err is " << ec.what() << std::endl;
                     return;
                 }
 
-                //处理读到的数据
+                //bytes_transferred：本次读到的字节数。这里用不到，就用 boost::ignore_unused 忽略掉
                 boost::ignore_unused(bytes_transferred);
+                //处理 _request 并填充_response
                 self->HandleReq();
+                //每收到一个请求，就重新调一次 CheckDeadline() 刷新倒计时
                 self->CheckDeadline();
             }
             catch (std::exception& exp) {
-                std::cout << "exception is " << exp.what() << std::endl;
+                std::cout << "HttpConnection Exception is " << exp.what() << std::endl;
             }
         }
     );
 }
 
+//十进制-->十六进制
 unsigned char ToHex(unsigned char x)
 {
     return  x > 9 ? x + 55 : x + 48;
 }
 
+//十六进制-->十进制
 unsigned char FromHex(unsigned char x)
 {
     unsigned char y;
@@ -45,6 +50,7 @@ unsigned char FromHex(unsigned char x)
     return y;
 }
 
+//url编码
 std::string UrlEncode(const std::string& str)
 {
     std::string strTemp = "";
@@ -71,6 +77,7 @@ std::string UrlEncode(const std::string& str)
     return strTemp;
 }
 
+//url解码
 std::string UrlDecode(const std::string& str)
 {
     std::string strTemp = "";
@@ -92,6 +99,7 @@ std::string UrlDecode(const std::string& str)
     return strTemp;
 }
 
+//从 HTTP 请求的 URI 里，切分出路径和查询参数，存到成员变量 _get_url 和 _get_params
 void HttpConnection::PreParseGetParam() {
     // 提取 URI  
     auto uri = _request.target();
@@ -128,16 +136,18 @@ void HttpConnection::PreParseGetParam() {
     }
 }
 
+//处理 _request 并填充_response
 void HttpConnection::HandleReq() {
     //设置版本
     _response.version(_request.version());
     //设置为短链接
     _response.keep_alive(false);
-
+    //切分请求的url和参数对
     PreParseGetParam();
 
+    //处理get请求
     if (_request.method() == http::verb::get) {
-        
+        //调用LogicSystem 的函数HandleGet
         bool success = LogicSystem::GetInstance()->HandleGet(_get_url, shared_from_this());
         if (!success) {
             _response.result(http::status::not_found);
@@ -156,7 +166,9 @@ void HttpConnection::HandleReq() {
         return;
     }
 
+    //处理post请求
     if (_request.method() == http::verb::post) {
+        //调用LogicSystem 的函数HandleGet
         bool success = LogicSystem::GetInstance()->HandlePost(_request.target(), shared_from_this());
         if (!success) {
             _response.result(http::status::not_found);
@@ -188,15 +200,15 @@ void HttpConnection::WriteResponse() {
         });
 }
 
+//启动 60 秒倒计时。如果期间没有新请求，就关闭连接；每收到一个请求，就重新刷新倒计时
 void HttpConnection::CheckDeadline() {
     auto self = shared_from_this();
-
     deadline_.async_wait(
         [self](beast::error_code ec)
         {
             if (!ec)
             {
-                // Close socket to cancel any outstanding operation.
+                //超时则关闭socket 
                 self->_socket.close(ec);
             }
         });
