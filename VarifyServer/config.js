@@ -1,6 +1,10 @@
+//引入自带的文件系统模块fsFile System，用来读写文件
 const fs = require('fs');
 
+//读取 config.json 的内容，返回字符串
 let config = JSON.parse(fs.readFileSync('config.json', 'utf8'));
+
+// 逐个取值
 let email_user = config.email.user;
 let email_pass = config.email.pass;
 let mysql_host = config.mysql.host;
