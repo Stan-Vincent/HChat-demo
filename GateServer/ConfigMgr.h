@@ -3,56 +3,29 @@
 
 //封装config.ini的子map
 struct SectionInfo {
-    SectionInfo() {
-    }
-    ~SectionInfo() {
-        _section_datas.clear();
-    }
+    SectionInfo();
+    ~SectionInfo();
 
     //复制构造
-    SectionInfo(const SectionInfo& src) {
-        _section_datas = src._section_datas;
-    }
-    SectionInfo& operator = (const SectionInfo& src) {
-        if (&src == this) {
-            return *this;
-        }
+    SectionInfo(const SectionInfo& src);
 
-        this->_section_datas = src._section_datas;
-        return *this;
-    }
+    SectionInfo& operator = (const SectionInfo& src);
 
     std::map<std::string, std::string> _section_datas;
 
-    std::string  operator[](const std::string& key) {
-        if (_section_datas.find(key) == _section_datas.end()) {
-            return "";
-        }
-        // 这里可以添加一些边界检查  
-        return _section_datas[key];
-    }
+    std::string  operator[](const std::string& key);
 };
 
 //封装封装config.ini的主map
 class ConfigMgr
 {
 public:
-    ~ConfigMgr() {
-        _config_map.clear();
-    }
+    ~ConfigMgr();
 
-    SectionInfo operator[](const std::string& section) {
-        if (_config_map.find(section) == _config_map.end()) {
-            return SectionInfo();
-        }
-        return _config_map[section];
-    }
+    SectionInfo operator[](const std::string& section);
 
     //懒汉式单例
-    static ConfigMgr& Inst() {
-        static ConfigMgr cfg_mgr;
-        return cfg_mgr;
-    }
+    static ConfigMgr& Inst();
 
 
     ConfigMgr& operator=(const ConfigMgr& src) = delete;

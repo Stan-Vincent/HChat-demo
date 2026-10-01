@@ -6,14 +6,13 @@ public:
     friend class LogicSystem;
 	HttpConnection(boost::asio::io_context& ioc);
 	void Start();
-    tcp::socket& GetSocket() {
-        return _socket;
-    }
+    tcp::socket& GetSocket();
 
 private:
     //启动60秒倒计时如果期间没有新请求，就关闭连接
 	void CheckDeadline();
 
+    //把处理好的响应异步发回客户端，发完后关闭连接的发送端，并取消超时定时器
 	void WriteResponse();
 
     //处理 _request 并填充_response

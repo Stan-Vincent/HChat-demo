@@ -33,6 +33,11 @@ void HttpConnection::Start()
     );
 }
 
+tcp::socket& HttpConnection::GetSocket()
+{
+    return _socket;
+}
+
 //十进制-->十六进制
 unsigned char ToHex(unsigned char x)
 {
@@ -186,16 +191,21 @@ void HttpConnection::HandleReq() {
     }
 }
 
+//把处理好的响应异步发回客户端，发完后关闭连接的发送端，并取消超时定时器
 void HttpConnection::WriteResponse() {
     auto self = shared_from_this();
+    //在 HTTP 响应头里设置 Content-Length
     _response.content_length(_response.body().size());
+
     http::async_write(
         _socket,
         _response,
         [self](beast::error_code ec, std::size_t)
         {
             std::cout << "Async_write...(HttpConnection:Start())\n\n";
+            //只关闭发送端,接收方向还开着
             self->_socket.shutdown(tcp::socket::shutdown_send, ec);
+            //取消超时定时器
             self->deadline_.cancel();
         });
 }

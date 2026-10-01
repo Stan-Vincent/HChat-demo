@@ -1,5 +1,24 @@
 #include "ConfigMgr.h"
 
+ConfigMgr::~ConfigMgr()
+{
+    _config_map.clear();
+}
+
+//C++11 之后，static 局部变量初始化是线程安全的，多个线程同时调用 Inst() 也只会构造一次
+ConfigMgr& ConfigMgr::Inst()
+{
+    static ConfigMgr cfg_mgr;
+    return cfg_mgr;
+}
+
+SectionInfo ConfigMgr::operator[](const std::string& section) {
+    if (_config_map.find(section) == _config_map.end()) {
+        return SectionInfo();
+    }
+    return _config_map[section];
+}
+
 ConfigMgr::ConfigMgr() {
     // 获取当前工作目录  
     boost::filesystem::path current_path = boost::filesystem::current_path();
@@ -44,3 +63,37 @@ ConfigMgr::ConfigMgr() {
     
 
 }
+
+SectionInfo::SectionInfo()
+{
+}
+
+SectionInfo::~SectionInfo()
+{
+    _section_datas.clear();
+}
+
+SectionInfo::SectionInfo(const SectionInfo& src)
+{
+    _section_datas = src._section_datas;
+}
+
+SectionInfo& SectionInfo::operator=(const SectionInfo& src)
+{
+    if (&src == this) {
+        return *this;
+    }
+
+    this->_section_datas = src._section_datas;
+    return *this;
+}
+
+std::string  SectionInfo::operator[](const std::string& key) {
+    if (_section_datas.find(key) == _section_datas.end()) {
+        return "";
+    }
+    // 这里可以添加一些边界检查  
+    return _section_datas[key];
+}
+
+

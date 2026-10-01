@@ -12,6 +12,13 @@ using message::GetVarifyReq;
 using message::GetVarifyRsp;
 using message::VarifyService;
 
+
+/*
+*grpc连接池
+*内部维护一个队列，队列里是 gRPC 的 stub
+*getConnection 从队列取一个，returnConnection 还回去
+*mutex + cond_ 保证多线程安全
+*/
 class RPConPool {
 public:
     RPConPool(size_t poolsize, std::string host, std::string port);
@@ -21,13 +28,13 @@ public:
     void returnConnection(std::unique_ptr<VarifyService::Stub> context);
 
 private:
-    std::atomic<bool> b_stop_;
-    size_t poolsize_;
-    std::string host_;
-    std::string port_;
-    std::queue<std::unique_ptr<VarifyService::Stub>> connections_;
-    std::condition_variable cond_;
-    std::mutex mutex_;
+    std::atomic<bool> b_stop_;                                  // 是否已关闭
+    size_t poolsize_;                                           // 池大小
+    std::string host_;                                          // VarifyServer 地址
+    std::string port_;                                          // 端口
+    std::queue<std::unique_ptr<VarifyService::Stub>> connections_; // 连接队列
+    std::condition_variable cond_;                              // 条件变量
+    std::mutex mutex_;                                          // 互斥锁
 };
 
 //封装的一个gRPC客户端，负责调用VarifyServer的GetVarifyCode服务。它用单例模式保证全局只有一个实例，避免每次都重新建立连接
@@ -36,32 +43,7 @@ class VerifyGrpcClient :public Singleton<VerifyGrpcClient>
     friend class Singleton<VerifyGrpcClient>;
 public:
 
-    GetVarifyRsp GetVarifyCode(std::string email) {
-        ClientContext context;  //gRPC 的上下文，可传元数据、超时、取消
-
-        // 设置 3 秒超时
-        context.set_deadline(std::chrono::system_clock::now() + std::chrono::seconds(5));
-
-        GetVarifyRsp reply;     //准备接收响应的对象
-        GetVarifyReq request;   //构造请求对象
-        request.set_email(email);//填充 email 字段
-
-        //同步调用远程服务，结果填进 reply
-        auto stub = pool_->getConnection();
-        Status status = stub->GetVarifyCode(&context, request, &reply);
-
-        //判断 RPC 本身是否成功
-        if (status.ok()) {
-            pool_->returnConnection(std::move(stub));
-            return reply;
-        }
-        else {
-            std::cout << "gRPC 调用失败: " << status.error_message() << std::endl;
-            reply.set_error(ErrorCodes::RPCFailed);
-            pool_->returnConnection(std::move(stub));
-            return reply;
-        }
-    }
+    GetVarifyRsp GetVarifyCode(std::string email);
 
 private:
     VerifyGrpcClient();
