@@ -12,6 +12,24 @@ using message::GetVarifyReq;
 using message::GetVarifyRsp;
 using message::VarifyService;
 
+class RPConPool {
+public:
+    RPConPool(size_t poolsize, std::string host, std::string port);
+    ~RPConPool();
+    void Close();
+    std::unique_ptr<VarifyService::Stub> getConnection();
+    void returnConnection(std::unique_ptr<VarifyService::Stub> context);
+
+private:
+    std::atomic<bool> b_stop_;
+    size_t poolsize_;
+    std::string host_;
+    std::string port_;
+    std::queue<std::unique_ptr<VarifyService::Stub>> connections_;
+    std::condition_variable cond_;
+    std::mutex mutex_;
+};
+
 //封装的一个gRPC客户端，负责调用VarifyServer的GetVarifyCode服务。它用单例模式保证全局只有一个实例，避免每次都重新建立连接
 class VerifyGrpcClient :public Singleton<VerifyGrpcClient>
 {
@@ -29,27 +47,24 @@ public:
         request.set_email(email);//填充 email 字段
 
         //同步调用远程服务，结果填进 reply
-        Status status = stub_->GetVarifyCode(&context, request, &reply);
+        auto stub = pool_->getConnection();
+        Status status = stub->GetVarifyCode(&context, request, &reply);
 
         //判断 RPC 本身是否成功
-        if (status.error_code() == grpc::StatusCode::DEADLINE_EXCEEDED) {
-            std::cout << "gRPC 调用超时" << std::endl;
+        if (status.ok()) {
+            pool_->returnConnection(std::move(stub));
+            return reply;
         }
         else {
             std::cout << "gRPC 调用失败: " << status.error_message() << std::endl;
+            reply.set_error(ErrorCodes::RPCFailed);
+            pool_->returnConnection(std::move(stub));
+            return reply;
         }
-        reply.set_error(ErrorCodes::RPCFailed);
-        return reply;
     }
 
 private:
-    VerifyGrpcClient() {
-        //CreateChannel 建立到 127.0.0.1:50051 的 gRPC 通道（Insecure = 不加密，本地测试用）
-        std::shared_ptr<Channel> channel = grpc::CreateChannel("127.0.0.1:50051", grpc::InsecureChannelCredentials());
-        //NewStub(channel) 创建一个 Stub（存根），后续所有 RPC 调用都通过它发出。
-        stub_ = VarifyService::NewStub(channel);
-    }
-    std::shared_ptr<Channel> channel_;
-    std::unique_ptr<VarifyService::Stub> stub_;
+    VerifyGrpcClient();
+    std::unique_ptr<RPConPool> pool_;
 };
 

@@ -19,6 +19,7 @@ struct SectionInfo {
         }
 
         this->_section_datas = src._section_datas;
+        return *this;
     }
 
     std::map<std::string, std::string> _section_datas;
@@ -47,22 +48,21 @@ public:
         return _config_map[section];
     }
 
-
-    ConfigMgr& operator=(const ConfigMgr& src) {
-        if (&src == this) {
-            return *this;
-        }
-
-        this->_config_map = src._config_map;
-    };
-
-    ConfigMgr(const ConfigMgr& src) {
-        this->_config_map = src._config_map;
+    //懒汉式单例
+    static ConfigMgr& Inst() {
+        static ConfigMgr cfg_mgr;
+        return cfg_mgr;
     }
 
+
+    ConfigMgr& operator=(const ConfigMgr& src) = delete;
+
+
+    ConfigMgr(const ConfigMgr& src) = delete;
+    
+private:
     //默认构造函数(.cpp)
     ConfigMgr();
-private:
 
     // 存储section和key-value对的map  
     std::map<std::string, SectionInfo> _config_map;

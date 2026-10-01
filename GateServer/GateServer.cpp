@@ -8,7 +8,7 @@
 int main()
 {
     //ConfigMgr:从config,ini文件里读取GateServer的端口号
-    ConfigMgr gCfgMgr;
+    auto& gCfgMgr = ConfigMgr::Inst();
     std::string gate_post_str = gCfgMgr["GateServer"]["Port"];
     //std::cout <<"gate_post_str:"<< gate_post_str << std::endl;
     unsigned short gate_port = atoi(gate_post_str.c_str());
