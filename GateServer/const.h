@@ -18,6 +18,9 @@
 #include <queue>
 #include <mutex>
 #include <condition_variable>
+#include <sw/redis++/redis++.h>
+#include "hiredis/hiredis.h"
+#include <cassert>
 
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
