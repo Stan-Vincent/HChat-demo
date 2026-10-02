@@ -4,12 +4,12 @@
       "pass": "VFnwmdku5LArXmSm"
     },
     "mysql":{
-      "host": "81.68.86.146",
-      "user": "3316",
+      "host": "127.0.0.1",
+      "user": "3308",
       "password": "123456"
     },
     "redis":{
-      "host": "81.68.86.146",
+      "host": "127.0.0.1",
       "port": 6380,
       "passwd": "123456"
 

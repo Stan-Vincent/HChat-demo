@@ -30,7 +30,7 @@ void TestRedisMgr() {
 
 int main()
 {
-    TestRedisMgr();
+    //TestRedisMgr();
 
     //ConfigMgr:从config,ini文件里读取GateServer的端口号
     auto& gCfgMgr = ConfigMgr::Inst();
