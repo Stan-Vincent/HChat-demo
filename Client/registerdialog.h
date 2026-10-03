@@ -20,6 +20,8 @@ private slots:
     void on_grt_code_clicked(); //点击获取验证码按钮（自动连接信号与槽）
     void slot_reg_mod_finish(ReqId req_id, QString res ,ErrorCodes err);
 
+    void on_sure_btn_clicked();
+
 private:
     Ui::RegisterDialog *ui;
 
