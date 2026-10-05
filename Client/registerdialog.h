@@ -22,8 +22,23 @@ private slots:
 
     void on_sure_btn_clicked();
 
+    void on_return_btn_clicked();
+
 private:
     Ui::RegisterDialog *ui;
+
+
+
+    bool checkUserValid();
+    bool checkEmailValid();
+    bool checkPassValid();
+    bool checkVarifyValid();
+    bool checkConfirmValid();
+
+    void AddTipErr(TipErr te,QString tips);
+    void DelTipErr(TipErr te);
+
+    void ChangeTipPage();
 
     //初始化_handles
     void initHttpHandlers();
@@ -34,6 +49,12 @@ private:
     ///注册验证码对应的处理
     //initHttpHandlers()后，_handlers[ID_GET_VARIFY_CODE] --> 调用获取Json验证码数据并分析的函数
     QMap<ReqId ,std::function<void(const QJsonObject&)>> _handlers;
+
+    QMap<TipErr, QString> _tip_errs;
+    QTimer * _countdown_timer;
+    int _countdown;
+signals:
+    void sigSwitchLogin();
 };
 
 #endif // REGISTERDIALOG_H

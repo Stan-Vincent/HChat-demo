@@ -271,7 +271,7 @@ int MysqlDao::RegUserTransaction(const std::string& name, const std::string& ema
         return -1;
     }
     Defer defer([this, &con]() {
-        // ★ 借出去的连接在事务模式下，归还前必须还原为自动提交，
+        //  借出去的连接在事务模式下，归还前必须还原为自动提交，
         //   否则这条连接会带着一个未结束的事务回到池里，污染后续使用者
         try {
             if (con) con->_con->setAutoCommit(true);
