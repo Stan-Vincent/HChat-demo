@@ -148,9 +148,13 @@ LogicSystem::LogicSystem() {
             return true;
         }
 
+        // ★ 客户端 registerdialog.cpp 里读的就是这个 "uid" 字段，
+        //   之前没回传，导致 Qt 端 jsonObj["uid"].toInt() 一直拿到默认值 0
         root["error"] = 0;
         root["email"] = email;
         root["user"] = user;
+        root["uid"] = uid;
+        std::cout << " register success, uid = " << uid << std::endl;
         //root["passwd"] = pwd;
         //root["confirm"] = confirm;
         //root["varifycode"] = src_root["varifycode"].asString();
