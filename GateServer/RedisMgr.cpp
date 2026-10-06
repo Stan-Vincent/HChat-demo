@@ -43,8 +43,15 @@ bool RedisMgr::Get(const std::string& key, std::string& value)
         std::cout << "[ GET " << key << " ] failed (reply null)" << std::endl;
         return false;
     }
+    //key does not exist (expired / never requested) -> hiredis replies with NIL,
+    //that is a normal case, not a type error, so tell the two apart
+    if (reply->type == REDIS_REPLY_NIL) {
+        std::cout << "[ GET " << key << " ] not found (expired or never requested)" << std::endl;
+        freeReplyObject(reply);
+        return false;
+    }
     if (reply->type != REDIS_REPLY_STRING) {
-        std::cout << "[ GET " << key << " ] failed (not string)" << std::endl;
+        std::cout << "[ GET " << key << " ] failed (unexpected reply type: " << reply->type << ")" << std::endl;
         freeReplyObject(reply);
         return false;
     }

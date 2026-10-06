@@ -20,6 +20,7 @@ LoginDialog::~LoginDialog()
 
 void LoginDialog::slot_forget_pwd()
 {
-    qDebug()<<"slot forget pwd";
+    //qDebug()<<"slot forget pwd";
     emit switchReset();
 }
+

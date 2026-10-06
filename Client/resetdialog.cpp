@@ -25,12 +25,13 @@ ResetDialog::ResetDialog(QWidget *parent) :
 
 
     connect(ui->varify_edit, &QLineEdit::editingFinished, this, [this](){
-         checkVarifyValid();
+        checkVarifyValid();
     });
 
     //连接reset相关信号和注册处理回调
     initHandlers();
-    connect(HttpMgr::GetInstance().get(), &HttpMgr::sig_reset_mod_finish, this,&ResetDialog::slot_reset_mod_finish);
+    connect(HttpMgr::GetInstance().get(), &HttpMgr::sig_reset_mod_finish, this,
+            &ResetDialog::slot_reset_mod_finish);
 
 }
 
@@ -42,7 +43,7 @@ ResetDialog::~ResetDialog()
 
 void ResetDialog::on_return_btn_clicked()
 {
-    qDebug() << "sure btn clicked ";
+    //qDebug() << "sure btn clicked ";
     emit switchLogin();
 }
 
@@ -169,8 +170,8 @@ void ResetDialog::DelTipErr(TipErr te)
 {
     _tip_errs.remove(te);
     if(_tip_errs.empty()){
-      ui->err_tip->clear();
-      return;
+        ui->err_tip->clear();
+        return;
     }
 
     showTip(_tip_errs.first(), false);
@@ -207,7 +208,7 @@ void ResetDialog::initHandlers()
 void ResetDialog::showTip(QString str, bool b_ok)
 {
     if(b_ok){
-         ui->err_tip->setProperty("state","normal");
+        ui->err_tip->setProperty("state","normal");
     }else{
         ui->err_tip->setProperty("state","err");
     }
@@ -246,5 +247,5 @@ void ResetDialog::on_sure_btn_clicked()
     json_obj["passwd"] = xorString(ui->pwd_edit->text());
     json_obj["varifycode"] = ui->varify_edit->text();
     HttpMgr::GetInstance()->PostHttpReq(QUrl(gate_url_prefix+"/reset_pwd"),
-                 json_obj, ReqId::ID_RESET_PWD,Modules::RESETMOD);
+                                        json_obj, ReqId::ID_RESET_PWD,Modules::RESETMOD);
 }

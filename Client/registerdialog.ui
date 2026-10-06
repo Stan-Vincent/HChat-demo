@@ -381,7 +381,7 @@
             </widget>
            </item>
            <item>
-            <widget class="TimerBtn" name="grt_code">
+            <widget class="TimerBtn" name="get_code">
              <property name="maximumSize">
               <size>
                <width>65</width>

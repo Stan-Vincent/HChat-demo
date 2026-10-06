@@ -4,7 +4,6 @@
 // ============================================================
 //                     MySqlPool 实现
 // ============================================================
-
 MySqlPool::MySqlPool(const std::string& host, int port,
     const std::string& user, const std::string& pass,
     const std::string& schema, int poolSize)
@@ -15,24 +14,25 @@ MySqlPool::MySqlPool(const std::string& host, int port,
         for (int i = 0; i < poolSize_; ++i) {
             sql::mysql::MySQL_Driver* driver = sql::mysql::get_mysql_driver_instance();
 
-            // ★ 用 ConnectOptionsMap 传参，不用 URL 字符串
+            //用 ConnectOptionsMap 传参，不用 URL 字符串
             sql::ConnectOptionsMap opts;
-            opts["hostName"] = host_;      // "127.0.0.1"
-            opts["port"] = port_;      // 3308 (int)
-            opts["userName"] = user_;      // "root"
-            opts["password"] = pass_;      // "123456"
-            opts["schema"] = schema_;    // "xxxl"
+            opts["hostName"] = host_;      
+            opts["port"] = port_;      
+            opts["userName"] = user_;      
+            opts["password"] = pass_;      
+            opts["schema"] = schema_;    
 
             auto* con = driver->connect(opts);
-            // con->setSchema(schema_);  // 已经在 opts 里指定 schema 了，这行可省
 
             auto currentTime = std::chrono::system_clock::now().time_since_epoch();
+
             long long timestamp = std::chrono::duration_cast<std::chrono::seconds>(currentTime).count();
             pool_.push(std::make_unique<SqlConnection>(con, timestamp));
         }
 
         std::cout << "MySQL 连接池初始化完成，成功连接数: " << pool_.size() << std::endl;
 
+        //后台保活线程
         _check_thread = std::thread([this]() {
             int counter = 0;
             while (!b_stop_.load()) {
@@ -83,10 +83,12 @@ void MySqlPool::Close()
 
 //还连接
 void MySqlPool::returnConnection(std::unique_ptr<SqlConnection> con) {
-    if (con == nullptr) return;   // 空指针不收
+    if (con == nullptr) 
+        return;   // 空指针不收
 
     std::unique_lock<std::mutex> lock(mutex_);   // 加锁
-    if (b_stop_) return;                          // 池关了就不还了
+    if (b_stop_) 
+        return;                          // 池关了就不还了
 
     pool_.push(std::move(con));                   // 塞进队尾
     cond_.notify_one();                           // 叫醒一个睡着的线程
@@ -175,6 +177,7 @@ void MySqlPool::checkConnectionPro()
 bool MySqlPool::reconnect(long long timestamp)
 {
     try {
+        //新建连接 → 包装 → 放回池
         sql::mysql::MySQL_Driver* driver = sql::mysql::get_mysql_driver_instance();
 
         sql::ConnectOptionsMap opts;
@@ -212,7 +215,7 @@ MysqlDao::MysqlDao()
     const auto& schema = cfg["Mysql"]["Schema"];
     const auto& user = cfg["Mysql"]["User"];
 
-    // ★ 直接传 host 和 port，不拼 url
+    // 直接传 host 和 port，不拼 url
     pool_.reset(new MySqlPool(host, std::stoi(port), user, pwd, schema, 5));
 }
 
@@ -224,10 +227,12 @@ MysqlDao::~MysqlDao()
 // 注册用户（通过存储过程）
 int MysqlDao::RegUser(const std::string& name, const std::string& email, const std::string& pwd)
 {
+    //借连接
     auto con = pool_->getConnection();
     if (con == nullptr) {
         return -1;
     }
+    // Defer 保证归还
     // RAII：无论怎么退出，都自动归还连接
     Defer defer([this, &con]() {
         pool_->returnConnection(std::move(con));
@@ -235,8 +240,8 @@ int MysqlDao::RegUser(const std::string& name, const std::string& email, const s
 
     try {
         // 准备调用存储过程
-        std::unique_ptr<sql::PreparedStatement> stmt(
-            con->_con->prepareStatement("CALL reg_user(?,?,?,@result)"));
+        //CALL reg_user(?,?,?,@result) 调用存储过程的sql函数
+        std::unique_ptr<sql::PreparedStatement> stmt(con->_con->prepareStatement("CALL reg_user(?,?,?,@result)"));
         stmt->setString(1, name);
         stmt->setString(2, email);
         stmt->setString(3, pwd);
@@ -246,7 +251,10 @@ int MysqlDao::RegUser(const std::string& name, const std::string& email, const s
 
         // 通过会话变量 @result 拿返回值（JDBC 不能直接注册输出参数）
         std::unique_ptr<sql::Statement> stmtResult(con->_con->createStatement());
+        //SELECT @result 读输出参数
         std::unique_ptr<sql::ResultSet> res(stmtResult->executeQuery("SELECT @result AS result"));
+
+        //返回结果
         if (res->next()) {
             int result = res->getInt("result");
             std::cout << "Result: " << result << std::endl;
@@ -264,7 +272,7 @@ int MysqlDao::RegUser(const std::string& name, const std::string& email, const s
 
 // 注册用户（事务版本）
 int MysqlDao::RegUserTransaction(const std::string& name, const std::string& email,
-    const std::string& pwd)
+    const std::string& pwd, const std::string& icon)
 {
     auto con = pool_->getConnection();
     if (con == nullptr) {
@@ -287,8 +295,10 @@ int MysqlDao::RegUserTransaction(const std::string& name, const std::string& ema
         // 1. 检查 email 是否已存在
         std::unique_ptr<sql::PreparedStatement> pstmt_email(
             con->_con->prepareStatement("SELECT 1 FROM user WHERE email = ?"));
+
         pstmt_email->setString(1, email);
         std::unique_ptr<sql::ResultSet> res_email(pstmt_email->executeQuery());
+
         if (res_email->next()) {
             con->_con->rollback();
             std::cout << "email " << email << " exist" << std::endl;
@@ -298,8 +308,10 @@ int MysqlDao::RegUserTransaction(const std::string& name, const std::string& ema
         // 2. 检查 name 是否已存在
         std::unique_ptr<sql::PreparedStatement> pstmt_name(
             con->_con->prepareStatement("SELECT 1 FROM user WHERE name = ?"));
+
         pstmt_name->setString(1, name);
         std::unique_ptr<sql::ResultSet> res_name(pstmt_name->executeQuery());
+
         if (res_name->next()) {
             con->_con->rollback();
             std::cout << "name " << name << " exist" << std::endl;
@@ -309,33 +321,38 @@ int MysqlDao::RegUserTransaction(const std::string& name, const std::string& ema
         // 3. 更新 user_id 表的自增 id
         std::unique_ptr<sql::PreparedStatement> pstmt_upid(
             con->_con->prepareStatement("UPDATE user_id SET id = id + 1"));
+
         pstmt_upid->executeUpdate();
 
         // 4. 读取新 id
         std::unique_ptr<sql::PreparedStatement> pstmt_uid(
             con->_con->prepareStatement("SELECT id FROM user_id"));
+
         std::unique_ptr<sql::ResultSet> res_uid(pstmt_uid->executeQuery());
+
         int newId = 0;
         if (res_uid->next()) {
             newId = res_uid->getInt("id");
         }
-        else {
+        else 
+        {
             std::cout << "select id from user_id failed" << std::endl;
             con->_con->rollback();
             return -1;
         }
 
-        // 5. 插入 user 表（★ 占位符有 6 个，6 个都必须绑定，少一个 executeUpdate 就会抛
+        // 5. 插入 user 表（占位符有 6 个，6 个都必须绑定，少一个 executeUpdate 就会抛
         //      "Parameter 6 is not set"）
         std::unique_ptr<sql::PreparedStatement> pstmt_insert(
             con->_con->prepareStatement(
                 "INSERT INTO user (uid, name, email, pwd, nick, icon) VALUES (?, ?, ?, ?, ?, ?)"));
+
         pstmt_insert->setInt(1, newId);
         pstmt_insert->setString(2, name);
         pstmt_insert->setString(3, email);
         pstmt_insert->setString(4, pwd);
         pstmt_insert->setString(5, name);   // nick：默认与用户名相同
-        pstmt_insert->setString(6, "");     // icon：默认为空
+        pstmt_insert->setString(6, icon);     // icon: avatar path from the client
         pstmt_insert->executeUpdate();
 
         // 6. 提交事务
@@ -461,6 +478,7 @@ bool MysqlDao::CheckPwd(const std::string& email, const std::string& pwd, UserIn
         userInfo.email = res->getString("email");
         userInfo.uid = res->getInt("uid");
         userInfo.pwd = origin_pwd;
+        userInfo.icon = res->getString("icon");
         return true;
     }
     catch (sql::SQLException& e) {
