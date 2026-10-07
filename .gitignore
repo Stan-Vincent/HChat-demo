@@ -1,47 +1,75 @@
-# Qt Creator 本地配置
+# ==========================================================
+#                      HChat .gitignore
+# ==========================================================
+
+# ---------- Qt Creator / Qt ----------
 .qtcreator/
 *.user
 *.user.*
-
-# 编译产物
-build/
-debug/
-release/
-*.o
-*.obj
-*.exe
-*.dll
-*.so
-
-# 编译生成的中间文件
 moc_*.cpp
 moc_*.h
 ui_*.h
 qrc_*.cpp
-*.pdb
 
-# 本地设置或数据库文件
-*.db
-*.sqlite
-settings.ini
-.workbuddy/
-
-# ========== Visual Studio ==========
+# ---------- Visual Studio ----------
 .vs/
+*.suo
+*.sdf
+*.opensdf
+*.VC.db
+*.VC.opendb
+*.aps
+ipch/
+*.ipch
+*.sln.docstates
+# *.vcxproj.filters 是工程目录结构文件，需要跟着提交，所以这里不忽略
+
+# ---------- 构建输出目录 ----------
 x64/
 Debug/
 Release/
-*.vcxproj.user
-*.vcxproj.filter
-*.sln.docstates
+debug/
+release/
+build/
+# 注意：VS 的 IntDir 默认是 $(ProjectName)\$(Platform)\$(Configuration)，
+# 所以会出现 GateServer/GateServer/ 、StatusServer/StatusServer/ 这种嵌套中间目录，
+# 里面的 x64/ 已被忽略，父目录本身不会进版本库。
 
-# C++ 编译产物
+# ---------- C/C++ 编译产物 ----------
+*.o
 *.obj
 *.pdb
 *.ilk
 *.idb
 *.exp
 *.lib
+*.exe
+*.dll
+*.so
+*.dylib
+*.pch
+*.tlog
+*.lastbuildstate
+*.unsuccessfulbuild
 *.log
 
+# ---------- 操作系统 / 编辑器垃圾 ----------
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+*.swp
+*~
+
+# ---------- IDE ----------
+.idea/
+
+# ---------- 其它 ----------
 node_modules/
+*.db
+*.sqlite
+settings.ini
+
+# ---------- WorkBuddy 本地记忆 ----------
+.workbuddy/
