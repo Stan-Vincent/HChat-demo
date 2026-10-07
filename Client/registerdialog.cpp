@@ -133,6 +133,12 @@ void RegisterDialog::slot_reg_mod_finish(ReqId id, QString res, ErrorCodes err)
 
 
     //调用对应的逻辑,根据id回调。
+    //注意:QMap::operator[] 对不存在的 key 会插入一个空的 std::function,
+    //再调用它会抛出 std::bad_function_call 直接崩溃,所以必须先判断 key 是否存在
+    if(!_handlers.contains(id)){
+        qDebug() << "no handler registered for req id " << id;
+        return;
+    }
     _handlers[id](jsonDoc.object());
 
     return;

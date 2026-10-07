@@ -99,9 +99,15 @@ std::unique_ptr<SqlConnection> MySqlPool::getConnection()
 {
     std::unique_lock<std::mutex> lock(mutex_);   // 加锁
 
-    cond_.wait(lock, [this] {                    // 等条件
+    bool got = cond_.wait_for(lock, std::chrono::seconds(POOL_WAIT_TIMEOUT_SEC), [this] {                    // 等条件
         return b_stop_ || !pool_.empty();
     });
+
+    if (!got) {
+        std::cout << "mysql pool exhausted, wait for connection timeout ("
+            << POOL_WAIT_TIMEOUT_SEC << "s)" << std::endl;
+        return nullptr;
+    }
 
     if (b_stop_) 
         return nullptr;                 // 池关了，返回空

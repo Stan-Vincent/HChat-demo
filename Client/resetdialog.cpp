@@ -86,6 +86,12 @@ void ResetDialog::slot_reset_mod_finish(ReqId id, QString res, ErrorCodes err)
 
 
     //调用对应的逻辑,根据id回调。
+    //注意:QMap::operator[] 对不存在的 key 会插入一个空的 std::function,
+    //再调用它会抛出 std::bad_function_call 直接崩溃,所以必须先判断 key 是否存在
+    if(!_handlers.contains(id)){
+        qDebug() << "no handler registered for req id " << id;
+        return;
+    }
     _handlers[id](jsonDoc.object());
 
     return;
@@ -201,7 +207,9 @@ void ResetDialog::initHandlers()
         auto email = jsonObj["email"].toString();
         showTip(tr("重置成功,点击返回登录"), true);
         qDebug()<< "email is " << email ;
-        qDebug()<< "user uuid is " <<  jsonObj["uuid"].toString();
+        //服务端 /reset_pwd 只回 {error,email,user,varifycode},没有 uuid 字段,
+        //读 uuid 只会得到空串,改用服务端真实返回的 user
+        qDebug()<< "user is " << jsonObj["user"].toString();
     });
 }
 

@@ -13,6 +13,23 @@ namespace {
     };
 }
 
+// build a command with redisCommandArgv instead of the %s formatter.
+// hiredis' %s does NOT quote or escape: a key or value containing a space
+// would be split into two arguments, and a '%' would be read as a format
+// specifier. argv form is binary safe.
+redisReply* RunCommand(redisContext* c, const std::vector<std::string>& args) {
+    std::vector<const char*> argv;
+    std::vector<size_t> argvlen;
+    argv.reserve(args.size());
+    argvlen.reserve(args.size());
+    for (const auto& a : args) {
+        argv.push_back(a.data());
+        argvlen.push_back(a.size());
+    }
+    return (redisReply*)redisCommandArgv(
+        c, static_cast<int>(argv.size()), argv.data(), argvlen.data());
+}
+
 // ==================== RedisMgr ====================
 
 //从 config.ini 读 Redis 的地址、端口、密码
@@ -38,7 +55,7 @@ bool RedisMgr::Get(const std::string& key, std::string& value)
     if (connect == nullptr) return false;
     ConnGuard guard(_con_pool.get(), connect);
 
-    auto reply = (redisReply*)redisCommand(connect, "GET %s", key.c_str());
+    auto reply = RunCommand(connect, { "GET", key });
     if (reply == nullptr) {
         std::cout << "[ GET " << key << " ] failed (reply null)" << std::endl;
         return false;
@@ -71,7 +88,7 @@ bool RedisMgr::Set(const std::string& key, const std::string& value)
 
     ConnGuard guard(_con_pool.get(), connect);// RAII 保证归还
 
-    auto reply = (redisReply*)redisCommand(connect, "SET %s %s", key.c_str(), value.c_str());
+    auto reply = RunCommand(connect, { "SET", key, value });
     if (reply == nullptr) {
         std::cout << "Execut command [ SET " << key << " " << value << " ] failure (reply null)" << std::endl;
         return false;
@@ -94,7 +111,7 @@ bool RedisMgr::LPush(const std::string& key, const std::string& value)
     if (connect == nullptr) return false;
     ConnGuard guard(_con_pool.get(), connect);
 
-    auto reply = (redisReply*)redisCommand(connect, "LPUSH %s %s", key.c_str(), value.c_str());
+    auto reply = RunCommand(connect, { "LPUSH", key, value });
     if (reply == nullptr) {
         std::cout << "Execut command [ LPUSH " << key << " " << value << " ] failure (reply null)" << std::endl;
         return false;
@@ -116,7 +133,7 @@ bool RedisMgr::LPop(const std::string& key, std::string& value)
     if (connect == nullptr) return false;
     ConnGuard guard(_con_pool.get(), connect);
 
-    auto reply = (redisReply*)redisCommand(connect, "LPOP %s", key.c_str());
+    auto reply = RunCommand(connect, { "LPOP", key });
     if (reply == nullptr || reply->type == REDIS_REPLY_NIL) {
         std::cout << "Execut command [ LPOP " << key << " ] failure" << std::endl;
         if (reply) freeReplyObject(reply);
@@ -135,7 +152,7 @@ bool RedisMgr::RPush(const std::string& key, const std::string& value)
     if (connect == nullptr) return false;
     ConnGuard guard(_con_pool.get(), connect);
 
-    auto reply = (redisReply*)redisCommand(connect, "RPUSH %s %s", key.c_str(), value.c_str());
+    auto reply = RunCommand(connect, { "RPUSH", key, value });
     if (reply == nullptr) {
         std::cout << "Execut command [ RPUSH " << key << " " << value << " ] failure (reply null)" << std::endl;
         return false;
@@ -157,7 +174,7 @@ bool RedisMgr::RPop(const std::string& key, std::string& value)
     if (connect == nullptr) return false;
     ConnGuard guard(_con_pool.get(), connect);
 
-    auto reply = (redisReply*)redisCommand(connect, "RPOP %s", key.c_str());
+    auto reply = RunCommand(connect, { "RPOP", key });
     if (reply == nullptr || reply->type == REDIS_REPLY_NIL) {
         std::cout << "Execut command [ RPOP " << key << " ] failure" << std::endl;
         if (reply) freeReplyObject(reply);
@@ -176,8 +193,7 @@ bool RedisMgr::HSet(const std::string& key, const std::string& hkey, const std::
     if (connect == nullptr) return false;
     ConnGuard guard(_con_pool.get(), connect);
 
-    auto reply = (redisReply*)redisCommand(connect, "HSET %s %s %s",
-        key.c_str(), hkey.c_str(), value.c_str());
+    auto reply = RunCommand(connect, { "HSET", key, hkey, value });
     if (reply == nullptr || reply->type != REDIS_REPLY_INTEGER) {
         std::cout << "Execut command [ HSET " << key << " " << hkey << " " << value << " ] failure" << std::endl;
         if (reply) freeReplyObject(reply);
@@ -245,7 +261,7 @@ bool RedisMgr::Del(const std::string& key)
     if (connect == nullptr) return false;
     ConnGuard guard(_con_pool.get(), connect);
 
-    auto reply = (redisReply*)redisCommand(connect, "DEL %s", key.c_str());
+    auto reply = RunCommand(connect, { "DEL", key });
     if (reply == nullptr || reply->type != REDIS_REPLY_INTEGER) {
         std::cout << "Execut command [ DEL " << key << " ] failure" << std::endl;
         if (reply) freeReplyObject(reply);
@@ -263,7 +279,7 @@ bool RedisMgr::ExistsKey(const std::string& key)
     if (connect == nullptr) return false;
     ConnGuard guard(_con_pool.get(), connect);
 
-    auto reply = (redisReply*)redisCommand(connect, "EXISTS %s", key.c_str());
+    auto reply = RunCommand(connect, { "EXISTS", key });
     if (reply == nullptr || reply->type != REDIS_REPLY_INTEGER || reply->integer == 0) {
         std::cout << "Not Found [ Key " << key << " ]" << std::endl;
         if (reply) freeReplyObject(reply);
@@ -295,7 +311,7 @@ RedisConPool::RedisConPool(size_t poolSize, const std::string& host, int port, c
             continue;
         }
 
-        auto reply = (redisReply*)redisCommand(context, "AUTH %s", pwd);
+        auto reply = RunCommand(context, { "AUTH", std::string(pwd) });
         if (reply == nullptr) {
             std::cout << "认证失败（reply 为空）" << std::endl;
             redisFree(context);
@@ -332,9 +348,15 @@ redisContext* RedisConPool::getConnection()
     std::unique_lock<std::mutex> lock(mutex_);
     //条件等待：如果队列为空（没连接可借），就挂起当前线程，并释放锁让别人用。
     //等别人归还连接并调用 notify_one()，才唤醒
-    cond_.wait(lock, [this] {
+    bool got = cond_.wait_for(lock, std::chrono::seconds(POOL_WAIT_TIMEOUT_SEC), [this] {
         return b_stop_ || !connections_.empty();
         });
+
+    if (!got) {
+        std::cout << "redis pool exhausted, wait for connection timeout ("
+            << POOL_WAIT_TIMEOUT_SEC << "s)" << std::endl;
+        return nullptr;
+    }
 
     if (b_stop_) return nullptr;
 

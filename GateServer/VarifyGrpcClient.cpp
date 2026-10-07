@@ -35,12 +35,18 @@ std::unique_ptr<VarifyService::Stub> RPConPool::getConnection()
 	//加锁保护队列：多线程同时 getConnection 时，不会重复取到同一个元素
 	std::unique_lock<std::mutex> lock(mutex_);
 	//如果队列为空，线程会阻塞在 wait，直到别人 returnConnection 唤醒它
-	cond_.wait(lock, [this]() {
+	bool got = cond_.wait_for(lock, std::chrono::seconds(POOL_WAIT_TIMEOUT_SEC), [this]() {
 		if (b_stop_) {
 			return true;
 		}
 		return !connections_.empty();
 	});
+
+	if (!got) {
+		std::cout << "grpc pool exhausted, wait for connection timeout ("
+			<< POOL_WAIT_TIMEOUT_SEC << "s)" << std::endl;
+		return nullptr;
+	}
 
 	if (b_stop_) {
 		return nullptr;

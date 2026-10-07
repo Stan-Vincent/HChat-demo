@@ -92,7 +92,6 @@ struct ServerInfo{
 
 enum class ChatRole
 {
-
     Self,
     Other
 };

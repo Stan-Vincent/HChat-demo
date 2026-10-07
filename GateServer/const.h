@@ -21,6 +21,8 @@
 #include <sw/redis++/redis++.h>
 #include "hiredis/hiredis.h"
 #include <cassert>
+#include <chrono>
+#include <vector>
 #include <mysql/mysql.h>
 
 
@@ -61,4 +63,8 @@ private:
 };
 
 #define CODEPREFIX  "code_"
+
+// max time a caller waits when borrowing a connection from any pool.
+// on timeout we return nullptr instead of blocking the io thread forever.
+constexpr int POOL_WAIT_TIMEOUT_SEC = 3;
 
