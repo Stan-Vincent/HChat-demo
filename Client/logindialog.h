@@ -4,6 +4,7 @@
 #include <QDialog>
 #include "global.h"
 #include "httpmgr.h"
+#include "tcpmgr.h"
 
 namespace Ui {
 class LoginDialog;

@@ -23,11 +23,11 @@ LoginDialog::LoginDialog(QWidget *parent)
             &LoginDialog::slot_login_mod_finish);
 
     //连接tcp连接请求的信号和槽函数
-    //connect(this, &LoginDialog::sig_connect_tcp, TcpMgr::GetInstance().get(), &TcpMgr::slot_tcp_connect);
+    connect(this, &LoginDialog::sig_connect_tcp, TcpMgr::GetInstance().get(), &TcpMgr::slot_tcp_connect);
     //连接tcp管理者发出的连接成功信号
-    //connect(TcpMgr::GetInstance().get(), &TcpMgr::sig_con_success, this, &LoginDialog::slot_tcp_con_finish);
+    connect(TcpMgr::GetInstance().get(), &TcpMgr::sig_con_success, this, &LoginDialog::slot_tcp_con_finish);
     //连接tcp管理者发出的登陆失败信号
-    //connect(TcpMgr::GetInstance().get(), &TcpMgr::sig_login_failed, this, &LoginDialog::slot_login_failed);
+    connect(TcpMgr::GetInstance().get(), &TcpMgr::sig_login_failed, this, &LoginDialog::slot_login_failed);
 
     initHead();
 }
@@ -211,6 +211,7 @@ void LoginDialog::slot_login_mod_finish(ReqId id, QString res, ErrorCodes err)
 {
     if(err != ErrorCodes::SUCCESS){
         showTip(tr("网络请求错误"),false);
+        enableBtn(true);
         return;
     }
 
@@ -219,17 +220,26 @@ void LoginDialog::slot_login_mod_finish(ReqId id, QString res, ErrorCodes err)
     //json解析错误
     if(jsonDoc.isNull()){
         showTip(tr("json解析错误"),false);
+        enableBtn(true);
         return;
     }
 
     //json解析错误
     if(!jsonDoc.isObject()){
         showTip(tr("json解析错误"),false);
+        enableBtn(true);
         return;
     }
 
 
     //调用对应的逻辑,根据id回调。
+    //注意:QMap::operator[] 对不存在的 key 会插入一个空的 std::function,
+    //再调用它会抛出 std::bad_function_call 直接崩溃,所以必须先判断 key 是否存在
+    if(!_handlers.contains(id)){
+        qDebug() << "no handler registered for req id " << id;
+        enableBtn(true);
+        return;
+    }
     _handlers[id](jsonDoc.object());
 
     return;
@@ -248,7 +258,7 @@ void LoginDialog::slot_tcp_con_finish(bool bsuccess)
         QByteArray jsonData = doc.toJson(QJsonDocument::Indented);
 
         //发送tcp请求给chat server
-        //emit TcpMgr::GetInstance()->sig_send_data(ReqId::ID_CHAT_LOGIN, jsonData);
+        emit TcpMgr::GetInstance()->sig_send_data(ReqId::ID_CHAT_LOGIN, jsonData);
 
     }else{
         showTip(tr("网络异常"),false);
