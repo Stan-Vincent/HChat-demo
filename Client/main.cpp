@@ -1,38 +1,38 @@
-﻿#include "mainwindow.h"
+#include "mainwindow.h"
 #include <QApplication>
 #include <QFile>
+#include "global.h"
 
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
 
-    ///初加载样式表
     QFile qss(":/style/stylesheet.qss");
-    if(qss.open(QFile::ReadOnly)){
-        //qDebug("Client's stylesheet open success");
-        QString style = QString::fromUtf8(qss.readAll());
+
+    if( qss.open(QFile::ReadOnly))
+    {
+        qDebug("open success");
+        QString style = QLatin1String(qss.readAll());
         a.setStyleSheet(style);
         qss.close();
     }else{
-        qDebug("Client's stylesheet open failed");
-    }
+         qDebug("Open failed");
+     }
 
-    ///从congif.ini获取GateServer的url前缀（host和port信息）
-    //获取congig.ini目录
-    QString fileName = "config.ini";
 
-    //获取执行目录
+    // 获取当前应用程序的路径
     QString app_path = QCoreApplication::applicationDirPath();
-    QString config_path = QDir::toNativeSeparators(app_path + QDir::separator() + fileName);
-    QSettings settings(config_path,QSettings::IniFormat);
+    // 拼接文件名
+    QString fileName = "config.ini";
+    QString config_path = QDir::toNativeSeparators(app_path +
+                             QDir::separator() + fileName);
 
-    //读取ini文件关于GateServer的http地址
+    QSettings settings(config_path, QSettings::IniFormat);
     QString gate_host = settings.value("GateServer/host").toString();
     QString gate_port = settings.value("GateServer/port").toString();
-    gate_url_prefix = "http://"+gate_host +":" +gate_port;
+    gate_url_prefix = "http://"+gate_host+":"+gate_port;
 
-    ///初始化主窗口
     MainWindow w;
     w.show();
-    return QCoreApplication::exec();
+    return a.exec();
 }

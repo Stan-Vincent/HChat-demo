@@ -1,27 +1,28 @@
-﻿#ifndef GLOBAL_H
+#ifndef GLOBAL_H
 #define GLOBAL_H
 #include <QWidget>
 #include <functional>
-#include <QRegularExpression>//正则表达式
 #include "QStyle"
-#include <QJsonArray>
-#include <QJsonObject>
-#include <QNetworkReply>
 #include <memory>
-#include <iostream>
-#include <mutex>
+#include <QJsonObject>
+#include <QJsonDocument>
+#include <QNetworkReply>
 #include <QDir>
 #include <QSettings>
-#include <QTimer>
-#include <QEventLoop>
-
-//声明 用于刷新qss样式表的函数(接收类型:QWidget*，返回类型:void)
+/**
+ * @brief repolish用来根据属性刷新qss
+ */
 extern std::function<void(QWidget*)> repolish;
+/**
+ * @brief The ReqId enum 表示请求的id
+ */
 
-//异或字符串
 extern std::function<QString(QString)> xorString;
 
-// @brief 延迟执行
+/*
+* @brief 延迟执行
+*/
+
 extern void delay_run(int msecs);
 
 enum ReqId{
@@ -80,8 +81,9 @@ enum ClickLbState{
     Selected = 1
 };
 
-//网关(GateServer)的url前缀
+
 extern QString gate_url_prefix;
+
 
 struct ServerInfo{
     QString Host;
@@ -92,6 +94,7 @@ struct ServerInfo{
 
 enum class ChatRole
 {
+
     Self,
     Other
 };
@@ -131,10 +134,10 @@ const int  tip_offset = 5;
 
 
 const std::vector<QString>  strs ={"hello world !",
-                                   "nice to meet u",
-                                   "New year，new life",
-                                   "You have to love yourself",
-                                   "My love is written in the wind ever since the whole world is you"};
+                             "nice to meet u",
+                             "New year，new life",
+                            "You have to love yourself",
+                            "My love is written in the wind ever since the whole world is you"};
 
 const std::vector<QString> heads = {
     ":/res/head_1.jpg",

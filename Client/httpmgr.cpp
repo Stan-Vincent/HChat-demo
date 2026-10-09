@@ -1,48 +1,46 @@
-﻿#include "httpmgr.h"
+#include "httpmgr.h"
 
 HttpMgr::~HttpMgr()
 {
 
 }
 
-HttpMgr::HttpMgr() {
-    //连接http请求和完成信号，信号槽机制保证队列消费
-    connect(this,&HttpMgr::sig_http_finish,this,&HttpMgr::slot_http_finish);
-}
-
 void HttpMgr::PostHttpReq(QUrl url, QJsonObject json, ReqId req_id, Modules mod)
 {
     //创建一个HTTP POST请求，并设置请求头和请求体
     QByteArray data = QJsonDocument(json).toJson();
-
     //通过url构造请求
     QNetworkRequest request(url);
-    request.setHeader(QNetworkRequest::ContentTypeHeader,"application/json");
-    request.setHeader(QNetworkRequest::ContentLengthHeader,QByteArray::number(data.length()));
-
-    //获取自己的智能指针，构造伪闭包并增加智能指针引用计数
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    request.setHeader(QNetworkRequest::ContentLengthHeader, QByteArray::number(data.length()));
+    //发送请求，并处理响应, 获取自己的智能指针，构造伪闭包并增加智能指针引用计数
     auto self = shared_from_this();
-    //发送post请求，等待网关处理并处理响应
-    QNetworkReply *reply = _manager.post(request,data);
-
+    QNetworkReply * reply = _manager.post(request, data);
     //设置信号和槽等待发送完成
-    QObject::connect(reply ,&QNetworkReply::finished ,[self,reply ,req_id ,mod](){
-        //处理错误情况
+    QObject::connect(reply, &QNetworkReply::finished, [reply, self, req_id, mod](){
+        //处理错误的情况
         if(reply->error() != QNetworkReply::NoError){
             qDebug() << reply->errorString();
-            //发送失败信号
-            emit self->sig_http_finish(req_id, "", ErrorCodes::ERR_NETWORK ,mod);
+            //发送信号通知完成
+            emit self->sig_http_finish(req_id, "", ErrorCodes::ERR_NETWORK, mod);
             reply->deleteLater();
-            return ;
+            return;
         }
 
-        //无错误
+        //无错误则读回请求
         QString res = reply->readAll();
-        //发送成功信号 --> 调用HttpMgr::slot_http_finish
-        emit self->sig_http_finish(req_id, res, ErrorCodes::SUCCESS ,mod);
+
+        //发送信号通知完成
+        emit self->sig_http_finish(req_id, res, ErrorCodes::SUCCESS,mod);
         reply->deleteLater();
-        return ;
+        return;
     });
+}
+
+HttpMgr::HttpMgr()
+{
+    //连接http请求和完成信号，信号槽机制保证队列消费
+    connect(this, &HttpMgr::sig_http_finish, this, &HttpMgr::slot_http_finish);
 }
 
 void HttpMgr::slot_http_finish(ReqId id, QString res, ErrorCodes err, Modules mod)
@@ -61,5 +59,3 @@ void HttpMgr::slot_http_finish(ReqId id, QString res, ErrorCodes err, Modules mo
         emit sig_login_mod_finish(id, res, err);
     }
 }
-
-

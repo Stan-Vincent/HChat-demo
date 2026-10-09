@@ -1,8 +1,7 @@
-﻿#ifndef CLICKEDLABEL_H
+#ifndef CLICKEDLABEL_H
 #define CLICKEDLABEL_H
 #include <QLabel>
 #include "global.h"
-#include <QEnterEvent>
 
 class ClickedLabel:public QLabel
 {

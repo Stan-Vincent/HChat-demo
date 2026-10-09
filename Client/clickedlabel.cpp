@@ -1,6 +1,5 @@
-﻿#include "clickedlabel.h"
+#include "clickedlabel.h"
 #include <QMouseEvent>
-
 ClickedLabel::ClickedLabel(QWidget* parent):QLabel (parent),_curstate(ClickLbState::Normal)
 {
     setCursor(Qt::PointingHandCursor);
@@ -18,7 +17,7 @@ void ClickedLabel::mousePressEvent(QMouseEvent* event)  {
             update();
 
         }else{
-            // qDebug()<<"PressEvent , change to normal press: "<< _normal_press;
+              // qDebug()<<"PressEvent , change to normal press: "<< _normal_press;
             _curstate = ClickLbState::Normal;
             setProperty("state",_normal_press);
             repolish(this);
@@ -34,13 +33,13 @@ void ClickedLabel::mouseReleaseEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
         if(_curstate == ClickLbState::Normal){
-            // qDebug()<<"ReleaseEvent , change to normal hover: "<< _normal_hover;
+             // qDebug()<<"ReleaseEvent , change to normal hover: "<< _normal_hover;
             setProperty("state",_normal_hover);
             repolish(this);
             update();
 
         }else{
-            //  qDebug()<<"ReleaseEvent , change to select hover: "<< _selected_hover;
+             //  qDebug()<<"ReleaseEvent , change to select hover: "<< _selected_hover;
             setProperty("state",_selected_hover);
             repolish(this);
             update();
@@ -112,12 +111,12 @@ bool ClickedLabel::SetCurState(ClickLbState state)
 {
     _curstate = state;
     if (_curstate == ClickLbState::Normal) {
-        setProperty("state", _normal);
-        repolish(this);
+		setProperty("state", _normal);
+		repolish(this);
     }
     else if (_curstate == ClickLbState::Selected) {
-        setProperty("state", _selected);
-        repolish(this);
+		setProperty("state", _selected);
+		repolish(this);
     }
 
     return true;

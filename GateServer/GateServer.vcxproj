@@ -131,6 +131,13 @@
       <AdditionalLibraryDirectories>D:\Program Files\mysql-connector-c++-26.7.0-winx64\lib64\vs14;D:\software\vcpkg\vcpkg\installed\x64-windows\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>redis++.lib;hiredis.lib;ws2_32.lib;%(AdditionalDependencies);mysqlcppconn.lib</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <!-- 把 config.ini 和 MySQL 认证插件拷到输出目录。不拷的话只有从工程目录运行
+           才能读到配置（ConfigMgr 从当前工作目录找 config.ini），从 x64\Debug 直接运行会闪退。 -->
+      <Command>xcopy /Y "$(ProjectDir)config.ini" "$(OutDir)"
+xcopy /Y /E /I "D:\Program Files\mysql-connector-c++-26.7.0-winx64\lib64\plugin" "$(OutDir)plugin"</Command>
+      <Message>Copy config.ini and MySQL auth plugins to output dir</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -151,6 +158,11 @@
       <AdditionalLibraryDirectories>D:\Program Files\mysql-connector-c++-26.7.0-winx64\lib64\vs14;D:\software\vcpkg\vcpkg\installed\x64-windows\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>redis++.lib;hiredis.lib;ws2_32.lib;%(AdditionalDependencies);mysqlcppconn.lib</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /Y "$(ProjectDir)config.ini" "$(OutDir)"
+xcopy /Y /E /I "D:\Program Files\mysql-connector-c++-26.7.0-winx64\lib64\plugin" "$(OutDir)plugin"</Command>
+      <Message>Copy config.ini and MySQL auth plugins to output dir</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="AsioIOServicePool.h" />

@@ -1,23 +1,22 @@
-﻿#include "logindialog.h"
+#include "logindialog.h"
 #include "ui_logindialog.h"
+#include <QDebug>
+#include "httpmgr.h"
+#include "tcpmgr.h"
+#include <QRegularExpression>
 #include <QPainter>
 #include <QPainterPath>
 
-LoginDialog::LoginDialog(QWidget *parent)
-    : QDialog(parent)
-    , ui(new Ui::LoginDialog)
+LoginDialog::LoginDialog(QWidget *parent) :
+    QDialog(parent),
+    ui(new Ui::LoginDialog)
 {
     ui->setupUi(this);
-
-    //点击注册按钮 -> 跳转注册界面
-    connect(ui->reg_btn,&QPushButton::clicked,this,&LoginDialog::switchRegister);
-
+    connect(ui->reg_btn, &QPushButton::clicked, this, &LoginDialog::switchRegister);
     ui->forget_label->SetState("normal","hover","","selected","selected_hover","");
     ui->forget_label->setCursor(Qt::PointingHandCursor);
     connect(ui->forget_label, &ClickedLabel::clicked, this, &LoginDialog::slot_forget_pwd);
-
     initHttpHandlers();
-
     //连接登录回包信号
     connect(HttpMgr::GetInstance().get(), &HttpMgr::sig_login_mod_finish, this,
             &LoginDialog::slot_login_mod_finish);
@@ -34,41 +33,33 @@ LoginDialog::LoginDialog(QWidget *parent)
 
 LoginDialog::~LoginDialog()
 {
+    qDebug()<<"destruct LoginDlg";
     delete ui;
 }
 
 void LoginDialog::initHead()
 {
     // 加载图片
-    QPixmap originalPixmap(":/res/MyXXXAvatar.jpg");
-
-    // 设置图片自动缩放
+    QPixmap originalPixmap(":/res/head_1.jpg");
+      // 设置图片自动缩放
     qDebug()<< originalPixmap.size() << ui->head_label->size();
-    //Qt::KeepAspectRatio保持宽高比 Qt::SmoothTransformation平滑缩放
     originalPixmap = originalPixmap.scaled(ui->head_label->size(),
-                                           Qt::KeepAspectRatio, Qt::SmoothTransformation);
+            Qt::KeepAspectRatio, Qt::SmoothTransformation);
 
     // 创建一个和原始图片相同大小的QPixmap，用于绘制圆角图片
     QPixmap roundedPixmap(originalPixmap.size());
-
-    // 用透明色填充
-    roundedPixmap.fill(Qt::transparent);
+    roundedPixmap.fill(Qt::transparent); // 用透明色填充
 
     QPainter painter(&roundedPixmap);
-    // 设置抗锯齿，使圆角更平滑
-    painter.setRenderHint(QPainter::Antialiasing);
-    //绘制 Pixmap 时用平滑插值，避免像素块
+    painter.setRenderHint(QPainter::Antialiasing); // 设置抗锯齿，使圆角更平滑
     painter.setRenderHint(QPainter::SmoothPixmapTransform);
 
     // 使用QPainterPath设置圆角
     QPainterPath path;
-    path.addRoundedRect(0, 0,
-                        originalPixmap.width(),
-                        originalPixmap.height(),
-                        10, 10); // 最后两个参数分别是x和y方向的圆角半径
+    path.addRoundedRect(0, 0, originalPixmap.width(), originalPixmap.height(), 10, 10); // 最后两个参数分别是x和y方向的圆角半径
     painter.setClipPath(path);
 
-    //设置裁剪区域 将原始图片绘制到roundedPixmap上
+    // 将原始图片绘制到roundedPixmap上
     painter.drawPixmap(0, 0, originalPixmap);
 
     // 设置绘制好的圆角图片到QLabel上
@@ -98,7 +89,7 @@ void LoginDialog::initHttpHandlers()
         _uid = si.Uid;
         _token = si.Token;
         qDebug()<< "email is " << email << " uid is " << si.Uid <<" host is "
-                 << si.Host << " Port is " << si.Port << " Token is " << si.Token;
+                << si.Host << " Port is " << si.Port << " Token is " << si.Token;
         emit sig_connect_tcp(si);
     });
 }
@@ -106,7 +97,7 @@ void LoginDialog::initHttpHandlers()
 void LoginDialog::showTip(QString str, bool b_ok)
 {
     if(b_ok){
-        ui->err_tip->setProperty("state","normal");
+         ui->err_tip->setProperty("state","normal");
     }else{
         ui->err_tip->setProperty("state","err");
     }
@@ -114,6 +105,12 @@ void LoginDialog::showTip(QString str, bool b_ok)
     ui->err_tip->setText(str);
 
     repolish(ui->err_tip);
+}
+
+void LoginDialog::slot_forget_pwd()
+{
+    qDebug()<<"slot forget pwd";
+    emit switchReset();
 }
 
 bool LoginDialog::checkUserValid(){
@@ -160,31 +157,9 @@ bool LoginDialog::enableBtn(bool enabled)
     return true;
 }
 
-void LoginDialog::AddTipErr(TipErr te,QString tips){
-    _tip_errs[te] = tips;
-    showTip(tips, false);
-}
-
-void LoginDialog::DelTipErr(TipErr te){
-    _tip_errs.remove(te);
-    if(_tip_errs.empty()){
-        ui->err_tip->clear();
-        return;
-    }
-
-    showTip(_tip_errs.first(), false);
-}
-
-void LoginDialog::slot_forget_pwd()
-{
-    //qDebug()<<"slot forget pwd";
-    emit switchReset();
-}
-
 void LoginDialog::on_login_btn_clicked()
 {
     qDebug()<<"login btn clicked";
-
     if(checkUserValid() == false){
         return;
     }
@@ -194,15 +169,12 @@ void LoginDialog::on_login_btn_clicked()
     }
 
     enableBtn(false);
-
     auto email = ui->email_edit->text();
     auto pwd = ui->pass_edit->text();
-
     //发送http请求登录
     QJsonObject json_obj;
     json_obj["email"] = email;
     json_obj["passwd"] = xorString(pwd);
-
     HttpMgr::GetInstance()->PostHttpReq(QUrl(gate_url_prefix+"/user_login"),
                                         json_obj, ReqId::ID_LOGIN_USER,Modules::LOGINMOD);
 }
@@ -211,7 +183,6 @@ void LoginDialog::slot_login_mod_finish(ReqId id, QString res, ErrorCodes err)
 {
     if(err != ErrorCodes::SUCCESS){
         showTip(tr("网络请求错误"),false);
-        enableBtn(true);
         return;
     }
 
@@ -220,26 +191,17 @@ void LoginDialog::slot_login_mod_finish(ReqId id, QString res, ErrorCodes err)
     //json解析错误
     if(jsonDoc.isNull()){
         showTip(tr("json解析错误"),false);
-        enableBtn(true);
         return;
     }
 
     //json解析错误
     if(!jsonDoc.isObject()){
         showTip(tr("json解析错误"),false);
-        enableBtn(true);
         return;
     }
 
 
     //调用对应的逻辑,根据id回调。
-    //注意:QMap::operator[] 对不存在的 key 会插入一个空的 std::function,
-    //再调用它会抛出 std::bad_function_call 直接崩溃,所以必须先判断 key 是否存在
-    if(!_handlers.contains(id)){
-        qDebug() << "no handler registered for req id " << id;
-        enableBtn(true);
-        return;
-    }
     _handlers[id](jsonDoc.object());
 
     return;
@@ -248,31 +210,43 @@ void LoginDialog::slot_login_mod_finish(ReqId id, QString res, ErrorCodes err)
 void LoginDialog::slot_tcp_con_finish(bool bsuccess)
 {
 
-    if(bsuccess){
-        showTip(tr("聊天服务连接成功，正在登录..."),true);
-        QJsonObject jsonObj;
-        jsonObj["uid"] = _uid;
-        jsonObj["token"] = _token;
+   if(bsuccess){
+      showTip(tr("聊天服务连接成功，正在登录..."),true);
+      QJsonObject jsonObj;
+      jsonObj["uid"] = _uid;
+      jsonObj["token"] = _token;
 
-        QJsonDocument doc(jsonObj);
-        QByteArray jsonData = doc.toJson(QJsonDocument::Indented);
+      QJsonDocument doc(jsonObj);
+      QByteArray jsonData = doc.toJson(QJsonDocument::Indented);
 
-        //发送tcp请求给chat server
-        emit TcpMgr::GetInstance()->sig_send_data(ReqId::ID_CHAT_LOGIN, jsonData);
+      //发送tcp请求给chat server
+     emit TcpMgr::GetInstance()->sig_send_data(ReqId::ID_CHAT_LOGIN, jsonData);
 
-    }else{
-        showTip(tr("网络异常"),false);
-        enableBtn(true);
-    }
+   }else{
+      showTip(tr("网络异常"),false);
+      enableBtn(true);
+   }
 
 }
 
 void LoginDialog::slot_login_failed(int err)
 {
     QString result = QString("登录失败, err is %1")
-                         .arg(err);
+                             .arg(err);
     showTip(result,false);
     enableBtn(true);
 }
 
+void LoginDialog::AddTipErr(TipErr te,QString tips){
+    _tip_errs[te] = tips;
+    showTip(tips, false);
+}
+void LoginDialog::DelTipErr(TipErr te){
+    _tip_errs.remove(te);
+    if(_tip_errs.empty()){
+      ui->err_tip->clear();
+      return;
+    }
 
+    showTip(_tip_errs.first(), false);
+}
