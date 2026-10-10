@@ -16,7 +16,7 @@ RegisterDialog::RegisterDialog(QWidget *parent) :
     ui->pass_edit->setEchoMode(QLineEdit::Password);
     ui->confirm_edit->setEchoMode(QLineEdit::Password);
     ui->err_tip->setProperty("state","normal");
-    repolish(ui->err_tip);
+    reload_qss(ui->err_tip);
     connect(HttpMgr::GetInstance().get(), &HttpMgr::sig_reg_mod_finish, this,
             &RegisterDialog::slot_reg_mod_finish);
     initHttpHandlers();
@@ -80,7 +80,7 @@ RegisterDialog::RegisterDialog(QWidget *parent) :
     connect(_countdown_timer, &QTimer::timeout, [this](){
         if(_countdown==0){
             _countdown_timer->stop();
-            emit sigSwitchLogin();
+            emit sig_switch_login();
             return;
         }
         _countdown--;
@@ -318,7 +318,7 @@ void RegisterDialog::showTip(QString str, bool b_ok)
 
     ui->err_tip->setText(str);
 
-    repolish(ui->err_tip);
+    reload_qss(ui->err_tip);
 }
 
 //day11 添加确认槽函数
@@ -370,13 +370,13 @@ void RegisterDialog::on_sure_btn_clicked()
 void RegisterDialog::on_return_btn_clicked()
 {
     _countdown_timer->stop();
-    emit sigSwitchLogin();
+    emit sig_switch_login();
 }
 
 void RegisterDialog::on_cancel_btn_clicked()
 {
     _countdown_timer->stop();
-    emit sigSwitchLogin();
+    emit sig_switch_login();
 }
 
 

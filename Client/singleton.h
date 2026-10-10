@@ -1,4 +1,4 @@
-#ifndef SINGLETON_H
+﻿#ifndef SINGLETON_H
 #define SINGLETON_H
 /******************************************************************************
  *
@@ -36,7 +36,7 @@ public:
         std::cout << _instance.get() << endl;
     }
     ~Singleton() {
-        std::cout << "this is singleton destruct" << std::endl;
+        //std::cout << "this is singleton destruct" << std::endl;
     }
 };
 

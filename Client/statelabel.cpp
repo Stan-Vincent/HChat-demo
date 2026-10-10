@@ -20,7 +20,7 @@ void StateLabel::mousePressEvent(QMouseEvent* event)  {
             qDebug()<<"PressEvent , change to selected press: "<< _selected_press;
             _curstate = ClickLbState::Selected;
             setProperty("state",_selected_press);
-            repolish(this);
+            reload_qss(this);
             update();
         }
 
@@ -36,13 +36,13 @@ void StateLabel::mouseReleaseEvent(QMouseEvent *event)
         if(_curstate == ClickLbState::Normal){
             //qDebug()<<"ReleaseEvent , change to normal hover: "<< _normal_hover;
             setProperty("state",_normal_hover);
-            repolish(this);
+            reload_qss(this);
             update();
 
         }else{
             //qDebug()<<"ReleaseEvent , change to select hover: "<< _selected_hover;
             setProperty("state",_selected_hover);
-            repolish(this);
+            reload_qss(this);
             update();
         }
         emit clicked();
@@ -58,13 +58,13 @@ void StateLabel::enterEvent(QEnterEvent* event) {
     if(_curstate == ClickLbState::Normal){
          //qDebug()<<"enter , change to normal hover: "<< _normal_hover;
         setProperty("state",_normal_hover);
-        repolish(this);
+        reload_qss(this);
         update();
 
     }else{
          //qDebug()<<"enter , change to selected hover: "<< _selected_hover;
         setProperty("state",_selected_hover);
-        repolish(this);
+        reload_qss(this);
         update();
     }
 
@@ -77,13 +77,13 @@ void StateLabel::leaveEvent(QEvent* event){
     if(_curstate == ClickLbState::Normal){
         // qDebug()<<"leave , change to normal : "<< _normal;
         setProperty("state",_normal);
-        repolish(this);
+        reload_qss(this);
         update();
 
     }else{
         // qDebug()<<"leave , change to select normal : "<< _selected;
         setProperty("state",_selected);
-        repolish(this);
+        reload_qss(this);
         update();
     }
     QLabel::leaveEvent(event);
@@ -101,7 +101,7 @@ void StateLabel::SetState(QString normal, QString hover, QString press,
     _selected_press = select_press;
 
     setProperty("state",normal);
-    repolish(this);
+    reload_qss(this);
 }
 
 ClickLbState StateLabel::GetCurState(){
@@ -112,7 +112,7 @@ void StateLabel::ClearState()
 {
     _curstate = ClickLbState::Normal;
     setProperty("state",_normal);
-    repolish(this);
+    reload_qss(this);
     update();
 }
 
@@ -121,14 +121,14 @@ void StateLabel::SetSelected(bool bselected)
     if(bselected){
         _curstate = ClickLbState::Selected;
         setProperty("state",_selected);
-        repolish(this);
+        reload_qss(this);
         update();
         return;
     }
 
     _curstate = ClickLbState::Normal;
     setProperty("state",_normal);
-    repolish(this);
+    reload_qss(this);
     update();
     return;
 

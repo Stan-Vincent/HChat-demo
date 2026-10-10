@@ -4,6 +4,7 @@
 #include <QFrame>
 #include "global.h"
 #include <QHBoxLayout>
+
 class BubbleFrame : public QFrame
 {
     Q_OBJECT
@@ -17,7 +18,7 @@ protected:
 private:
     QHBoxLayout *m_pHLayout;
     ChatRole m_role;
-     int      m_margin;
+    int      m_margin;
 };
 
 #endif // BUBBLE_H

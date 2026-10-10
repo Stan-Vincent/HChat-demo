@@ -1,4 +1,4 @@
-#include "clickedbtn.h"
+﻿#include "clickedbtn.h"
 #include <QVariant>
 #include "global.h"
 #include <QKeyEvent>
@@ -20,14 +20,14 @@ void ClickedBtn::SetState(QString normal, QString hover, QString press)
     _normal = normal;
     _press = press;
     setProperty("state",normal);
-    repolish(this);
+    reload_qss(this);
     update();
 }
 
 void ClickedBtn::enterEvent(QEnterEvent* event)
 {
     setProperty("state",_hover);
-    repolish(this);
+    reload_qss(this);
     update();
     QPushButton::enterEvent(event);
 }
@@ -35,7 +35,7 @@ void ClickedBtn::enterEvent(QEnterEvent* event)
 void ClickedBtn::leaveEvent(QEvent *event)
 {
     setProperty("state",_normal);
-    repolish(this);
+    reload_qss(this);
     update();
     QPushButton::leaveEvent(event);
 }
@@ -43,7 +43,7 @@ void ClickedBtn::leaveEvent(QEvent *event)
 void ClickedBtn::mousePressEvent(QMouseEvent *event)
 {
     setProperty("state",_press);
-    repolish(this);
+    reload_qss(this);
     update();
     QPushButton::mousePressEvent(event);
 }
@@ -51,7 +51,7 @@ void ClickedBtn::mousePressEvent(QMouseEvent *event)
 void ClickedBtn::mouseReleaseEvent(QMouseEvent *event)
 {
     setProperty("state",_hover);
-    repolish(this);
+    reload_qss(this);
     update();
     QPushButton::mouseReleaseEvent(event);
 }

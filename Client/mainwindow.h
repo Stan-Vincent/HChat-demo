@@ -1,4 +1,4 @@
-#ifndef MAINWINDOW_H
+﻿#ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
 #include <QMainWindow>
@@ -6,19 +6,13 @@
 #include "registerdialog.h"
 #include "resetdialog.h"
 #include "chatdialog.h"
-/******************************************************************************
- *
- * @file       mainwindow.h
- * @brief      主界面功能 Function
- *
- * @author     恋恋风辰
- * @date       2024/02/27
- * @history
- *****************************************************************************/
+#include <QStackedWidget>
+
 namespace Ui {
 class MainWindow;
 }
 
+//UI状态
 enum UIStatus{
     LOGIN_UI,
     REGISTER_UI,
@@ -33,22 +27,27 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+
+    void offlineLogin();
+
 public slots:
-    void SlotSwitchReg();
-    void SlotSwitchLogin();
-    void SlotSwitchReset();
-    void SlotSwitchLogin2();
-    void SlotSwitchChat();
-    void SlotOffline();
-    void SlotExcepConOffline();
+    void slot_switch_register();
+    void slot_switch_login();
+    void slot_switch_reset();
+    void slot_switch_chatdlg();
+    void slot_offline();
+    void slot_connection_closed();
 
 private:
-    void offlineLogin();
     Ui::MainWindow *ui;
-    LoginDialog* _login_dlg;
-    RegisterDialog* _reg_dlg;
-    ResetDialog* _reset_dlg;
-    ChatDialog* _chat_dlg;
+
+    QStackedWidget *_stacked_widget = nullptr;
+    LoginDialog *_login_dlg = nullptr;
+    RegisterDialog *_reg_dlg = nullptr;
+    ResetDialog *_reset_dlg = nullptr;
+    ChatDialog *_chat_dlg = nullptr;
+
+
     UIStatus _ui_status;
 };
 

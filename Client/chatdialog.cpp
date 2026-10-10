@@ -345,6 +345,16 @@ void ChatDialog::slot_load_chat_thread(bool load_more, int last_thread_id,
 			other_uid = cti->_user1_id;
 		}
 
+		// ★ 跳过无效会话。库里可能残留 user1_id/user2_id 为 0 的脏数据
+		//   （演示数据时代点假好友留下的），算出来的 other_uid 会是 0，
+		//   后面 GetFriendById(0) 返回 nullptr 会直接闪退。
+		if (other_uid <= 0) {
+			qDebug() << "slot_load_chat_thread: skip invalid thread, thread_id ="
+				<< cti->_thread_id << " user1 =" << cti->_user1_id
+				<< " user2 =" << cti->_user2_id;
+			continue;
+		}
+
 		auto chat_thread_data = std::make_shared<ChatThreadData>(other_uid, cti->_thread_id, 0);
 		UserMgr::GetInstance()->AddChatThreadData(chat_thread_data, other_uid);
 
@@ -967,6 +977,14 @@ void ChatDialog::slot_jump_chat_item(std::shared_ptr<SearchInfo> si)
 
 	//如果没找到，则发送创建请求
 	auto uid = UserMgr::GetInstance()->GetUid();
+	// ★ 双方 uid 必须都有效。之前演示数据里 uid=0 的联系人会走到这里，
+	//   服务端 min(uid,0)=0 就会往 private_chat 写一条 user1_id=0 的脏数据，
+	//   之后所有客户端加载会话列表时都会因此崩溃。
+	if (uid <= 0 || si->_uid <= 0) {
+		qDebug() << "slot_jump_chat_item: invalid uid, self =" << uid
+			<< " other =" << si->_uid << ", skip create private chat";
+		return;
+	}
 	QJsonObject jsonObj;
 	jsonObj["uid"] = uid;
 	jsonObj["other_id"] = si->_uid;
@@ -1014,6 +1032,12 @@ void ChatDialog::slot_jump_chat_item_from_infopage(std::shared_ptr<UserInfo> use
 
 	//如果没找到，则发送创建请求
 	auto uid = UserMgr::GetInstance()->GetUid();
+	// ★ 同上：对方 uid 必须有效，否则会写出 user1_id=0 的脏会话
+	if (uid <= 0 || user_info->_uid <= 0) {
+		qDebug() << "slot_jump_chat_item_from_infopage: invalid uid, self =" << uid
+			<< " other =" << user_info->_uid << ", skip create private chat";
+		return;
+	}
 	QJsonObject jsonObj;
 	jsonObj["uid"] = uid;
 	jsonObj["other_id"] = user_info->_uid;

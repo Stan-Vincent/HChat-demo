@@ -159,32 +159,40 @@ win32:CONFIG(debug, debug | release)
     OutputDir =  $${OUT_PWD}/$${DESTDIR}
     OutputDir = $$replace(OutputDir, /, \\)
 
-    #执行copy命令
-    QMAKE_POST_LINK += copy /Y \"$$TargetConfig\" \"$$OutputDir\"
-
     # ------------------------------------------------------------------
-    # 把运行时 DLL 拷到 exe 同级目录。
-    # 原因：这台机器的 PATH 里有两套 MinGW（Qt 自带的 mingw1120 和 MSYS2 的 gcc16.1），
-    # 两者 libstdc++-6.dll 的导出符号不同。从 Qt Creator 运行时 kit 的 MinGW 会被加进
-    # PATH 没问题，但双击 exe 用的是系统 PATH，会捞到 MSYS2 那份，报
-    # 「无法找到入口点 __emutls_v._ZSt11__once_call」。
-    # Windows 的 DLL 搜索顺序里 exe 所在目录优先级最高，放这里即可保证加载正确版本。
+    # 构建后要把这些文件拷到 exe 同级目录，否则双击 exe 会失败：
+    #   config.ini        —— ConfigMgr 从当前工作目录读它，缺了直接闪退
+    #   MinGW 运行时 3 个  —— 缺了报「无法找到入口点 __emutls_v._ZSt11__once_call」
+    #   Qt6 运行时 4 个   —— 缺了报「找不到 Qt6Core.dll」
+    #   plugins/platforms  —— 缺了报「no Qt platform plugin could be initialized」
+    #
+    # ★ 两条纪律（踩过坑，务必保持）：
+    #
+    # 1) 必须写成【一条】QMAKE_POST_LINK，命令之间用 && 连接。
+    #    原来分成 10 次 QMAKE_POST_LINK += 追加，qmake 生成 Makefile 时会用【空格】
+    #    把它们拼成一行，于是 cmd 把后面的命令全当成 copy 的参数，编译报
+    #    「error: [Makefile.Debug:350: bin/Hchat.exe] Error 1」。
+    #
+    # 2) 本段按【cmd 语法】写（Qt Creator 用的就是 cmd 执行 recipe）：
+    #    copy 是 cmd 内建命令，系统里没有 copy.exe。
+    #    若改用 Git Bash / MSYS2 的 mingw32-make，MSYS 会把 /Y、/E、/I 当成
+    #    POSIX 路径转换掉，xcopy 报「参数无效」（Error 4）。两个绕法：
+    #      a) 用 cmd 跑同一个 make：  cmd //c "mingw32-make -j4"
+    #      b) 或加环境变量：         MSYS2_ARG_CONV_EXCL="*" mingw32-make -j4
+    #    推荐 a，和 Qt Creator 行为一致。
     MinGWBin = D:\\QT6\\Tools\\mingw1120_64\\bin
     QtBin    = D:\\QT6\\6.5.3\\mingw_64\\bin
 
-    QMAKE_POST_LINK += copy /Y \"$$MinGWBin\\libstdc++-6.dll\" \"$$OutputDir\"
-    QMAKE_POST_LINK += copy /Y \"$$MinGWBin\\libgcc_s_seh-1.dll\" \"$$OutputDir\"
-    QMAKE_POST_LINK += copy /Y \"$$MinGWBin\\libwinpthread-1.dll\" \"$$OutputDir\"
-    QMAKE_POST_LINK += copy /Y \"$$QtBin\\Qt6Core.dll\" \"$$OutputDir\"
-    QMAKE_POST_LINK += copy /Y \"$$QtBin\\Qt6Gui.dll\" \"$$OutputDir\"
-    QMAKE_POST_LINK += copy /Y \"$$QtBin\\Qt6Widgets.dll\" \"$$OutputDir\"
-    QMAKE_POST_LINK += copy /Y \"$$QtBin\\Qt6Network.dll\" \"$$OutputDir\"
-
-    # Qt 插件：platforms 是必须的（少它会报 "no Qt platform plugin could be initialized"，
-    # 因为 exe 同级有 Qt6Core.dll 后 Qt 会从 <exedir> 找插件，而不是 Qt 安装目录）。
-    # styles / imageformats 是可选的（样式表、图片格式支持）。
-    QMAKE_POST_LINK += xcopy /Y /E /I \"$$QtBin\\..\\plugins\\platforms\" \"$$OutputDir\\platforms\"
-    QMAKE_POST_LINK += xcopy /Y /E /I \"$$QtBin\\..\\plugins\\styles\" \"$$OutputDir\\styles\"
-    QMAKE_POST_LINK += xcopy /Y /E /I \"$$QtBin\\..\\plugins\\imageformats\" \"$$OutputDir\\imageformats\"
+    QMAKE_POST_LINK += \
+        copy /Y \"$$TargetConfig\" \"$$OutputDir\" \
+        && copy /Y \"$$MinGWBin\\libstdc++-6.dll\" \"$$OutputDir\" \
+        && copy /Y \"$$MinGWBin\\libgcc_s_seh-1.dll\" \"$$OutputDir\" \
+        && copy /Y \"$$MinGWBin\\libwinpthread-1.dll\" \"$$OutputDir\" \
+        && copy /Y \"$$QtBin\\Qt6Core.dll\" \"$$OutputDir\" \
+        && copy /Y \"$$QtBin\\Qt6Gui.dll\" \"$$OutputDir\" \
+        && copy /Y \"$$QtBin\\Qt6Widgets.dll\" \"$$OutputDir\" \
+        && copy /Y \"$$QtBin\\Qt6Network.dll\" \"$$OutputDir\" \
+        && xcopy /Y /E /I \"$$QtBin\\..\\plugins\\platforms\" \"$$OutputDir\\platforms\" \
+        && xcopy /Y /E /I \"$$QtBin\\..\\plugins\\styles\" \"$$OutputDir\\styles\" \
+        && xcopy /Y /E /I \"$$QtBin\\..\\plugins\\imageformats\" \"$$OutputDir\\imageformats\"
 }
-

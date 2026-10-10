@@ -1,4 +1,4 @@
-#include "logindialog.h"
+﻿#include "logindialog.h"
 #include "ui_logindialog.h"
 #include <QDebug>
 #include "httpmgr.h"
@@ -12,7 +12,7 @@ LoginDialog::LoginDialog(QWidget *parent) :
     ui(new Ui::LoginDialog)
 {
     ui->setupUi(this);
-    connect(ui->reg_btn, &QPushButton::clicked, this, &LoginDialog::switchRegister);
+    connect(ui->reg_btn, &QPushButton::clicked, this, &LoginDialog::sig_switch_register);
     ui->forget_label->SetState("normal","hover","","selected","selected_hover","");
     ui->forget_label->setCursor(Qt::PointingHandCursor);
     connect(ui->forget_label, &ClickedLabel::clicked, this, &LoginDialog::slot_forget_pwd);
@@ -104,13 +104,13 @@ void LoginDialog::showTip(QString str, bool b_ok)
 
     ui->err_tip->setText(str);
 
-    repolish(ui->err_tip);
+    reload_qss(ui->err_tip);
 }
 
 void LoginDialog::slot_forget_pwd()
 {
-    qDebug()<<"slot forget pwd";
-    emit switchReset();
+    qDebug()<<"LonginDialog [slot_forget_pwd]";
+    emit sig_switch_reset();
 }
 
 bool LoginDialog::checkUserValid(){

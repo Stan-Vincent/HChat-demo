@@ -223,7 +223,7 @@ void ResetDialog::showTip(QString str, bool b_ok)
 
     ui->err_tip->setText(str);
 
-    repolish(ui->err_tip);
+    reload_qss(ui->err_tip);
 }
 
 void ResetDialog::on_sure_btn_clicked()

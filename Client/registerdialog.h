@@ -55,7 +55,7 @@ private:
     QTimer * _countdown_timer;
     int _countdown;
 signals:
-    void sigSwitchLogin();
+    void sig_switch_login();
 };
 
 #endif // REGISTERDIALOG_H

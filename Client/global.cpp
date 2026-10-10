@@ -1,8 +1,8 @@
-#include "global.h"
+﻿#include "global.h"
 #include <QEventLoop>
 #include <QTimer>
 
-std::function<void(QWidget*)> repolish =[](QWidget *w){
+std::function<void(QWidget*)> reload_qss =[](QWidget *w){
     w->style()->unpolish(w);
     w->style()->polish(w);
 };

@@ -26,6 +26,12 @@ void ChatUserWid::SetChatData(std::shared_ptr<ChatThreadData> chat_data) {
     _chat_data = chat_data;
     auto other_id = _chat_data->GetOtherId();
     auto other_info = UserMgr::GetInstance()->GetFriendById(other_id);
+    // ★ 必须判空：GetFriendById 查不到会返回 nullptr，
+    //   之前这里直接 other_info->_icon，库里一旦有 uid=0 的坏会话就会闪退。
+    if (other_info == nullptr) {
+        qDebug() << "SetChatData: friend info not found, other_id =" << other_id;
+        return;
+    }
     // 加载图片
     QPixmap pixmap(other_info->_icon);
 

@@ -1,4 +1,4 @@
-#ifndef GLOBAL_H
+﻿#ifndef GLOBAL_H
 #define GLOBAL_H
 #include <QWidget>
 #include <functional>
@@ -9,22 +9,17 @@
 #include <QNetworkReply>
 #include <QDir>
 #include <QSettings>
-/**
- * @brief repolish用来根据属性刷新qss
- */
-extern std::function<void(QWidget*)> repolish;
-/**
- * @brief The ReqId enum 表示请求的id
- */
 
+//repolish用来根据属性刷新qss
+extern std::function<void(QWidget*)> reload_qss;
+
+//加密函数
 extern std::function<QString(QString)> xorString;
 
-/*
-* @brief 延迟执行
-*/
-
+//延迟执行
 extern void delay_run(int msecs);
 
+//ReqId enum 表示请求的id
 enum ReqId{
     ID_GET_VARIFY_CODE = 1001, //获取验证码
     ID_REG_USER = 1002, //注册用户

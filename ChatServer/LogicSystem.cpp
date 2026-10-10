@@ -852,6 +852,15 @@ void LogicSystem::CreatePrivateChat(std::shared_ptr<CSession> session, const sho
 	rtvalue["uid"] = uid;
 	rtvalue["other_id"] = other_id;
 
+	// ★ 校验双方 uid。CreatePrivateChat 里做的是 uid1 = min(uid, other_id)，
+	//   只要有一方是 0，就会往 private_chat 写进一条 user1_id=0 的脏会话；
+	//   之后所有客户端加载会话列表都会因为 GetFriendById(0) 拿到 nullptr 而闪退。
+	//   客户端演示数据时代点过 uid=0 的假好友，已经产生过这种脏数据。
+	if (uid <= 0 || other_id <= 0 || uid == other_id) {
+		rtvalue["error"] = ErrorCodes::UidInvalid;
+		return;
+	}
+
 	Defer defer([this, &rtvalue, session]() {
 		std::string return_str = rtvalue.toStyledString();
 		session->Send(return_str, ID_CREATE_PRIVATE_CHAT_RSP);

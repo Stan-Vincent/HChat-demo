@@ -1,4 +1,4 @@
-#ifndef ADDUSERITEM_H
+﻿#ifndef ADDUSERITEM_H
 #define ADDUSERITEM_H
 
 #include <QWidget>
@@ -13,7 +13,9 @@ class AddUserItem : public ListItemBase
 
 public:
     explicit AddUserItem(QWidget *parent = nullptr);
+
     ~AddUserItem();
+
     QSize sizeHint() const override {
         return QSize(250, 70); // 返回自定义的尺寸
     }

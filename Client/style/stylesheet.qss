@@ -8,11 +8,11 @@ background-color:#e7fbfff6
 }
 
 #err_tip[state='normal']{
-   color: green;
+   color: rgb(41, 246, 75);
 }
 
 #err_tip[state='err']{
-   color: red;
+   color: rgb(241, 78, 78);
 }
 
 
@@ -50,7 +50,7 @@ background-color:#e7fbfff6
 }
 
 #tip_lb, #tip2_lb{
-    color:green;
+    color:rgb(41, 246, 75);
 }
 
 #forget_label[state='normal'],#forget_label[state='selected']{
