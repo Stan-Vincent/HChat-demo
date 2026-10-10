@@ -461,6 +461,49 @@ bool MysqlDao::AddFriend(const int& from, const int& to, std::string back_name,
 	return true;
 }
 
+//按 email 查用户。加好友时支持用邮箱搜索。
+//刻意不走 Redis 缓存（没有 emailcache_* 这一类键），邮箱搜索频率也低。
+std::shared_ptr<UserInfo> MysqlDao::GetUserByEmail(const std::string& email)
+{
+	auto con = pool_->getConnection();
+	if (con == nullptr) {
+		return nullptr;
+	}
+
+	Defer defer([this, &con]() {
+		pool_->returnConnection(std::move(con));
+		});
+
+	try {
+		std::unique_ptr<sql::PreparedStatement> pstmt(
+			con->_con->prepareStatement("SELECT * FROM user WHERE email = ?"));
+		pstmt->setString(1, email);
+
+		std::unique_ptr<sql::ResultSet> res(pstmt->executeQuery());
+		std::shared_ptr<UserInfo> user_ptr = nullptr;
+		while (res->next()) {
+			user_ptr.reset(new UserInfo);
+			user_ptr->uid = res->getInt("uid");
+			user_ptr->name = res->getString("name");
+			user_ptr->pwd = res->getString("pwd");
+			user_ptr->email = res->getString("email");
+			user_ptr->nick = res->getString("nick");
+			user_ptr->desc = res->getString("desc");
+			user_ptr->sex = res->getInt("sex");
+			user_ptr->icon = res->getString("icon");
+			break;
+		}
+		return user_ptr;
+	}
+	catch (sql::SQLException& e) {
+		std::cerr << "SQLException: " << e.what()
+			<< " (MySQL error code: " << e.getErrorCode()
+			<< ", SQLState: " << e.getSQLState() << " )" << std::endl;
+		return nullptr;
+	}
+}
+
+
 std::shared_ptr<UserInfo> MysqlDao::GetUser(int uid)
 {
 	auto con = pool_->getConnection();
@@ -817,10 +860,11 @@ std::shared_ptr<PageResult> MysqlDao::LoadChatMsg(int thread_id, int last_messag
 		// SQL：多取一条，用于判断是否还有更多
 		const std::string sql = R"(
         SELECT message_id, thread_id, sender_id, recv_id, content,
+               msg_type, unique_name, total_size, md5,
                created_at, updated_at, status
-        FROM chat_message
-        WHERE thread_id = ?
-          AND message_id > ?
+          FROM chat_message
+         WHERE thread_id = ?
+           AND message_id > ?
         ORDER BY message_id ASC
         LIMIT ?
 		)";
@@ -845,7 +889,28 @@ std::shared_ptr<PageResult> MysqlDao::LoadChatMsg(int thread_id, int last_messag
 			msg.content = rs->getString("content");
 			msg.chat_time = rs->getString("created_at");
 			msg.status = rs->getInt("status");
+			// ★ 图文消息字段
+			msg.msg_type = rs->getInt("msg_type");
+			msg.unique_id = rs->getString("unique_name");
+			msg.total_size = rs->getUInt64("total_size");
+			msg.md5 = rs->getString("md5");
 			page_res->messages.push_back(std::move(msg));
+		}
+
+		// ★ 判断是否还有更多 —— 这段原来整个漏掉了。
+		//   SQL 用 fetch_limit = page_size + 1 多取一条：
+		//   如果真的读到了第 N+1 条，说明后面还有，load_more = true，
+		//   并把那条丢掉（只返回 page_size 条）。
+		//   next_cursor 必须推进到本页最后一条的 message_id，
+		//   否则下次请求还是同一个游标，会拿到同一页数据。
+		//   漏掉这段的后果：load_more 恒为 false -> 客户端以为加载完了，
+		//   超过 10 条的消息再也翻不出来。
+		if ((int)page_res->messages.size() > page_size) {
+			page_res->load_more = true;
+			page_res->messages.pop_back();
+		}
+		if (!page_res->messages.empty()) {
+			page_res->next_cursor = (int)page_res->messages.back().message_id;
 		}
 
 		return page_res;
@@ -877,8 +942,9 @@ bool MysqlDao::AddChatMsg(std::vector<std::shared_ptr<ChatMessage>>& chat_datas)
 		auto pstmt = std::unique_ptr<sql::PreparedStatement>(
 			conn->prepareStatement(
 				"INSERT INTO chat_message "
-				"(thread_id, sender_id, recv_id, content, created_at, updated_at, status) "
-				"VALUES (?, ?, ?, ?, ?, ?, ?)"
+				"(thread_id, sender_id, recv_id, content, msg_type, unique_name, "
+				" total_size, md5, created_at, updated_at, status) "
+				"VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 			)
 		);
 
@@ -889,10 +955,16 @@ bool MysqlDao::AddChatMsg(std::vector<std::shared_ptr<ChatMessage>>& chat_datas)
 			pstmt->setUInt64(3, msg->recv_id);
 			pstmt->setString(4, msg->content);
 
-			pstmt->setString(5, msg->chat_time);  // created_at
-			pstmt->setString(6, msg->chat_time);  // updated_at
+			// 图文消息字段（msg_type / unique_name / total_size / md5）
+			pstmt->setInt(5, msg->msg_type);
+			pstmt->setString(6, msg->unique_id);
+			pstmt->setUInt64(7, msg->total_size);
+			pstmt->setString(8, msg->md5);
 
-			pstmt->setInt(7, msg->status);
+			pstmt->setString(9, msg->chat_time);   // created_at
+			pstmt->setString(10, msg->chat_time);  // updated_at
+
+			pstmt->setInt(11, msg->status);
 			pstmt->executeUpdate();
 
 			// 2. 取 LAST_INSERT_ID()

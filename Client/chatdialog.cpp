@@ -31,6 +31,14 @@ ChatDialog::ChatDialog(QWidget* parent) :
 
 	ui->add_btn->SetState("normal", "hover", "press");
 	ui->add_btn->setProperty("state", "normal");
+
+	//★ 「添加好友」按钮：点它切到搜索模式，然后可以按 uid / 昵称 / 邮箱搜人。
+	//  原来只设了样式状态、漏了 connect，所以这个按钮点了毫无反应。
+	connect(ui->add_btn, &QPushButton::clicked, this, [this]() {
+		qDebug() << "add_btn clicked, switch to search mode";
+		ShowSearch(true);
+		ui->search_edit->setFocus();
+	});
 	QAction* searchAction = new QAction(ui->search_edit);
 	searchAction->setIcon(QIcon(":/res/search.png"));
 	ui->search_edit->addAction(searchAction, QLineEdit::LeadingPosition);
@@ -116,6 +124,8 @@ ChatDialog::ChatDialog(QWidget* parent) :
 
 	//连接清除搜索框操作
 	connect(ui->friend_apply_page, &ApplyFriendPage::sig_show_search, this, &ChatDialog::slot_show_search);
+	// ★ 个人信息页的「退出登录」
+	connect(ui->user_info_page, &UserInfoPage::sig_logout, this, &ChatDialog::slot_logout);
 
 	//为searchlist 设置search edit
 	ui->search_list->SetSearchEdit(ui->search_edit);
@@ -186,7 +196,8 @@ ChatDialog::~ChatDialog()
 
 void ChatDialog::loadChatList()
 {
-	showLoadingDlg(true);
+	// 计数 +1 并显示加载框；收到回包时由 LoadingSession 配平
+	beginLoadingRequest();
 	//发送请求逻辑
 	QJsonObject jsonObj;
 	auto uid = UserMgr::GetInstance()->GetUid();
@@ -208,10 +219,14 @@ void ChatDialog::loadChatMsg() {
 	//发送聊天记录请求
 	_cur_load_chat = UserMgr::GetInstance()->GetCurLoadData();
 	if (_cur_load_chat == nullptr) {
+		// ★ 没有可加载的会话了 -> 配平掉这次计数。
+		//   原来这里直接 return，beginLoadingRequest 加的计数没人减，
+		//   加载框就永远留下了（这就是「无法退出」）。
+		endLoadingRequest();
 		return;
 	}
 
-	showLoadingDlg(true);
+	beginLoadingRequest();
 
 	//发送请求给服务器
 		//发送请求逻辑
@@ -270,6 +285,13 @@ void ChatDialog::slot_text_chat_msg(std::vector<std::shared_ptr<TextChatData>> m
 		//更新数据
 		auto thread_id = msg->GetThreadId();
 		auto thread_data = UserMgr::GetInstance()->GetChatThreadByThreadId(thread_id);
+
+		// ★ 必须判空：会话可能已被重建或从未加入 _chat_map，
+		//   原来直接 thread_data->AddMsg(msg) 会空指针崩溃。
+		if (thread_data == nullptr) {
+			qDebug() << "slot_text_chat_msg: thread data not found, thread_id =" << thread_id;
+			continue;
+		}
 
 		thread_data->AddMsg(msg);
 
@@ -330,6 +352,16 @@ void ChatDialog::UpdateChatMsg(std::vector<std::shared_ptr<TextChatData> > msgda
 void ChatDialog::slot_load_chat_thread(bool load_more, int last_thread_id,
 	std::vector<std::shared_ptr<ChatThreadInfo>> chat_threads)
 {
+	// ★ 这条加载链路是「链式」的：一次回包可能立刻触发下一个请求
+	//   （load_more -> 再拉一页；否则 -> loadChatMsg 拉消息），
+	//   最深能串十几层。所以不能用「函数返回就关框」的 RAII ——
+	//   那会在链路中途把加载框关掉。
+	//
+	//   用计数器：loadChatList/loadChatMsg 发出请求时 ++，
+	//   每次收到回包 --，减到 0 才关框。这样无论走哪个分支、
+	//   中间穿插多少层，都能正确配平。
+	LoadingSession session(this);
+
 	for (auto& cti : chat_threads) {
 		//先处理单聊，群聊跳过，以后添加
 		if (cti->_type == "group") {
@@ -370,6 +402,8 @@ void ChatDialog::slot_load_chat_thread(bool load_more, int last_thread_id,
 
 	UserMgr::GetInstance()->SetLastChatThreadId(last_thread_id);
 
+	// 链式继续：发出下一个请求前先把本次计数减掉，
+	// 这样不会因为「还没加载完」而误关加载框。
 	if (load_more) {
 		//发送请求逻辑
 		QJsonObject jsonObj;
@@ -381,12 +415,17 @@ void ChatDialog::slot_load_chat_thread(bool load_more, int last_thread_id,
 		QJsonDocument doc(jsonObj);
 		QByteArray jsonData = doc.toJson(QJsonDocument::Compact);
 
+		// ★ 关键：先减计数（等价于本次回包已消费完），
+		//   再发下一个请求重新 +1。顺序不能反 ——
+		//   反了会先减到 0 把框关掉，界面闪一下。
+		endLoadingRequest();
 		//发送tcp请求给chat server
 		emit TcpMgr::GetInstance()->sig_send_data(ReqId::ID_LOAD_CHAT_THREAD_REQ, jsonData);
 		return;
 	}
 
-	showLoadingDlg(false);
+	// 本层结束，计数交给 loadChatMsg 接棒（它会 beginLoadingRequest）
+	endLoadingRequest();
 	//继续加载聊天数据
 	loadChatMsg();
 }
@@ -418,6 +457,16 @@ void ChatDialog::slot_create_private_chat(int uid, int other_id, int thread_id)
 
 void ChatDialog::slot_load_chat_msg(int thread_id, int msg_id, bool load_more, std::vector<std::shared_ptr<TextChatData>> msglists)
 {
+	// ★ 必须判空。_cur_load_chat 是 loadChatMsg() 里设的成员指针，
+	//   如果那次调用因为 _chat_map 里查不到而提前 return 了
+	//   （GetCurLoadData 返回 nullptr），这里就会解引用空指针崩掉。
+	//   而且即使崩了，加载框也没人关 —— 变成「崩溃 + 窗口残留」。
+	if (_cur_load_chat == nullptr) {
+		endLoadingRequest();
+		return;
+	}
+	LoadingSession session(this);
+
 	_cur_load_chat->SetLastMsgId(msg_id);
 	//加载聊天信息
 	for (auto& chat_msg : msglists) {
@@ -435,6 +484,8 @@ void ChatDialog::slot_load_chat_msg(int thread_id, int msg_id, bool load_more, s
 		QJsonDocument doc(jsonObj);
 		QByteArray jsonData = doc.toJson(QJsonDocument::Compact);
 
+		// 本层结束 -> 计数-1；下一个请求发出时会再 +1
+		endLoadingRequest();
 		//发送tcp请求给chat server
 		emit TcpMgr::GetInstance()->sig_send_data(ReqId::ID_LOAD_CHAT_MSG_REQ, jsonData);
 		return;
@@ -447,13 +498,13 @@ void ChatDialog::slot_load_chat_msg(int thread_id, int msg_id, bool load_more, s
 		//更新聊天界面信息
 		SetSelectChatItem();
 		SetSelectChatPage();
-		showLoadingDlg(false);
+		// 计数由 session 析构自动减到 0 并关框
 		return;
 	}
 
 	//继续加载下一个聊天
 	//发送请求给服务器
-	//发送请求逻辑
+		//发送请求逻辑
 	QJsonObject jsonObj;
 	jsonObj["thread_id"] = _cur_load_chat->GetThreadId();
 	jsonObj["message_id"] = _cur_load_chat->GetLastMsgId();
@@ -461,6 +512,8 @@ void ChatDialog::slot_load_chat_msg(int thread_id, int msg_id, bool load_more, s
 	QJsonDocument doc(jsonObj);
 	QByteArray jsonData = doc.toJson(QJsonDocument::Compact);
 
+	// 本层结束 -> 计数-1
+	endLoadingRequest();
 	//发送tcp请求给chat server
 	emit TcpMgr::GetInstance()->sig_send_data(ReqId::ID_LOAD_CHAT_MSG_REQ, jsonData);
 }
@@ -488,8 +541,13 @@ void ChatDialog::slot_add_chat_msg(int thread_id, std::vector<std::shared_ptr<Te
 void ChatDialog::showLoadingDlg(bool show)
 {
 	if (show) {
+		// ★ 已经在显示就别重复创建。
+		//   链式加载里每层都会调showLoadingDlg(true)，
+		//   原来每次都 new 一个 + deleteLater 旧的，叠加几层就会
+		//   攒出好几个 LoadingDlg，其中 _loading_dlg 指向的只是最后一个，
+		//   关掉它之后剩下的还在屏幕上挡着 —— 又是一个「无法退出」。
 		if (_loading_dlg) {
-			_loading_dlg->deleteLater();
+			return;
 		}
 		_loading_dlg = new LoadingDlg(this, "正在加载聊天列表...");
 		_loading_dlg->setModal(true);
@@ -502,6 +560,26 @@ void ChatDialog::showLoadingDlg(bool show)
 		_loading_dlg = nullptr;
 	}
 
+}
+
+void ChatDialog::beginLoadingRequest()
+{
+	// ★ 每个请求发出时 +1，收到回包构造 LoadingSession 时 -1，
+	//   减到 0 才关框。这样链式加载的中间层不会把框提前关掉，
+	//   任何一条错误/提前 return 的路径也不会漏关。
+	_loading_req_count++;
+	showLoadingDlg(true);
+}
+
+void ChatDialog::endLoadingRequest()
+{
+	if (_loading_req_count > 0) {
+		_loading_req_count--;
+	}
+	if (_loading_req_count <= 0) {
+		_loading_req_count = 0;
+		showLoadingDlg(false);
+	}
 }
 
 void ChatDialog::AddLBGroup(StateWidget* lb)
@@ -859,6 +937,15 @@ void ChatDialog::slot_friend_info_page(std::shared_ptr<UserInfo> user_info)
 }
 
 
+
+void ChatDialog::slot_logout()
+{
+	qDebug() << "ChatDialog::slot_logout";
+	// 断开长连接，让服务端把这个会话清理掉（usession_ / uip_）
+	TcpMgr::GetInstance()->CloseConnection();
+	// 通知外层切回登录页
+	emit sig_logout();
+}
 
 void ChatDialog::slot_show_search(bool show)
 {

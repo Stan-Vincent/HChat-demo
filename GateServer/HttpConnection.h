@@ -40,6 +40,10 @@ private:
 
     //get请求的url
     std::string _get_url;
+    // ★ 存放静态资源（upload 下的图片）的二进制内容。
+    //   必须放在成员里：beast::buffers_body 持有的是指针，
+    //   如果指向 handler 里的局部变量，返回后数据就没了，客户端会收到乱码。
+    std::string _file_body;
 
     //get请求的url的参数 结构:key->value
     std::unordered_map<std::string, std::string> _get_params;

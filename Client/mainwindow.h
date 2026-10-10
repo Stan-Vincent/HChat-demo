@@ -37,6 +37,8 @@ public slots:
     void slot_switch_chatdlg();
     void slot_offline();
     void slot_connection_closed();
+    // ★ 聊天窗口发来的「退出登录」
+    void slot_logout();
 
 private:
     Ui::MainWindow *ui;

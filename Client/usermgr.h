@@ -20,6 +20,9 @@ public:
     QString GetIcon();
     QString GetDesc();
      std::shared_ptr<UserInfo> GetUserInfo();
+    // 提交个人资料成功后，把新值同步进内存（否则要重新登录才生效）
+    void UpdateLocalUserInfo(const QString& nick, const QString& desc,
+                              int sex, const QString& icon);
     void AppendApplyList(QJsonArray array);
     void AppendFriendList(QJsonArray array);
     std::vector<std::shared_ptr<ApplyInfo>> GetApplyList();

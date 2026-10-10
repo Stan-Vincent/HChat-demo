@@ -90,6 +90,9 @@ message AddFriendMsg{
 	int32 thread_id = 4;
 	string msgcontent = 5;
 	int32 status = 6;
+	int32 msg_type = 7;
+	int64 total_size = 8;
+	string md5 = 9;
 }
 
 message AuthFriendReq{
@@ -116,6 +119,12 @@ message TextChatData{
 	int32 msg_id = 2;
 	string msgcontent = 3;
 	string chat_time = 4;
+	// 消息类型：0=文本 1=图片 2=文件。
+	// msgcontent 的含义随之变化：文本存正文，图片/文件存【服务器上的相对路径】。
+	int32 msg_type = 5;
+	// 文件字节数与 md5（图片/文件用，文本为 0 / 空）
+	int64 total_size = 6;
+	string md5 = 7;
 }
 
 message TextChatMsgRsp {

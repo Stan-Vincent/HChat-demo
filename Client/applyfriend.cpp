@@ -1,4 +1,4 @@
-#include "applyfriend.h"
+﻿#include "applyfriend.h"
 #include "ui_applyfriend.h"
 #include "clickedlabel.h"
 #include "friendlabel.h"
@@ -128,7 +128,7 @@ void ApplyFriend::SetSearchInfo(std::shared_ptr<SearchInfo> si)
 
 void ApplyFriend::ShowMoreLabel()
 {
-    qDebug()<< "receive more label clicked";
+    qDebug()<< "ApplyFriend [receive more label clicked]";
     ui->more_lb_wid->hide();
 
     ui->lb_list->setFixedWidth(325);

@@ -43,6 +43,33 @@ HttpMgr::HttpMgr()
     connect(this, &HttpMgr::sig_http_finish, this, &HttpMgr::slot_http_finish);
 }
 
+void HttpMgr::PostHttpReqRaw(QUrl url, const QJsonObject& json,
+                             std::function<void(bool, const QString&, const QString&)> cb,
+                             QObject* ctx)
+{
+    QByteArray data = QJsonDocument(json).toJson(QJsonDocument::Compact);
+    QNetworkRequest request(url);
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    request.setHeader(QNetworkRequest::ContentLengthHeader, QByteArray::number(data.length()));
+
+    //★ 挂在 _manager（HttpMgr 的成员）上，跟着 HttpMgr 一起活，不用每次 new
+    QNetworkReply *reply = _manager.post(request, data);
+    // ctx 为空时退化成 this，至少保证不会在 HttpMgr 析构后回调
+    QObject* guard = (ctx != nullptr) ? ctx : static_cast<QObject*>(this);
+
+    QObject::connect(reply, &QNetworkReply::finished, guard,
+                     [reply, cb]()
+    {
+        reply->deleteLater();
+        if (reply->error() != QNetworkReply::NoError) {
+            qDebug() << "http raw failed:" << reply->errorString();
+            cb(false, "", reply->errorString());
+            return;
+        }
+        cb(true, QString::fromUtf8(reply->readAll()), "");
+    });
+}
+
 void HttpMgr::slot_http_finish(ReqId id, QString res, ErrorCodes err, Modules mod)
 {
     if(mod == Modules::REGISTERMOD){
@@ -57,5 +84,13 @@ void HttpMgr::slot_http_finish(ReqId id, QString res, ErrorCodes err, Modules mo
 
     if(mod == Modules::LOGINMOD){
         emit sig_login_mod_finish(id, res, err);
+    }
+
+    if(mod == Modules::UPLOADMOD){
+        emit sig_upload_mod_finish(id, res, err);
+    }
+
+    if(mod == Modules::USERINFOMOD){
+        emit sig_userinfo_mod_finish(id, res, err);
     }
 }

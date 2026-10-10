@@ -1,673 +1,357 @@
+/* ============================================================================
+ * HChat 客户端样式表
+ * 组织顺序：
+ *   1. 全局基础（字体 / 颜色 / 通用控件）
+ *   2. 登录 / 注册 / 重置
+ *   3. 主聊天界面（侧边栏 / 搜索 / 列表 / 聊天页）
+ *   4. 好友申请 / 好友信息
+ *   5. 添加好友 / 认证好友
+ *   6. 弹窗（加载 / 查找成功 / 查找失败）
+ *   7. 自定义控件（状态标签 / 图标按钮 / 进度条 / 红点）
+ * ========================================================================= */
 
-QDialog#LoginDialog,#RegisterDialog,#ResetDialog{
-background-color:#e7fbfff6
-}
+/* ============================================================================
+ * 1. 全局基础
+ * ========================================================================= */
 
-#user_label,#pass_label{
-   color:black;
-}
-
-#err_tip[state='normal']{
-   color: rgb(41, 246, 75);
-}
-
-#err_tip[state='err']{
-   color: rgb(241, 78, 78);
-}
-
-
-#pass_visible[state='unvisible']{
-   border-image: url(:/res/unvisible.png);
-}
-
-#pass_visible[state='unvisible_hover']{
-   border-image: url(:/res/unvisible_hover.png);
-}
-
-#pass_visible[state='visible']{
-   border-image: url(:/res/visible.png);
-}
-
-#pass_visible[state='visible_hover']{
-   border-image: url(:/res/visible_hover.png);
-}
-
-
-#confirm_visible[state='unvisible']{
-   border-image: url(:/res/unvisible.png);
-}
-
-#confirm_visible[state='unvisible_hover']{
-   border-image: url(:/res/unvisible_hover.png);
-}
-
-#confirm_visible[state='visible']{
-   border-image: url(:/res/visible.png);
-}
-
-#confirm_visible[state='visible_hover']{
-   border-image: url(:/res/visible_hover.png);
-}
-
-#tip_lb, #tip2_lb{
-    color:rgb(41, 246, 75);
-}
-
-#forget_label[state='normal'],#forget_label[state='selected']{
-    color:black;
-}
-
-#forget_label[state='hover'], #forget_label[state='selected_hover']{
-    color: rgb(42, 112, 241);
-}
-
-#side_bar{
-  background-color:rgb(46,46,46);
-}
-
-#add_btn[state='normal']{
-    border-image: url(:/res/add_friend_normal.png);
-}
-
-#add_btn[state='hover']{
-    border-image: url(:/res/add_friend_hover.png);
-
-}
-
-#add_btn[state='press']{
-    border-image: url(:/res/add_friend_hover.png);
-}
-
-#search_wid{
-     background-color:rgb(247,247,247);
-}
-
-#chat_user_list {
-    background-color: rgb(247,247,248);
-    border: none;
-}
-
-#chat_user_list::item:selected {
-    background-color: #d3d7d4;
-    border: none;
-    outline: none;
-}
-
-#chat_user_list::item:hover {
-    background-color: rgb(206,207,208);
-    border: none;
-    outline: none;
-}
-
-#chat_user_list::focus {
-    border: none;
-    outline: none;
-}
-
-#user_chat_lb{
-    color:rgb(153,153,153);
+/* 默认字体和文字色：让所有控件有个统一基线 */
+QWidget {
+    font-family: "Microsoft YaHei", "微软雅黑", sans-serif;
     font-size: 14px;
-    font-family: "Microsoft YaHei";
+    color: #1f1f1f;
 }
 
-#already_add_lb{
-    color:rgb(153,153,153);
+/* QLineEdit 的 placeholder 颜色（默认太浅） */
+QLineEdit {
+    placeholder-text-color: #b0b0b0;
+}
+
+/* 输入框获得焦点时的边框（默认是系统蓝，丑） */
+QLineEdit:focus {
+    border: 1px solid #07c160;
+}
+
+/* Tooltip（默认黄底，太土） */
+QToolTip {
+    background-color: #2e2e2e;
+    color: #ffffff;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
     font-size: 12px;
-    font-family: "Microsoft YaHei";
 }
 
-#user_name_lb{
-    color:rgb(0,0,0);
-    font-size: 16px;
-    font-weight: normal;
-    font-family: "Microsoft YaHei";
+/* QMenu（右键菜单） */
+QMenu {
+    background-color: #ffffff;
+    border: 1px solid #e5e5e5;
+    border-radius: 6px;
+    padding: 4px 0;
+}
+QMenu::item {
+    padding: 6px 24px 6px 12px;
+    border-radius: 4px;
+    margin: 0 4px;
+}
+QMenu::item:selected {
+    background-color: #e8f8ec;
+    color: #07c160;
+}
+QMenu::separator {
+    height: 1px;
+    background: #ececec;
+    margin: 4px 8px;
 }
 
-#time_wid #time_lb{
-   color:rgb(140,140,140);
-   font-size: 12px;
-   font-family: "Microsoft YaHei";
+/* 消息框（默认样式太朴素） */
+QMessageBox {
+    background-color: #ffffff;
 }
-
-QScrollBar:vertical {
-    background: transparent; /* 将轨道背景设置为透明 */
-    width: 8px; /* 滚动条宽度，根据需要调整 */
-    margin: 0px; /* 移除滚动条与滑块之间的间距 */
-}
-
-QScrollBar::handle:vertical {
-    background: rgb(173,170,169); /* 滑块颜色 */
-    min-height: 10px; /* 滑块最小高度，根据需要调整 */
-    border-radius: 4px; /* 滑块边缘圆角，调整以形成椭圆形状 */
-}
-
-QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-    height: 0px; /* 移除上下按钮 */
-    border: none; /* 移除边框 */
-    background: transparent; /* 背景透明 */
-}
-
-QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
-    background: none; /* 页面滚动部分背景透明 */
-}
-
-LoadingDlg{
-    background: #f2eada;
-}
-
-#title_lb{
-    font-family: "Microsoft YaHei";
-    font-size: 18px;
-    font-weight: normal;
-}
-
-#chatEdit{
-    background: #ffffff;
-    border: none; /* 隐藏边框 */
-    font-family: "Microsoft YaHei"; /* 设置字体 */
-    font-size: 18px; /* 设置字体大小 */
-    padding: 5px; /* 设置内边距 */
-}
-
-#send_wid{
-    background: #ffffff;
-    border: none; /* 隐藏边框 */
-}
-
-#add_btn[state='normal']{
-    border-image: url(:/res/add_friend_normal.png);
-}
-
-#add_btn[state='hover']{
-    border-image: url(:/res/add_friend_hover.png);
-
-}
-
-#add_btn[state='press']{
-    border-image: url(:/res/add_friend_hover.png);
-}
-
-#receive_btn[state='normal']{
-   background: #f0f0f0;
-   color: #2cb46e;
-   font-size: 16px; /* 设置字体大小 */
-   font-family: "Microsoft YaHei"; /* 设置字体 */
-   border-radius: 20px; /* 设置圆角 */
-}
-
-#receive_btn[state='hover']{
-   background: #d2d2d2;
-   color: #2cb46e;
-   font-size: 16px; /* 设置字体大小 */
-   font-family: "Microsoft YaHei"; /* 设置字体 */
-   border-radius: 20px; /* 设置圆角 */
-}
-
-#receive_btn[state='press']{
-   background: #c6c6c6;
-   color: #2cb46e;
-   font-size: 16px; /* 设置字体大小 */
-   font-family: "Microsoft YaHei"; /* 设置字体 */
-   border-radius: 20px; /* 设置圆角 */
-}
-
-#send_btn[state='normal']{
-    background: #f0f0f0;
-    color: #2cb46e;
-    font-size: 16px; /* 设置字体大小 */
-    font-family: "Microsoft YaHei"; /* 设置字体 */
-    border-radius: 20px; /* 设置圆角 */
-}
-
-#send_btn[state='hover']{
-   background: #d2d2d2;
-   color: #2cb46e;
-   font-size: 16px; /* 设置字体大小 */
-   font-family: "Microsoft YaHei"; /* 设置字体 */
-   border-radius: 20px; /* 设置圆角 */
-}
-
-#send_btn[state='press']{
-   background: #c6c6c6;
-   color: #2cb46e;
-   font-size: 16px; /* 设置字体大小 */
-   font-family: "Microsoft YaHei"; /* 设置字体 */
-   border-radius: 20px; /* 设置圆角 */
-}
-
-#tool_wid{
-    background: #ffffff;
-    border-bottom: 0.5px solid #ececec; /* 设置下边框颜色和宽度 */
-}
-
-#emo_lb[state='normal']{
-    border-image: url(:/res/smile.png);
-}
-
-#emo_lb[state='hover']{
-    border-image: url(:/res/smile_hover.png);
-}
-
-#emo_lb[state='press']{
-    border-image: url(:/res/smile_press.png);
-}
-
-#file_lb[state='normal']{
-    border-image: url(:/res/filedir.png);
-}
-
-#file_lb[state='hover']{
-    border-image: url(:/res/filedir_hover.png);
-}
-
-#file_lb[state='press']{
-    border-image: url(:/res/filedir_press.png);
-}
-
-#chat_data_list{
-     background: black;
-}
-
-#chat_bg{
-    background: #f0f0f0;
-}
-
-#chat_area{
-    border: none;
-}
-
-#chat_user_name{
-    color:rgb(153,153,153);
+QMessageBox QLabel {
     font-size: 14px;
-    font-family: "Microsoft YaHei";
+    color: #1f1f1f;
 }
-
-#side_chat_lb[state='normal']{
-    border-image: url(:/res/chat_icon.png);
-}
-
-#side_chat_lb[state='hover']{
-    border-image: url(:/res/chat_icon_hover.png);
-}
-
-#side_chat_lb[state='pressed']{
-    border-image: url(:/res/chat_icon_press.png);
-}
-
-#side_chat_lb[state='selected_normal']{
-    border-image: url(:/res/chat_icon_press.png);
-}
-
-#side_chat_lb[state='selected_hover']{
-    border-image: url(:/res/chat_icon_press.png);
-}
-
-#side_chat_lb[state='selected_pressed']{
-    border-image: url(:/res/chat_icon_press.png);
-}
-
-#side_contact_lb[state='normal']{
-    border-image: url(:/res/contact_list.png);
-}
-
-#side_contact_lb[state='hover']{
-    border-image: url(:/res/contact_list_hover.png);
-}
-
-#side_contact_lb[state='pressed']{
-    border-image: url(:/res/contact_list_press.png);
-}
-
-#side_contact_lb[state='selected_normal']{
-    border-image: url(:/res/contact_list_press.png);
-}
-
-#side_contact_lb[state='selected_hover']{
-    border-image: url(:/res/contact_list_press.png);
-}
-
-#side_contact_lb[state='selected_pressed']{
-    border-image: url(:/res/contact_list_press.png);
-}
-
-#side_settings_lb[state='normal']{
-    border-image: url(:/res/settings.png);
-}
-
-#side_settings_lb[state='hover']{
-    border-image: url(:/res/settings_hover.png);
-}
-
-
-#side_settings_lb[state='pressed']{
-    border-image: url(:/res/settings_press.png);
-}
-
-#side_settings_lb[state='selected_normal']{
-    border-image: url(:/res/settings_press.png);
-}
-
-#side_settings_lb[state='selected_hover']{
-    border-image: url(:/res/settings_press.png);
-}
-
-#side_settings_lb[state='selected_pressed']{
-    border-image: url(:/res/settings_press.png);
-}
-
-#search_edit {
-    border: 2px solid #f1f1f1;
-}
-
-/* 搜索框列表*/
-#search_list {
-    background-color: rgb(247,247,248);
+QMessageBox QPushButton {
+    min-width: 70px;
+    min-height: 28px;
+    background: #f0f0f0;
     border: none;
+    border-radius: 14px;
+    padding: 0 16px;
+    font-size: 14px;
+}
+QMessageBox QPushButton:hover {
+    background: #e0e0e0;
+}
+QMessageBox QPushButton:pressed {
+    background: #d0d0d0;
 }
 
+/* ============================================================================
+ * 2. 登录 / 注册 / 重置 对话框
+ * ========================================================================= */
+
+/* 三个对话框共用背景（原来是 #e7fbfff6，改成不透明浅绿白） */
+QDialog#LoginDialog,
+QDialog#RegisterDialog,
+QDialog#ResetDialog {
+    background-color: #f6fbff;
+}
+
+/* 用户名 / 密码标签 */
+#user_label, #pass_label {
+    color: #1f1f1f;
+    font-size: 14px;
+}
+
+/* 错误提示：成功=绿，错误=红 */
+#err_tip[state='normal'] {
+    color: #07c160;
+}
+#err_tip[state='err'] {
+    color: #f14e4e;
+}
+
+/* 密码可见性图标：六状态（4 个图片状态，press 复用 hover） */
+#pass_visible[state='unvisible']        { border-image: url(:/res/unvisible.png); }
+#pass_visible[state='unvisible_hover']  { border-image: url(:/res/unvisible_hover.png); }
+#pass_visible[state='visible']          { border-image: url(:/res/visible.png); }
+#pass_visible[state='visible_hover']    { border-image: url(:/res/visible_hover.png); }
+
+#confirm_visible[state='unvisible']       { border-image: url(:/res/unvisible.png); }
+#confirm_visible[state='unvisible_hover'] { border-image: url(:/res/unvisible_hover.png); }
+#confirm_visible[state='visible']         { border-image: url(:/res/visible.png); }
+#confirm_visible[state='visible_hover']   { border-image: url(:/res/visible_hover.png); }
+
+/* 注册成功 / 重置成功 的提示文字 */
+#tip_lb, #tip2_lb {
+    color: #07c160;
+}
+
+/* 忘记密码标签：普通黑，hover 蓝 */
+#forget_label[state='normal'],
+#forget_label[state='selected'] {
+    color: #1f1f1f;
+}
+#forget_label[state='hover'],
+#forget_label[state='selected_hover'] {
+    color: #2a70f1;
+}
+
+/* 注册/重置界面的输入框（统一圆角） */
+#RegisterDialog QLineEdit,
+#ResetDialog QLineEdit,
+#LoginDialog QLineEdit {
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 4px 8px;
+    background: #ffffff;
+}
+#RegisterDialog QLineEdit:focus,
+#ResetDialog QLineEdit:focus,
+#LoginDialog QLineEdit:focus {
+    border: 1px solid #07c160;
+}
+
+/* ============================================================================
+ * 3. 主聊天界面
+ * ========================================================================= */
+
+/* ---------- 3.1 左侧功能栏 ---------- */
+#side_bar {
+    background-color: #2e2e2e;
+}
+
+/* 侧边栏按钮：聊天 / 联系人 / 设置 各六状态（图片控制） */
+#side_chat_lb[state='normal']           { border-image: url(:/res/chat_icon.png); }
+#side_chat_lb[state='hover']            { border-image: url(:/res/chat_icon_hover.png); }
+#side_chat_lb[state='pressed']          { border-image: url(:/res/chat_icon_press.png); }
+#side_chat_lb[state='selected_normal']  { border-image: url(:/res/chat_icon_press.png); }
+#side_chat_lb[state='selected_hover']   { border-image: url(:/res/chat_icon_press.png); }
+#side_chat_lb[state='selected_pressed'] { border-image: url(:/res/chat_icon_press.png); }
+
+#side_contact_lb[state='normal']           { border-image: url(:/res/contact_list.png); }
+#side_contact_lb[state='hover']            { border-image: url(:/res/contact_list_hover.png); }
+#side_contact_lb[state='pressed']          { border-image: url(:/res/contact_list_press.png); }
+#side_contact_lb[state='selected_normal']  { border-image: url(:/res/contact_list_press.png); }
+#side_contact_lb[state='selected_hover']   { border-image: url(:/res/contact_list_press.png); }
+#side_contact_lb[state='selected_pressed'] { border-image: url(:/res/contact_list_press.png); }
+
+#side_settings_lb[state='normal']           { border-image: url(:/res/settings.png); }
+#side_settings_lb[state='hover']            { border-image: url(:/res/settings_hover.png); }
+#side_settings_lb[state='pressed']          { border-image: url(:/res/settings_press.png); }
+#side_settings_lb[state='selected_normal']  { border-image: url(:/res/settings_press.png); }
+#side_settings_lb[state='selected_hover']   { border-image: url(:/res/settings_press.png); }
+#side_settings_lb[state='selected_pressed'] { border-image: url(:/res/settings_press.png); }
+
+/* ---------- 3.2 搜索栏 ---------- */
+#search_wid {
+    background-color: #f7f7f7;
+    border-bottom: 1px solid #ececec;
+}
+#search_edit {
+    border: 1px solid #e8e8e8;
+    border-radius: 4px;
+    background: #ffffff;
+    padding: 2px 6px;
+}
+#search_edit:focus {
+    border: 1px solid #07c160;
+}
+
+/* 添加群组按钮（原 QSS 中重复定义两次，这里只留一份） */
+#add_btn[state='normal'] { border-image: url(:/res/add_friend_normal.png); }
+#add_btn[state='hover']  { border-image: url(:/res/add_friend_hover.png); }
+#add_btn[state='press']  { border-image: url(:/res/add_friend_hover.png); }
+
+/* ---------- 3.3 会话 / 联系人 / 搜索 列表 ---------- */
+#chat_user_list,
+#con_user_list,
+#search_list {
+    background-color: #f7f7f8;
+    border: none;
+    outline: none;
+}
+#chat_user_list::item:selected,
+#con_user_list::item:selected,
 #search_list::item:selected {
     background-color: #d3d7d4;
     border: none;
     outline: none;
 }
-
+#chat_user_list::item:hover,
+#con_user_list::item:hover,
 #search_list::item:hover {
-    background-color: rgb(206,207,208);
+    background-color: #cecfd0;
+    border: none;
+    outline: none;
+}
+#chat_user_list::item:focus,
+#con_user_list::item:focus,
+#search_list::item:focus {
     border: none;
     outline: none;
 }
 
-#search_list::focus {
-    border: none;
-    outline: none;
-}
-
+/* 无效的占位项（隐藏用） */
 #invalid_item {
     background-color: #eaeaea;
     border: none;
 }
 
-#add_tip {
-    border-image: url(:/res/addtip.png);
-}
-
-#right_tip{
- border-image: url(:/res/right_tip.png);
-}
-
-#message_tip{
-  text-align: center;
-  font-family: "Microsoft YaHei";
-  font-size: 12pt;
-}
-
-#FindSuccessDlg{
-   background-color: #ffffff;
-}
-
-#name_lb{
-    font-size: 14px;
-    font-family: "Microsoft YaHei";
-}
-
-#add_friend_btn[state='normal']{
-    background: #07c160;
-    color: #ffffff;
-    font-size: 14px; /* 设置字体大小 */
-    font-family: "Microsoft YaHei"; /* 设置字体 */
-    border-radius: 20px; /* 设置圆角 */
-}
-
-#add_friend_btn[state='hover']{
-    background: #3bbb4b;
-    color: #ffffff;
-    font-size: 14px; /* 设置字体大小 */
-    font-family: "Microsoft YaHei"; /* 设置字体 */
-    border-radius: 20px; /* 设置圆角 */
-}
-
-#add_friend_btn[state='press']{
-   background: #07c160;
-   color: #ffffff;
-   font-size: 14px; /* 设置字体大小 */
-   font-family: "Microsoft YaHei"; /* 设置字体 */
-   border-radius: 20px; /* 设置圆角 */
-}
-
-#ApplyFriend{
-    border: 2px solid #f1f1f1;
-    font-size: 14px;
-    background: #f7f7f8;
-}
-
-#scrollArea{
-    background: #f7f7f8;
-    border: none;
-}
-
-#scrollcontent{
-     background: #f7f7f8;
-}
-
-#scrollcontent #apply_lb{
-    font-family: "Microsoft YaHei";
+/* 列表项里的名字 / 摘要 / 时间 */
+#user_name_lb {
+    color: #000000;
     font-size: 16px;
     font-weight: normal;
 }
-
-#apply_wid QLabel{
-    color:rgb(140,140,140);
+#user_chat_lb {
+    color: #999999;
     font-size: 14px;
-    font-family: "Microsoft YaHei";
-    height: 25px;
+}
+#already_add_lb {
+    color: #999999;
+    font-size: 12px;
+}
+#time_wid #time_lb {
+    color: #8c8c8c;
+    font-size: 12px;
 }
 
-#apply_wid #name_ed, #apply_wid #back_ed{
-    border: 1px solid #f7f7f8;
-    font-size: 14px;
-    font-family: "Microsoft YaHei";
+/* ---------- 3.4 聊天页 ---------- */
+#chat_data_list {
+    background: #000000;
 }
-
-#apply_wid #lb_ed {
-       border: none;
-       font-size: 14px;
-       font-family: "Microsoft YaHei";
-}
-
-#apply_wid #more_lb{
-    border-image: url(:/res/arowdown.png);
-}
-
-#apply_wid #tipslb[state='normal'] {
-    padding: 2px;
-    background: #e1e1e1;
-    color: #1e1e1e;
-    border-radius: 10px;
-}
-
-#apply_wid #tipslb[state='hover'] {
-    padding: 2px;
-    background: #e1e1e1;
-    color: #1e1e1e;
-    border-radius: 10px;
-}
-
-#apply_wid #tipslb[state='pressed'] {
-    padding: 2px;
-    background: #e1e1e1;
-    color: #48bf56;
-    border-radius: 10px;
-}
-
-#apply_wid #tipslb[state='selected_normal'] {
-    padding: 2px;
-    background: #e1e1e1;
-    color: #48bf56;
-    border-radius: 10px;
-}
-
-#apply_wid #tipslb[state='selected_hover'] {
-    padding: 2px;
-    background: #e1e1e1;
-    color: #48bf56;
-    border-radius: 10px;
-}
-
-#apply_wid #tipslb[state='selected_pressed'] {
-    padding: 2px;
-    background: #e1e1e1;
-    color: #1e1e1e;
-    border-radius: 10px;
-}
-
-#input_tip_wid {
-    background: #d3eaf8;
-}
-
-#apply_wid #FriendLabel {
-    background: #daf6e7;
-    color: #48bf56;
-    border-radius: 10px;
-}
-
-#apply_wid #tip_lb {
-    padding-left: 2px;
-    color:rgb(153,153,153);
-    font-size: 14px;
-    font-family: "Microsoft YaHei";
-}
-
-#gridWidget {
-   background: #fdfdfd;
-}
-
-#close_lb[state='normal'] {
-    border-image: url(:/res/tipclose.png);
-}
-
-#close_lb[state='hover'] {
-    border-image: url(:/res/tipclose.png);
-}
-
-#close_lb[state='pressed'] {
-    border-image: url(:/res/tipclose.png);
-}
-
-#close_lb[state='select_normal'] {
-    border-image: url(:/res/tipclose.png);
-}
-
-#close_lb[state='select_hover'] {
-    border-image: url(:/res/tipclose.png);
-}
-
-#close_lb[state='select_pressed'] {
-    border-image: url(:/res/tipclose.png);
-}
-
-#apply_sure_wid #sure_btn[state='normal']  {
+#chat_bg {
     background: #f0f0f0;
-    color: #2cb46e;
-    font-size: 16px; /* 设置字体大小 */
-    font-family: "Microsoft YaHei"; /* 设置字体 */
-    border-radius: 20px; /* 设置圆角 */
+}
+#chat_area {
+    border: none;
+}
+#chat_user_name {
+    color: #999999;
+    font-size: 14px;
 }
 
-#apply_sure_wid #sure_btn[state='hover'] {
-    background: #d2d2d2;
-    color: #2cb46e;
-    font-size: 16px; /* 设置字体大小 */
-    font-family: "Microsoft YaHei"; /* 设置字体 */
-    border-radius: 20px; /* 设置圆角 */
+/* 输入区 */
+#tool_wid {
+    background: #ffffff;
+    border-bottom: 1px solid #ececec;
 }
-
-#apply_sure_wid #sure_btn[state='press'] {
-    background: #c6c6c6;
-    color: #2cb46e;
-    font-size: 16px; /* 设置字体大小 */
-    font-family: "Microsoft YaHei"; /* 设置字体 */
-    border-radius: 20px; /* 设置圆角 */
+#chatEdit {
+    background: #ffffff;
+    border: none;
+    font-size: 16px;
+    padding: 5px;
 }
-
-#apply_sure_wid #cancel_btn[state='normal']  {
-    background: #f0f0f0;
-    color: #2e2f30;
-    font-size: 16px; /* 设置字体大小 */
-    font-family: "Microsoft YaHei"; /* 设置字体 */
-    border-radius: 20px; /* 设置圆角 */
-}
-
-#apply_sure_wid #cancel_btn[state='hover'] {
-    background: #d2d2d2;
-    color: #2e2f30;
-    font-size: 16px; /* 设置字体大小 */
-    font-family: "Microsoft YaHei"; /* 设置字体 */
-    border-radius: 20px; /* 设置圆角 */
-}
-
-#apply_sure_wid #cancel_btn[state='press'] {
-    background: #c6c6c6;
-    color: #2e2f30;
-    font-size: 16px; /* 设置字体大小 */
-    font-family: "Microsoft YaHei"; /* 设置字体 */
-    border-radius: 20px; /* 设置圆角 */
-}
-
-#con_user_list {
-    background-color: rgb(247,247,248);
+#send_wid {
+    background: #ffffff;
     border: none;
 }
 
-#con_user_list::item:selected {
-    background-color: #d3d7d4;
-    border: none;
-    outline: none;
+/* 发送 / 接收按钮（三状态） */
+#receive_btn[state='normal'] { background: #f0f0f0; color: #07c160; font-size: 16px; border-radius: 20px; }
+#receive_btn[state='hover']  { background: #d2d2d2; color: #07c160; font-size: 16px; border-radius: 20px; }
+#receive_btn[state='press']  { background: #c6c6c6; color: #07c160; font-size: 16px; border-radius: 20px; }
+
+#send_btn[state='normal'] { background: #f0f0f0; color: #07c160; font-size: 16px; border-radius: 20px; }
+#send_btn[state='hover']  { background: #d2d2d2; color: #07c160; font-size: 16px; border-radius: 20px; }
+#send_btn[state='press']  { background: #c6c6c6; color: #07c160; font-size: 16px; border-radius: 20px; }
+
+/* 表情 / 文件按钮（三状态） */
+#emo_lb[state='normal'] { border-image: url(:/res/smile.png); }
+#emo_lb[state='hover']  { border-image: url(:/res/smile_hover.png); }
+#emo_lb[state='press']  { border-image: url(:/res/smile_press.png); }
+
+#file_lb[state='normal'] { border-image: url(:/res/filedir.png); }
+#file_lb[state='hover']  { border-image: url(:/res/filedir_hover.png); }
+#file_lb[state='press']  { border-image: url(:/res/filedir_press.png); }
+
+/* ---------- 3.5 消息类型图标（表情 / 文件 / 发送） ---------- */
+#add_tip  { border-image: url(:/res/addtip.png); }
+#right_tip{ border-image: url(:/res/right_tip.png); }
+#message_tip {
+    text-align: center;
+    font-size: 12pt;
 }
 
-#con_user_list::item:hover {
-    background-color: rgb(206,207,208);
-    border: none;
-    outline: none;
-}
+/* ============================================================================
+ * 4. 好友申请 / 好友信息
+ * ========================================================================= */
 
-#con_user_list::focus {
-    border: none;
-    outline: none;
-}
-
-
+/* 分组标题（"新的朋友" / "联系人"） */
 #GroupTipItem {
     background-color: #eaeaea;
     border: none;
 }
-
-#GroupTipItem QLabel{
+#GroupTipItem QLabel {
     color: #2e2f30;
-    font-size: 12px; /* 设置字体大小 */
-    font-family: "Microsoft YaHei"; /* 设置字体 */
+    font-size: 12px;
     border: none;
 }
 
+/* "新的朋友" 项 */
 #new_friend_item {
-     border-bottom: 1px solid #eaeaea;
+    border-bottom: 1px solid #eaeaea;
 }
 
+/* 分隔线 */
 #LineItem {
-    background-color:rgb(247,247,247);
+    background-color: #f7f7f7;
     border: none;
 }
 
+/* 申请页顶部标题栏 */
 #friend_apply_lb {
-    font-family: "Microsoft YaHei";
     font-size: 18px;
     font-weight: normal;
 }
-
 #friend_apply_wid {
     background-color: #f1f2f3;
     border-bottom: 1px solid #ede9e7;
 }
 
+/* 申请列表 */
 #apply_friend_list {
     background-color: #f1f2f3;
     border-left: 1px solid #ede9e7;
@@ -676,139 +360,330 @@ LoadingDlg{
     border-bottom: none;
 }
 
+/* 申请项 */
 ApplyFriendItem {
     background-color: #f1f2f3;
     border-bottom: 2px solid #dbd9d9;
 }
-
-ApplyFriendItem #user_chat_lb{
+ApplyFriendItem #user_chat_lb {
     color: #a2a2a2;
-    font-size: 14px; /* 设置字体大小 */
-    font-family: "Microsoft YaHei"; /* 设置字体 */
+    font-size: 14px;
+}
+ApplyFriendItem #addBtn[state='normal'] { background-color: #d3d7d4; color: #07c160; font-size: 16px; border-radius: 20px; }
+ApplyFriendItem #addBtn[state='hover']  { background-color: #d3d3d3; color: #07c160; font-size: 16px; border-radius: 20px; }
+ApplyFriendItem #addBtn[state='press']  { background-color: #bebebe; color: #07c160; font-size: 16px; border-radius: 20px; }
+
+/* 好友信息页 */
+#friend_info_page #name_lb {
+    color: #161616;
+    font-size: 18px;
+}
+#friend_info_page #nick_tip,
+#friend_info_page #nick_lb,
+#friend_info_page #bak_lb,
+#friend_info_page #bak_tip {
+    color: #161616;
+    font-size: 14px;
 }
 
-ApplyFriendItem #addBtn[state='normal'] {
-    background-color: #d3d7d4;
-    color: #2cb46e;
-    font-size: 16px; /* 设置字体大小 */
-    font-family: "Microsoft YaHei"; /* 设置字体 */
-    border-radius: 20px; /* 设置圆角 */
-}
+/* 发消息 / 视频 / 语音 按钮 */
+#msg_chat[state='normal']   { border-image: url(:/res/msg_chat_normal.png); }
+#msg_chat[state='hover']    { border-image: url(:/res/msg_chat_hover.png); }
+#msg_chat[state='press']    { border-image: url(:/res/msg_chat_press.png); }
 
-ApplyFriendItem #addBtn[state='hover'] {
-    background-color: #D3D3D3;
-    color: #2cb46e;
-    font-size: 16px; /* 设置字体大小 */
-    font-family: "Microsoft YaHei"; /* 设置字体 */
-    border-radius: 20px; /* 设置圆角 */
-}
+#video_chat[state='normal'] { border-image: url(:/res/video_chat_normal.png); }
+#video_chat[state='hover']  { border-image: url(:/res/video_chat_hover.png); }
+#video_chat[state='press']  { border-image: url(:/res/video_chat_press.png); }
 
-ApplyFriendItem #addBtn[state='press'] {
-    background-color: #BEBEBE;
-    color: #2cb46e;
-    font-size: 16px; /* 设置字体大小 */
-    font-family: "Microsoft YaHei"; /* 设置字体 */
-    border-radius: 20px; /* 设置圆角 */
-}
+#voice_chat[state='normal'] { border-image: url(:/res/voice_chat_normal.png); }
+#voice_chat[state='hover']  { border-image: url(:/res/voice_chat_hover.png); }
+#voice_chat[state='press']  { border-image: url(:/res/voice_chat_press.png); }
 
+/* ============================================================================
+ * 5. 添加好友 / 认证好友
+ * ========================================================================= */
+
+#ApplyFriend {
+    border: 2px solid #f1f1f1;
+    font-size: 14px;
+    background: #f7f7f8;
+}
 #AuthenFriend {
     border: 2px solid #f1f1f1;
     font-size: 14px;
     background: #f7f7f8;
 }
 
+#scrollArea { background: #f7f7f8; border: none; }
+#scrollcontent { background: #f7f7f8; }
+#scrollcontent #apply_lb {
+    font-size: 16px;
+    font-weight: normal;
+}
+
+#apply_wid QLabel {
+    color: #8c8c8c;
+    font-size: 14px;
+    height: 25px;
+}
+#apply_wid #name_ed, #apply_wid #back_ed {
+    border: 1px solid #f7f7f8;
+    font-size: 14px;
+}
+#apply_wid #lb_ed {
+    border: none;
+    font-size: 14px;
+}
+#apply_wid #more_lb {
+    border-image: url(:/res/arowdown.png);
+}
+
+/* 标签（六状态） */
+#apply_wid #tipslb[state='normal']           { padding: 2px; background: #e1e1e1; color: #1e1e1e; border-radius: 10px; }
+#apply_wid #tipslb[state='hover']            { padding: 2px; background: #e1e1e1; color: #1e1e1e; border-radius: 10px; }
+#apply_wid #tipslb[state='pressed']          { padding: 2px; background: #e1e1e1; color: #07c160; border-radius: 10px; }
+#apply_wid #tipslb[state='selected_normal']  { padding: 2px; background: #e1e1e1; color: #07c160; border-radius: 10px; }
+#apply_wid #tipslb[state='selected_hover']   { padding: 2px; background: #e1e1e1; color: #07c160; border-radius: 10px; }
+#apply_wid #tipslb[state='selected_pressed'] { padding: 2px; background: #e1e1e1; color: #1e1e1e; border-radius: 10px; }
+
+/* 输入框下方的提示 */
+#input_tip_wid {
+    background: #d3eaf8;
+}
+
+/* 已加入的标签（带关闭按钮） */
+#apply_wid #FriendLabel {
+    background: #daf6e7;
+    color: #07c160;
+    border-radius: 10px;
+}
+#apply_wid #tip_lb {
+    padding-left: 2px;
+    color: #999999;
+    font-size: 14px;
+}
+
+#gridWidget {
+    background: #fdfdfd;
+}
+
+/* 关闭按钮（六状态，都用同一个图） */
+#close_lb[state='normal']         { border-image: url(:/res/tipclose.png); }
+#close_lb[state='hover']          { border-image: url(:/res/tipclose.png); }
+#close_lb[state='pressed']        { border-image: url(:/res/tipclose.png); }
+#close_lb[state='select_normal']  { border-image: url(:/res/tipclose.png); }
+#close_lb[state='select_hover']   { border-image: url(:/res/tipclose.png); }
+#close_lb[state='select_pressed'] { border-image: url(:/res/tipclose.png); }
+
+/* 确定 / 取消 按钮 */
+#apply_sure_wid #sure_btn[state='normal'] { background: #f0f0f0; color: #07c160; font-size: 16px; border-radius: 20px; }
+#apply_sure_wid #sure_btn[state='hover']  { background: #d2d2d2; color: #07c160; font-size: 16px; border-radius: 20px; }
+#apply_sure_wid #sure_btn[state='press']  { background: #c6c6c6; color: #07c160; font-size: 16px; border-radius: 20px; }
+
+#apply_sure_wid #cancel_btn[state='normal'] { background: #f0f0f0; color: #2e2f30; font-size: 16px; border-radius: 20px; }
+#apply_sure_wid #cancel_btn[state='hover']  { background: #d2d2d2; color: #2e2f30; font-size: 16px; border-radius: 20px; }
+#apply_sure_wid #cancel_btn[state='press']  { background: #c6c6c6; color: #2e2f30; font-size: 16px; border-radius: 20px; }
+
+/* ============================================================================
+ * 6. 弹窗
+ * ========================================================================= */
+
+/* 加载中弹窗 */
+LoadingDlg {
+    background: #f2eada;
+}
+LoadingDlg #status_lb {
+    color: #999999;
+    font-size: 18px;
+}
+
+#title_lb {
+    font-size: 18px;
+    font-weight: normal;
+}
+
+/* 查找成功弹窗 */
+#FindSuccessDlg {
+    background-color: #ffffff;
+}
+#name_lb {
+    font-size: 14px;
+}
+#add_friend_btn[state='normal'] { background: #07c160; color: #ffffff; font-size: 14px; border-radius: 20px; }
+#add_friend_btn[state='hover']  { background: #3bbb4b; color: #ffffff; font-size: 14px; border-radius: 20px; }
+#add_friend_btn[state='press']  { background: #07c160; color: #ffffff; font-size: 14px; border-radius: 20px; }
+
+/* 查找失败弹窗 */
+#FindFailDlg {
+    background-color: #ffffff;
+}
+#fail_tip, #fail_tip2 {
+    font-size: 14px;
+}
+#fail_sure_btn[state='normal'] { background: #07c160; color: #ffffff; font-size: 14px; border-radius: 20px; }
+#fail_sure_btn[state='hover']  { background: #3bbb4b; color: #ffffff; font-size: 14px; border-radius: 20px; }
+#fail_sure_btn[state='press']  { background: #07c160; color: #ffffff; font-size: 14px; border-radius: 20px; }
+
+/* ============================================================================
+ * 7. 自定义控件
+ * ========================================================================= */
+
+/* 红点（未读提示） */
 #red_point {
     border-image: url(:/res/red_point.png);
 }
 
-#FindFailDlg{
-   background-color: #ffffff;
+/* 滚动条（垂直 + 水平统一美化） */
+QScrollBar:vertical {
+    background: transparent;
+    width: 8px;
+    margin: 0;
+}
+QScrollBar::handle:vertical {
+    background: #adaaa9;
+    min-height: 20px;
+    border-radius: 4px;
+}
+QScrollBar::handle:vertical:hover {
+    background: #8c8a89;
+}
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {
+    height: 0;
+    border: none;
+    background: transparent;
+}
+QScrollBar::add-page:vertical,
+QScrollBar::sub-page:vertical {
+    background: none;
 }
 
-#fail_tip, #fail_tip2 {
-    font-size: 14px;
-    font-family: "Microsoft YaHei";
+QScrollBar:horizontal {
+    background: transparent;
+    height: 8px;
+    margin: 0;
+}
+QScrollBar::handle:horizontal {
+    background: #adaaa9;
+    min-width: 20px;
+    border-radius: 4px;
+}
+QScrollBar::handle:horizontal:hover {
+    background: #8c8a89;
+}
+QScrollBar::add-line:horizontal,
+QScrollBar::sub-line:horizontal {
+    width: 0;
+    border: none;
+    background: transparent;
+}
+QScrollBar::add-page:horizontal,
+QScrollBar::sub-page:horizontal {
+    background: none;
 }
 
-#fail_sure_btn[state='normal']{
-    background: #07c160;
+/* 进度条（PictureBubble 里也会单独设置，这里给个全局默认） */
+QProgressBar {
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    background-color: #f0f0f0;
+    text-align: center;
+    font-size: 10px;
+}
+QProgressBar::chunk {
+    background-color: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                                      stop:0 #07c160, stop:1 #05a050);
+    border-radius: 2px;
+}
+
+
+/* ============================================================
+   登录 / 注册 / 重置密码 三个界面的表单控件
+   （原版教程没给这些做样式，所以登录页看起来很朴素，这里补上）
+   ============================================================ */
+
+/* 输入框：白底 + 圆角 + 细边框，聚焦时边框变主色 */
+#email_edit, #pass_edit, #user_edit, #pwd_edit,
+#verify_edit, #confirm_edit, #varify_edit {
+    background-color: #ffffff;
+    border: 1px solid #d0d0d0;
+    border-radius: 4px;
+    padding: 4px 8px;
+    color: #1f1f1f;
+    selection-background-color: #41e464;
+    selection-color: #ffffff;
+}
+#email_edit:hover, #pass_edit:hover, #user_edit:hover, #pwd_edit:hover,
+#verify_edit:hover, #confirm_edit:hover, #varify_edit:hover {
+    border: 1px solid #bebebe;
+}
+#email_edit:focus, #pass_edit:focus, #user_edit:focus, #pwd_edit:focus,
+#verify_edit:focus, #confirm_edit:focus, #varify_edit:focus {
+    border: 1px solid #41e464;
+}
+#email_edit:disabled, #pass_edit:disabled, #user_edit:disabled, #pwd_edit:disabled {
+    background-color: #f7f7f7;
+    color: #b0b0b0;
+}
+
+/* 文字标签 */
+#email_label, #user_label, #pass_label, #verify_label, #confirm_label {
+    color: #333333;
+    font-size: 12pt;
+}
+
+/* 主按钮：绿色实心 */
+#login_btn, #reg_btn, #submit_btn, #sure_btn, #up_btn {
+    background-color: #41e464;
+    border: none;
+    border-radius: 4px;
     color: #ffffff;
-    font-size: 14px; /* 设置字体大小 */
-    font-family: "Microsoft YaHei"; /* 设置字体 */
-    border-radius: 20px; /* 设置圆角 */
+    font-size: 12pt;
+    font-weight: bold;
+}
+#login_btn:hover, #reg_btn:hover, #submit_btn:hover, #sure_btn:hover, #up_btn:hover {
+    background-color: #35c953;
+}
+#login_btn:pressed, #reg_btn:pressed, #submit_btn:pressed, #sure_btn:pressed, #up_btn:pressed {
+    background-color: #2a70f1;
+}
+#login_btn:disabled, #reg_btn:disabled {
+    background-color: #cccccc;
+    color: #888888;
 }
 
-#fail_sure_btn[state='hover']{
-    background: #3bbb4b;
-    color: #ffffff;
-    font-size: 14px; /* 设置字体大小 */
-    font-family: "Microsoft YaHei"; /* 设置字体 */
-    border-radius: 20px; /* 设置圆角 */
+/* 次要按钮：描边 */
+#return_btn, #cancel_btn, #varify_btn, #find_btn, #logout_btn {
+    background-color: #ffffff;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    color: #555555;
+    font-size: 12pt;
+}
+#return_btn:hover, #cancel_btn:hover, #varify_btn:hover, #find_btn:hover,
+#logout_btn:hover {
+    border: 1px solid #41e464;
+    color: #41e464;
+}
+#return_btn:pressed, #cancel_btn:pressed, #varify_btn:pressed, #logout_btn:pressed {
+    background-color: #f0f0f0;
 }
 
-#fail_sure_btn[state='press']{
-   background: #07c160;
-   color: #ffffff;
-   font-size: 14px; /* 设置字体大小 */
-   font-family: "Microsoft YaHei"; /* 设置字体 */
-   border-radius: 20px; /* 设置圆角 */
+/* 「记住密码 / 自动登录」这类复选框 */
+#remember_pwd_chk, #auto_login_chk {
+    color: #666666;
+    font-size: 10pt;
+    spacing: 6px;
 }
-
-#friend_info_page #name_lb {
-    color: #161616;
-    font-size: 18px; /* 设置字体大小 */
-    font-family: "Microsoft YaHei"; /* 设置字体 */
+#remember_pwd_chk::indicator, #auto_login_chk::indicator {
+    width: 14px;
+    height: 14px;
+    border: 1px solid #2e2e2e;
+    border-radius: 2px;
+    background-color: #ffffff;
 }
-
-#friend_info_page #nick_tip,
-#friend_info_page #nick_lb,
-#friend_info_page #bak_lb,
-#friend_info_page #bak_tip
-{
-    color: #161616;
-    font-size: 14px; /* 设置字体大小 */
-    font-family: "Microsoft YaHei"; /* 设置字体 */
+#remember_pwd_chk::indicator:checked, #auto_login_chk::indicator:checked {
+    /*选中填绿，但边框保留深色 —— 绿底+绿边会糊成一团、看不出方框形状 */
+    background-color: #41e464;
+    border: 1px solid #2e2e2e;
 }
-
-#msg_chat[state='normal'] {
- border-image: url(:/res/msg_chat_normal.png);
-}
-
-#msg_chat[state='hover'] {
- border-image: url(:/res/msg_chat_hover.png);
-}
-
-#msg_chat[state='press'] {
- border-image: url(:/res/msg_chat_press.png);
-}
-
-#video_chat[state='normal'] {
- border-image: url(:/res/video_chat_normal.png);
-}
-
-#video_chat[state='hover'] {
- border-image: url(:/res/video_chat_hover.png);
-}
-
-#video_chat[state='press'] {
- border-image: url(:/res/video_chat_press.png);
-}
-
-#voice_chat[state='normal'] {
- border-image: url(:/res/voice_chat_normal.png);
-}
-
-#voice_chat[state='hover'] {
- border-image: url(:/res/voice_chat_hover.png);
-}
-
-#voice_chat[state='press'] {
- border-image: url(:/res/voice_chat_press.png);
-}
-
-LoadingDlg #status_lb {
-    color:rgb(153,153,153);
-    font-size: 18px;
-    font-family: "Microsoft YaHei";
-}
-

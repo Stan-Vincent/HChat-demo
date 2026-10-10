@@ -5,6 +5,7 @@
 #include "userdata.h"
 #include <QMap>
 #include "chatitembase.h"
+#include "uploadmanager.h"
 
 namespace Ui {
 class ChatPage;
@@ -28,6 +29,8 @@ private slots:
 
 private:
     void clearItems();
+    // 按消息类型造气泡：TEXT→TextBubble，PIC→异步下载的 PictureBubble，FILE→nullptr
+    static QWidget* makeBubble(ChatMsgType type, const QString& content, ChatRole role);
     Ui::ChatPage *ui;
     std::shared_ptr<ChatThreadData> _chat_data;
     QMap<QString, QWidget*>  _bubble_map;

@@ -47,6 +47,11 @@ enum ReqId{
     ID_CREATE_PRIVATE_CHAT_RSP = 1028, //创建私聊回复
     ID_LOAD_CHAT_MSG_REQ = 1029,      //加载聊天消息
     ID_LOAD_CHAT_MSG_RSP = 1030,      //加载聊天消息
+    // ---- 以下是 HTTP（GateServer）用的，不是 TCP 协议的消息号 ----
+    ID_UPLOAD_IMAGE_REQ = 2001,   //上传图片（发HTTP）
+    ID_UPLOAD_IMAGE_RSP = 2002,   //上传图片回包
+    ID_UPDATE_USERINFO_REQ = 2003, //更新个人资料（发HTTP）
+    ID_UPDATE_USERINFO_RSP = 2004, //更新个人资料回包
 };
 
 enum ErrorCodes{
@@ -59,6 +64,8 @@ enum Modules{
     REGISTERMOD = 0,
     RESETMOD = 1,
     LOGINMOD = 2,
+    UPLOADMOD = 3,       //上传图片
+    USERINFOMOD = 4,     //更新个人资料
 };
 
 enum TipErr{
@@ -94,10 +101,21 @@ enum class ChatRole
     Other
 };
 
+//消息类型：0=文本 1=图片 2=文件
+enum class MsgType {
+    TEXT = 0,
+    PIC = 1,
+    FILE = 2
+};
+
 struct MsgInfo{
     QString msgFlag;//"text,image,file"
     QString content;//表示文件和图像的url,文本信息
     QPixmap pixmap;//文件和图片的缩略图
+    // 服务端上的相对路径（上传成功后由服务端返回，如 upload/123_abc.png）
+    QString url_path;
+    qint64 total_size = 0;
+    QString md5;
 };
 
 //聊天界面几种模式

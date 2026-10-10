@@ -43,8 +43,14 @@ struct ChatMessage {
 	int thread_id;
 	int sender_id;
 	int recv_id;
+	// 消息类型：0=文本 1=图片 2=文件。
+	// content 的含义随之变化：文本存正文，图片/文件存服务器上的相对路径。
+	int msg_type = 0;
 	std::string unique_id;
 	std::string content;
+	// 图片/文件的字节数与 md5（文本为 0 / 空）
+	uint64_t total_size = 0;
+	std::string md5;
 	std::string chat_time;
 	int status;
 };

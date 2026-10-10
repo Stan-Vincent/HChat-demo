@@ -6,6 +6,89 @@
 #include <QRegularExpression>
 #include <QPainter>
 #include <QPainterPath>
+#include "clickedlabel.h"
+#include <QLineEdit>
+#include <QCheckBox>
+#include <QSettings>
+#include <QTimer>
+#ifdef _WIN32
+// ★ 必须先定这两个宏再包含 windows.h：
+//   windows.h 会连带引入 rpcndr.h，里面 `typedef byte cs_byte;`
+//   与 QtCore 的 byte 撞名，报 "reference to 'byte' is ambiguous"。
+//   WIN32_LEAN_AND_MEAN 让它跳过 RPC/ Winsock 那一堆用不上的头。
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#include <wincrypt.h>
+#endif
+
+
+// ============================================================
+//  「记住密码 / 自动登录」的存储实现
+//
+//  密码不明文落盘：用 Windows DPAPI（CryptProtectData）加密后再写进 login.ini。
+//  DPAPI 以【当前登录的 Windows 用户凭据】为密钥，密文只有本机同一账户能解开；
+//  换机器、换用户、把 login.ini 拷给别人都解不开。这是 Windows 桌面程序
+//  保存密码的标准做法，比 base64 之类的自欺欺人强得多。
+// ============================================================
+static QString dpapiProtect(const QString& plain)
+{
+#ifdef _WIN32
+    if (plain.isEmpty()) return QString();
+    QByteArray utf8 = plain.toUtf8();
+    DATA_BLOB in;
+    in.pbData = (BYTE*)utf8.constData();
+    in.cbData = (DWORD)utf8.size();
+
+    DATA_BLOB out = { 0 };
+    if (!CryptProtectData(&in, L"HChat", nullptr, nullptr, nullptr,
+                          CRYPTPROTECT_UI_FORBIDDEN, &out)) {
+        qWarning() << "CryptProtectData failed, error =" << GetLastError();
+        return QString();
+    }
+    QByteArray cipher((char*)out.pbData, (int)out.cbData);
+    LocalFree(out.pbData);
+    return QString::fromLatin1(cipher.toBase64());
+#else
+    return plain;
+#endif
+}
+
+static QString dpapiUnprotect(const QString& b64)
+{
+#ifdef _WIN32
+    if (b64.isEmpty()) return QString();
+    QByteArray cipher = QByteArray::fromBase64(b64.toLatin1());
+    if (cipher.isEmpty()) return QString();
+
+    DATA_BLOB in;
+    in.pbData = (BYTE*)cipher.constData();
+    in.cbData = (DWORD)cipher.size();
+
+    DATA_BLOB out = { 0 };
+    if (!CryptUnprotectData(&in, nullptr, nullptr, nullptr, nullptr,
+                            CRYPTPROTECT_UI_FORBIDDEN, &out)) {
+        // 最常见原因：login.ini 被复制到了别的机器 / 别的 Windows 用户下
+        qWarning() << "CryptUnprotectData failed, error =" << GetLastError();
+        return QString();
+    }
+    QByteArray plain((char*)out.pbData, (int)out.cbData);
+    LocalFree(out.pbData);
+    return QString::fromUtf8(plain);
+#else
+    return b64;
+#endif
+}
+
+// 配置放在 exe 同目录，和 config.ini 放一起，方便整体拷贝或删除
+static QString loginSettingsPath()
+{
+    return QCoreApplication::applicationDirPath() + "/login.ini";
+}
 
 LoginDialog::LoginDialog(QWidget *parent) :
     QDialog(parent),
@@ -16,6 +99,25 @@ LoginDialog::LoginDialog(QWidget *parent) :
     ui->forget_label->SetState("normal","hover","","selected","selected_hover","");
     ui->forget_label->setCursor(Qt::PointingHandCursor);
     connect(ui->forget_label, &ClickedLabel::clicked, this, &LoginDialog::slot_forget_pwd);
+
+    // 密码显示/隐藏图标（与注册页 pass_visible 完全一致：同样 20x20、同一套图标）
+    ui->pass_visible->setCursor(Qt::PointingHandCursor);
+    ui->pass_visible->SetState("unvisible", "unvisible_hover", "",
+                               "visible", "visible_hover", "");
+    connect(ui->pass_visible, &ClickedLabel::clicked, this, [this]() {
+        bool b_visible = (ui->pass_edit->echoMode() == QLineEdit::Normal);
+        ui->pass_edit->setEchoMode(b_visible ? QLineEdit::Password : QLineEdit::Normal);
+        qDebug() << "pass_visible clicked, echoMode =" << ui->pass_edit->echoMode();
+    });
+
+    // 取消「记住密码」时连带取消「自动登录」，否则下次会带着空密码自动登录
+    connect(ui->remember_pwd_chk, &QCheckBox::toggled, this, [this](bool on) {
+        if (!on) {
+            ui->auto_login_chk->setChecked(false);
+        }
+    });
+
+    loadSettings();
     initHttpHandlers();
     //连接登录回包信号
     connect(HttpMgr::GetInstance().get(), &HttpMgr::sig_login_mod_finish, this,
@@ -29,12 +131,89 @@ LoginDialog::LoginDialog(QWidget *parent) :
     connect(TcpMgr::GetInstance().get(), &TcpMgr::sig_login_failed, this, &LoginDialog::slot_login_failed);
 
     initHead();
+
+    // 回填完成后再自动登录：延时等界面真正显示出来，避免控件还没准备好就发请求
+    if (ui->auto_login_chk->isChecked()
+        && !ui->email_edit->text().isEmpty()
+        && !ui->pass_edit->text().isEmpty()) {
+        QTimer::singleShot(300, this, [this]() {
+            qDebug() << "auto login triggered";
+            on_login_btn_clicked();
+        });
+    }
 }
 
 LoginDialog::~LoginDialog()
 {
     qDebug()<<"destruct LoginDlg";
+    saveSettings();
     delete ui;
+}
+
+// ============================================================
+//  读 / 写 login.ini
+// ============================================================
+void LoginDialog::loadSettings()
+{
+    QSettings st(loginSettingsPath(), QSettings::IniFormat);
+
+    const QString email = st.value("login/email").toString();
+    if (!email.isEmpty()) {
+        ui->email_edit->setText(email);
+    }
+
+    const bool remember = st.value("login/remember", false).toBool();
+    ui->remember_pwd_chk->setChecked(remember);
+    if (!remember) {
+        return;                       // 没勾「记住密码」就不去碰密文
+    }
+
+    const QString cipher = st.value("login/pwd_cipher").toString();
+    if (cipher.isEmpty()) {
+        return;
+    }
+    const QString pwd = dpapiUnprotect(cipher);
+    if (pwd.isEmpty()) {
+        // DPAPI 解不开（换机器 / 换 Windows 用户），把这份失效密文清掉
+        qWarning() << "saved password can not be decrypted, drop it";
+        st.remove("login/pwd_cipher");
+        return;
+    }
+    ui->pass_edit->setText(pwd);
+    ui->auto_login_chk->setChecked(st.value("login/auto_login", false).toBool());
+}
+
+void LoginDialog::SetAutoLogin(bool on)
+{
+    ui->remember_pwd_chk->setChecked(on);
+    ui->auto_login_chk->setChecked(on);
+    if (!on) {
+        saveSettings();          // 立刻把勾选状态落盘，清掉旧的密码密文
+    }
+}
+
+void LoginDialog::saveSettings()
+{
+    QSettings st(loginSettingsPath(), QSettings::IniFormat);
+
+    const QString email = ui->email_edit->text().trimmed();
+    if (email.isEmpty()) {
+        st.remove("login");
+        return;
+    }
+    st.setValue("login/email", email);
+
+    if (ui->remember_pwd_chk->isChecked()) {
+        st.setValue("login/remember", true);
+        st.setValue("login/auto_login", ui->auto_login_chk->isChecked());
+        // 注意存的是【原始密码】。on_login_btn_clicked 里发出去的是 xorString 后的密文，
+        // 那样存的话 DPAPI 解出来会是密文，登录会失败。
+        st.setValue("login/pwd_cipher", dpapiProtect(ui->pass_edit->text()));
+    } else {
+        st.remove("login/pwd_cipher");
+        st.remove("login/remember");
+        st.remove("login/auto_login");
+    }
 }
 
 void LoginDialog::initHead()
@@ -200,6 +379,14 @@ void LoginDialog::slot_login_mod_finish(ReqId id, QString res, ErrorCodes err)
         return;
     }
 
+
+    // ★ 必须先 contains 再 []：QMap::operator[] 会为不存在的 key 插入一个空
+    //   std::function，调用它直接抛 std::bad_function_call 崩掉。
+    //   registerdialog / resetdialog 都有这个判断，只有这里漏了。
+    if (!_handlers.contains(id)) {
+        qDebug() << "no handler registered for req id " << id;
+        return;
+    }
 
     //调用对应的逻辑,根据id回调。
     _handlers[id](jsonDoc.object());

@@ -58,8 +58,18 @@ void LogicSystem::DealMsg() {
 					_msg_que.pop();
 					continue;
 				}
-				call_back_iter->second(msg_node->_session, msg_node->_recvnode->_msg_id,
-					std::string(msg_node->_recvnode->_data, msg_node->_recvnode->_cur_len));
+				try {
+					call_back_iter->second(msg_node->_session, msg_node->_recvnode->_msg_id,
+						std::string(msg_node->_recvnode->_data, msg_node->_recvnode->_cur_len));
+				}
+				catch (const std::exception& e) {
+					// ★ 必须兜住：任何一个 handler 抛异常（比如 std::stoi("") 的
+					//   std::invalid_argument）如果逃出去，异常会跨出这个工作线程，
+					//   直接触发 std::terminate 让【整个 ChatServer 进程崩溃】，
+					//   客户端那边表现就是"一直转圈等回包 -> 心跳超时 -> 掉线"。
+					std::cerr << "DealMsg: handler for msg_id "
+						<< msg_node->_recvnode->_msg_id << " threw: " << e.what() << std::endl;
+				}
 				_msg_que.pop();
 			}
 			break;
@@ -263,9 +273,21 @@ void LogicSystem::SearchInfo(std::shared_ptr<CSession> session, const short& msg
 		session->Send(return_str, ID_SEARCH_USER_RSP);
 		});
 
+	// 分流规则：纯数字 -> 按 uid 查；含 @ -> 按邮箱查；否则按用户名查。
+	// 这样"加好友"支持 uid / 昵称 / 邮箱三种输入方式。
+	// ★ 空输入直接回错误包，别往下查 —— 既省一次查询，也避免踩数字转换的坑
+	if (uid_str.empty()) {
+	    rtvalue["error"] = ErrorCodes::UidInvalid;   // 枚举里没有 ErrParams，用 UidInvalid
+	    std::cout << "SearchInfo: empty search string" << std::endl;
+	    return;
+	}
+
 	bool b_digit = isPureDigit(uid_str);
 	if (b_digit) {
 		GetUserByUid(uid_str, rtvalue);
+	}
+	else if (uid_str.find('@') != std::string::npos) {
+		GetUserByEmail(uid_str, rtvalue);
 	}
 	else {
 		GetUserByName(uid_str, rtvalue);
@@ -375,6 +397,9 @@ void LogicSystem::AuthFriendApply(std::shared_ptr<CSession> session, const short
 		rtvalue["icon"] = user_info->icon;
 		rtvalue["sex"] = user_info->sex;
 		rtvalue["uid"] = touid;
+		// ★ 必须回传 thread_id：客户端 slot_auth_rsp 用它建 ChatThreadData。
+		//   缺了会让 auth_rsp->_thread_id 恒为 0，把 _uid_to_thread_id[对端] 覆盖成 0
+		//   （登录时已写入真实值），同一会话在 UserMgr 和 _chat_thread_items 里各存一份。
 	}
 	else {
 		rtvalue["error"] = ErrorCodes::UidInvalid;
@@ -393,6 +418,15 @@ void LogicSystem::AuthFriendApply(std::shared_ptr<CSession> session, const short
 
 	//更新数据库添加好友
 	MysqlMgr::GetInstance()->AddFriend(uid, touid,back_name, chat_datas);
+
+    // ★ 从 AddFriend 插入的消息里取 thread_id（它内部建了 chat_thread + private_chat）
+    int chat_thread_id = 0;
+    if (!chat_datas.empty()) {
+        chat_thread_id = chat_datas[0]->thread_id();
+    }
+	// 回传 thread_id：客户端 slot_auth_rsp 用它建 ChatThreadData。
+	//   缺了会让 auth_rsp->_thread_id 恒为 0，把 _uid_to_thread_id[对端] 覆盖成 0。
+	rtvalue["thread_id"] = chat_thread_id;
 
 	//查询redis 查找touid对应的server ip
 	auto to_str = std::to_string(touid);
@@ -436,6 +470,9 @@ void LogicSystem::AuthFriendApply(std::shared_ptr<CSession> session, const short
 				chat["thread_id"] = chat_data->thread_id();
 				chat["unique_id"] = chat_data->unique_id();
 				chat["msg_content"] = chat_data->msgcontent();
+				chat["msg_type"] = chat_data->msg_type();
+				chat["total_size"] = (Json::Int64)chat_data->total_size();
+				chat["md5"] = chat_data->md5();
 				chat["chat_time"] = chat_time;
 				chat["status"] = chat_data->status();
 				notify["chat_datas"].append(chat);
@@ -464,6 +501,9 @@ void LogicSystem::AuthFriendApply(std::shared_ptr<CSession> session, const short
 		chat["thread_id"] = chat_data->thread_id();
 		chat["unique_id"] = chat_data->unique_id();
 		chat["msg_content"] = chat_data->msgcontent();
+		chat["msg_type"] = chat_data->msg_type();
+		chat["total_size"] = (Json::Int64)chat_data->total_size();
+		chat["md5"] = chat_data->md5();
 		chat["chat_time"] = chat_time;
 		chat["status"] = chat_data->status();
 		rtvalue["chat_datas"].append(chat);
@@ -494,8 +534,22 @@ void LogicSystem::DealChatTextMsg(std::shared_ptr<CSession> session, const short
 	for (const auto& txt_obj : arrays) {
 		auto content = txt_obj["content"].asString();
 		auto unique_id = txt_obj["unique_id"].asString();
+		// ★ 图文消息：客户端不发 msg_type 时按文本(0)处理。
+		//   content 的含义随类型变化：文本=正文，图片/文件=服务器上的相对路径。
+		auto msg_type = txt_obj.get("msg_type", 0).asInt();
+		auto total_size = txt_obj.get("total_size", 0).asInt64();
+		auto md5 = txt_obj.get("md5", "").asString();
 		std::cout << "content is " << content << std::endl;
 		std::cout << "unique_id is " << unique_id << std::endl;
+		std::cout << "msg_type is " << msg_type << std::endl;
+		// 非法类型一律当文本
+		if (msg_type < 0 || msg_type > 2) {
+			msg_type = 0;
+		}
+		// 图片/文件必须有路径，否则客户端只能显示成一串路径文本
+		if (msg_type != 0 && content.empty()) {
+			msg_type = 0;
+		}
 		auto chat_msg = std::make_shared<ChatMessage>();
 		chat_msg->chat_time = timestamp;
 		chat_msg->sender_id = uid;
@@ -503,6 +557,9 @@ void LogicSystem::DealChatTextMsg(std::shared_ptr<CSession> session, const short
 		chat_msg->unique_id = unique_id;
 		chat_msg->thread_id = thread_id;
 		chat_msg->content = content;
+		chat_msg->msg_type = msg_type;
+		chat_msg->total_size = (uint64_t)total_size;
+		chat_msg->md5 = md5;
 		chat_msg->status = 2;
 		chat_datas.push_back(chat_msg);
 	}
@@ -519,6 +576,10 @@ void LogicSystem::DealChatTextMsg(std::shared_ptr<CSession> session, const short
 		chat_msg["content"] = chat_data->content;
 		chat_msg["status"] = chat_data->status;
 		chat_msg["chat_time"] = chat_data->chat_time;
+		// ★ 图文消息字段，客户端靠 msg_type 决定渲染成文本气泡还是图片
+		chat_msg["msg_type"] = chat_data->msg_type;
+		chat_msg["total_size"] = (Json::Int64)chat_data->total_size;
+		chat_msg["md5"] = chat_data->md5;
 		rtvalue["chat_datas"].append(chat_msg);
 	}
 
@@ -625,7 +686,9 @@ void LogicSystem::GetUserByUid(std::string uid_str, Json::Value& rtvalue)
 		return;
 	}
 
-	auto uid = std::stoi(uid_str);
+	auto uid = safeToInt(uid_str, 0);
+	// ★ 原来这里是 std::stoi(uid_str)，空串/非数字会抛 std::invalid_argument，
+	//   而 DealMsg 的工作线程一旦有异常逃出去就是 std::terminate -> 整个进程崩。
 	//redis中没有则查询mysql
 	//查询数据库
 	std::shared_ptr<UserInfo> user_info = nullptr;
@@ -646,7 +709,7 @@ void LogicSystem::GetUserByUid(std::string uid_str, Json::Value& rtvalue)
 	redis_root["sex"] = user_info->sex;
 	redis_root["icon"] = user_info->icon;
 
-	RedisMgr::GetInstance()->Set(base_key, redis_root.toStyledString());
+	RedisMgr::GetInstance()->Set(base_key, redis_root.toStyledString(), USER_BASE_INFO_TTL_SEC);
 
 	//返回数据
 	rtvalue["uid"] = user_info->uid;
@@ -714,7 +777,7 @@ void LogicSystem::GetUserByName(std::string name, Json::Value& rtvalue)
 	redis_root["sex"] = user_info->sex;
 	redis_root["icon"] = user_info->icon;
 
-	RedisMgr::GetInstance()->Set(base_key, redis_root.toStyledString());
+	RedisMgr::GetInstance()->Set(base_key, redis_root.toStyledString(), USER_BASE_INFO_TTL_SEC);
 	
 	//返回数据
 	rtvalue["uid"] = user_info->uid;
@@ -726,6 +789,30 @@ void LogicSystem::GetUserByName(std::string name, Json::Value& rtvalue)
 	rtvalue["sex"] = user_info->sex;
 	rtvalue["icon"] = user_info->icon;
 }
+
+//按邮箱查用户（加好友时支持邮箱搜索）。
+//刻意不走 Redis：邮箱搜索频率低，且没有 emailcache_* 这类缓存键。
+void LogicSystem::GetUserByEmail(const std::string& email, Json::Value& rtvalue)
+{
+	auto user_info = MysqlMgr::GetInstance()->GetUserByEmail(email);
+	if (user_info == nullptr) {
+		rtvalue["error"] = ErrorCodes::UidInvalid;
+		std::cout << "GetUserByEmail: not found, email is " << email << std::endl;
+		return;
+	}
+
+	rtvalue["error"] = ErrorCodes::Success;
+	rtvalue["uid"] = user_info->uid;
+	rtvalue["name"] = user_info->name;
+	rtvalue["nick"] = user_info->nick;
+	rtvalue["email"] = user_info->email;
+	rtvalue["icon"] = user_info->icon;
+	rtvalue["sex"] = user_info->sex;
+	rtvalue["desc"] = user_info->desc;
+	std::cout << "GetUserByEmail hit, uid is " << user_info->uid
+		<< " name is " << user_info->name << std::endl;
+}
+
 
 bool LogicSystem::GetBaseInfo(std::string base_key, int uid, std::shared_ptr<UserInfo>& userinfo)
 {
@@ -768,7 +855,9 @@ bool LogicSystem::GetBaseInfo(std::string base_key, int uid, std::shared_ptr<Use
 		redis_root["desc"] = userinfo->desc;
 		redis_root["sex"] = userinfo->sex;
 		redis_root["icon"] = userinfo->icon;
-		RedisMgr::GetInstance()->Set(base_key, redis_root.toStyledString());
+		// ★ 带 TTL 写入：以前是永久缓存，改了数据库 user.icon 后本机用户仍拿到旧值
+		//   （对方却正常，因为好友列表那条路径直读 MySQL 绕过了缓存），非常难排查。
+		RedisMgr::GetInstance()->Set(base_key, redis_root.toStyledString(), USER_BASE_INFO_TTL_SEC);
 	}
 
 	return true;
@@ -911,6 +1000,9 @@ void LogicSystem::LoadChatMsg(std::shared_ptr<CSession> session,
 		chat_data["thread_id"] = chat.thread_id;
 		chat_data["unique_id"] = 0;
 		chat_data["msg_content"] = chat.content;
+		chat_data["msg_type"] = chat.msg_type;
+		chat_data["total_size"] = (Json::Int64)chat.total_size;
+		chat_data["md5"] = chat.md5;
 		chat_data["chat_time"] = chat.chat_time;
 		chat_data["status"] = chat.status;
 		rtvalue["chat_datas"].append(chat_data);

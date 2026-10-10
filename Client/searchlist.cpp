@@ -10,7 +10,10 @@
 #include "userdata.h"
 #include "usermgr.h"
 
-SearchList::SearchList(QWidget *parent):QListWidget(parent),_find_dlg(nullptr), _search_edit(nullptr), _send_pending(false)
+// ★ 初始化顺序必须跟 searchlist.h 里成员的【声明顺序】一致，
+//   否则编译器会报 -Wreorder（并且实际初始化顺序是声明顺序，不是这里写的顺序）。
+//   声明顺序是：_send_pending -> _find_dlg -> _search_edit -> _loadingDialog
+SearchList::SearchList(QWidget *parent):QListWidget(parent),_send_pending(false), _find_dlg(nullptr), _search_edit(nullptr), _loadingDialog(nullptr)
 {
     Q_UNUSED(parent);
      this->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -39,15 +42,26 @@ void SearchList::SetSearchEdit(QWidget* edit) {
 
 void SearchList::waitPending(bool pending)
 {
-    if(pending){
+    if (pending) {
+        // 已经在显示就别再new 一个 —— LoadingDlg 是模态的，
+        // 叠多个只会挡住窗口且只有最后一个能被关掉。
+        if (_loadingDialog) {
+            return;
+        }
         _loadingDialog = new LoadingDlg(this);
         _loadingDialog->setModal(true);
         _loadingDialog->show();
         _send_pending = pending;
-    }else{
-        _loadingDialog->hide();
-        _loadingDialog->deleteLater();
-         _send_pending = pending;
+    } else {
+        // ★ 必须判空：SearchList 构造完到第一次搜索之间，
+        //   waitPending(false) 可能被调到（比如收到一个空结果），
+        //   原来会解引用未初始化/已 deleteLater 的指针 -> 崩。
+        if (_loadingDialog) {
+            _loadingDialog->hide();
+            _loadingDialog->deleteLater();
+            _loadingDialog = nullptr;      // 置空，避免悬垂指针
+        }
+        _send_pending = pending;
     }
 }
 
@@ -99,21 +113,39 @@ void SearchList::slot_item_clicked(QListWidgetItem *item)
            return;
        }
 
-       if (!_search_edit) {
-           return;
-       }
-       waitPending(true);
-       auto search_edit = dynamic_cast<CustomizeEdit*>(_search_edit);
-       auto uid_str = search_edit->text();
-       //此处发送请求给server
-	   QJsonObject jsonObj;
-	   jsonObj["uid"] = uid_str;
+           if (!_search_edit) {
+               return;
+           }
 
-	   QJsonDocument doc(jsonObj);
-	   QByteArray jsonData = doc.toJson(QJsonDocument::Compact);
+           auto search_edit = dynamic_cast<CustomizeEdit*>(_search_edit);
+           if (search_edit == nullptr) {
+               qDebug() << "search_edit is not a CustomizeEdit, give up";
+               return;
+           }
 
-	   //发送tcp请求给chat server
-       emit TcpMgr::GetInstance()->sig_send_data(ReqId::ID_SEARCH_USER_REQ, jsonData);
+           // ★ 空输入就别发请求了。
+           //   原先直接发 {"uid":""}，而服务端 isPureDigit("") 会把空串当成"纯数字"
+           //   -> GetUserByUid("") -> std::stoi("") 抛 std::invalid_argument
+           //   -> DealMsg 没有 try/catch -> ChatServer 整个进程崩
+           //   -> 客户端收不到回包永远转圈 -> 心跳超时掉线。
+           auto uid_str = search_edit->text().trimmed();
+           if (uid_str.isEmpty()) {
+               qDebug() << "search text is empty, do not send request";
+               _find_dlg = std::make_shared<FindFailDlg>(this);
+               _find_dlg->show();
+               return;
+           }
+
+           waitPending(true);
+           //此处发送请求给server
+           QJsonObject jsonObj;
+           jsonObj["uid"] = uid_str;
+
+           QJsonDocument doc(jsonObj);
+           QByteArray jsonData = doc.toJson(QJsonDocument::Compact);
+
+           //发送tcp请求给chat server
+           emit TcpMgr::GetInstance()->sig_send_data(ReqId::ID_SEARCH_USER_REQ, jsonData);
        return;
    }
 

@@ -13,6 +13,10 @@ class LoginDialog : public QDialog
     Q_OBJECT
 
 public:
+    // ★ 主动退出登录时调用：取消勾选「记住密码 / 自动登录」并清掉已存的密码，
+    //   否则下次启动会被自动登录又拉回去。
+    void SetAutoLogin(bool on);
+
     explicit LoginDialog(QWidget *parent = nullptr);
     ~LoginDialog();
 
@@ -24,6 +28,9 @@ public:
     bool enableBtn(bool);
 
 private:
+    //「记住密码 / 自动登录」的读写（login.ini，密码用 Windows DPAPI 加密）
+    void loadSettings();
+    void saveSettings();
     Ui::LoginDialog *ui;
 
     QMap<ReqId, std::function<void(const QJsonObject&)>> _handlers;

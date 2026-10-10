@@ -48,6 +48,15 @@ int main()
 		service.RegisterServer(pointer_server);
 		// 构建并启动gRPC服务器
 		std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
+		// ★ 必须判空：端口被占用 / 地址非法时 BuildAndStart 返回 nullptr。
+		//   原来直接往下走 —— 先打印一句假的 "RPC Server listening"，
+		//   紧接着 RPC 线程调 server->Wait() 解引用空指针 -> Segmentation fault。
+		if (server == nullptr) {
+			std::cerr << "FATAL: gRPC 服务启动失败，无法监听 " << server_address << std::endl;
+			std::cerr << "       常见原因：端口已被占用（是否已经有一个 ChatServer 在跑？），或 Host/RPCPort 配置不对。" << std::endl;
+			std::cerr << "       RPC 是 ChatServer 之间转发消息用的，起不来就无法工作，这里直接退出。" << std::endl;
+			return 1;
+		}
 		std::cout << "RPC Server listening on " << server_address << std::endl;
 
 		//单独启动一个线程处理grpc服务

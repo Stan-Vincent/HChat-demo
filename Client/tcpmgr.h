@@ -9,6 +9,14 @@
 #include <QJsonArray>
 #include <memory>
 
+// ★ 自定义 TCP 协议：2 字节大端 msg_id + 2 字节大端 msg_len + body
+//   与服务端 MsgNode.cpp 的 SendNode 保持一致（host_to_network_short = 大端）。
+static const int HEAD_TOTAL_LEN = 4;
+// 消息体长度上限。服务端 CSession 的 _data 是 MAX_LENGTH(2048)，
+// 但历史消息一页 10 条很容易超过 2048 字节，这里放宽到 64KB
+// （正好是 2 字节长度字段能表示的最大值 65535）。
+static const int MAX_MSG_BODY_LEN = 65535;
+
 class TcpMgr:public QObject, public Singleton<TcpMgr>,
         public std::enable_shared_from_this<TcpMgr>
 {

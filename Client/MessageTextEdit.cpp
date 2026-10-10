@@ -109,6 +109,16 @@ void MessageTextEdit::insertFileFromUrl(const QStringList &urls)
 void MessageTextEdit::insertImages(const QString &url)
 {
     QImage image(url);
+    // ★ 必须判空：QImage 构造失败不抛异常，只是一个 null image。
+    //   原来不判的话，下面 image.width() 是 0、不进缩放分支，
+    //   于是 cursor.insertImage(null) 插一个空白图元，
+    //   mMsgList 里还记了一条 "image" —— 用户点发送会得到一个空图片消息，
+    //   而且界面上看不出哪里出了问题。拖一个不支持的格式进来就会这样。
+    if (image.isNull()) {
+        QMessageBox::warning(this, tr("提示"),
+                             tr("无法加载这张图片：\n%1\n\n请确认文件没损坏，且格式受支持（png/jpg/bmp/webp）。").arg(url));
+        return;
+    }
     //按比例缩放图片
     if(image.width()>120||image.height()>80)
     {

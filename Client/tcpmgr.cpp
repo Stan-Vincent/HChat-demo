@@ -15,43 +15,57 @@ TcpMgr::TcpMgr():_host(""),_port(0),_b_recv_pending(false),_message_id(0),_messa
            // 读取所有数据并追加到缓冲区
            _buffer.append(_socket.readAll());
 
-           QDataStream stream(&_buffer, QIODevice::ReadOnly);
-           stream.setVersion(QDataStream::Qt_5_0);
-
+           // ★★ 这里【不能】用一次性的 QDataStream 来解包。
+           //   原来的写法是：在循环外构造 QDataStream stream(&_buffer)，
+           //   循环内部又不断 `_buffer = _buffer.mid(...)` 重新赋值 buffer。
+           //   两个问题：
+           //   ① stream 的读游标跨迭代累积 —— 第二条消息会从偏移 4 开始读，
+           //      把上一条消息体的前 4 字节当成消息头，直接解出错乱的 id/len。
+           //   ② _buffer 重新赋值会让QByteArray 重新分配内存，
+           //      stream 内部的 QBuffer 指向旧内存 —— 悬空指针，行为未定义。
+           //
+           //   TCP 是流式的，服务端完全可能把多个回包合并成一个包发过来
+           //   （加载聊天列表时就是连续多个回包），所以必须正确处理粘包。
+           //
+           //   改成：不用QDataStream，直接按「2 字节大端 id + 2 字节大端 len」
+           //   手工解析。服务端 SendNode 用的是 host_to_network_short，即大端。
            forever {
-                //先解析头部
-               if(!_b_recv_pending){
-                   // 检查缓冲区中的数据是否足够解析出一个消息头（消息ID + 消息长度）
-                   if (_buffer.size() < static_cast<int>(sizeof(quint16) * 2)) {
-                       return; // 数据不够，等待更多数据
+               // ---------- 1. 解析消息头 ----------
+               if (!_b_recv_pending) {
+                   if (_buffer.size() < static_cast<int>(HEAD_TOTAL_LEN)) {
+                       return;            // 头部都不够，等更多数据
+                   }
+                   const uchar* p = reinterpret_cast<const uchar*>(_buffer.constData());
+                   _message_id  = static_cast<quint16>((p[0] << 8) | p[1]);
+                   _message_len = static_cast<quint16>((p[2] << 8) | p[3]);
+
+                   // 小于头长或超过上限都说明流已经错位了，丢掉整个缓冲区，
+                   // 否则会一直按错误的长度往下解，再也同步不回来。
+                   if (_message_len <= 0 || _message_len > MAX_MSG_BODY_LEN) {
+                       qDebug() << "protocol desync, illegal body len:" << _message_len
+                                << " id:" << _message_id << ", drop buffer";
+                       _buffer.clear();
+                       _b_recv_pending = false;
+                       return;
                    }
 
-                   // 预读取消息ID和消息长度，但不从缓冲区中移除
-                   stream >> _message_id >> _message_len;
-
-                   //将buffer 中的前四个字节移除
-                   _buffer = _buffer.mid(sizeof(quint16) * 2);
-
-                   // 输出读取的数据
+                   _buffer.remove(0, HEAD_TOTAL_LEN);
                    qDebug() << "Message ID:" << _message_id << ", Length:" << _message_len;
-
                }
 
-                //buffer剩余长读是否满足消息体长度，不满足则退出继续等待接受
-               if(_buffer.size() < _message_len){
-                    _b_recv_pending = true;
-                    return;
+               // ---------- 2. 解析消息体 ----------
+               if (_buffer.size() < _message_len) {
+                   _b_recv_pending = true;   // 还没收全，等下一包
+                   return;
                }
 
                _b_recv_pending = false;
-               // 读取消息体
                QByteArray messageBody = _buffer.mid(0, _message_len);
-               qDebug() << "receive body msg is " << messageBody ;
+               qDebug() << "receive body msg is " << messageBody;
 
-               _buffer = _buffer.mid(_message_len);
-               handleMsg(ReqId(_message_id),_message_len, messageBody);
+               _buffer.remove(0, _message_len);
+               handleMsg(ReqId(_message_id), _message_len, messageBody);
            }
-
        });
 
        //5.15 之后版本
@@ -282,8 +296,13 @@ void TcpMgr::initHandlers()
             auto msg_content = data["msg_content"].toString();
             QString chat_time = data["chat_time"].toString();
             auto status = data["status"].toInt();
+            // ★ msg_type 必须从回包里读，不能硬编码 TEXT。
+            //   否则收到的图片消息会被当成文本渲染，气泡里直接显示 "upload/xxx.png"。
+            //   服务端老版本没这个字段时 toInt() 返回 0，正好等于 TEXT，向后兼容。
+            int msg_type = data["msg_type"].toInt();
+            if (msg_type < 0 || msg_type > 2) { msg_type = 0; }
             auto chat_data = std::make_shared<TextChatData>(msg_id, thread_id, ChatFormType::PRIVATE,
-                ChatMsgType::TEXT, msg_content, send_uid, status, chat_time);
+                static_cast<ChatMsgType>(msg_type), msg_content, send_uid, status, chat_time);
             chat_datas.push_back(chat_data);
         }
 
@@ -365,8 +384,10 @@ void TcpMgr::initHandlers()
             auto unique_id = data["unique_id"].toInt();
             auto msg_content = data["msg_content"].toString();
             auto status = data["status"].toInt();
+            int msg_type = data["msg_type"].toInt();
+            if (msg_type < 0 || msg_type > 2) { msg_type = 0; }
             auto chat_data = std::make_shared<TextChatData>(msg_id, thread_id, ChatFormType::PRIVATE,
-                ChatMsgType::TEXT, msg_content, send_uid, status);
+                static_cast<ChatMsgType>(msg_type), msg_content, send_uid, status);
             chat_datas.push_back(chat_data);
         }
 
@@ -417,8 +438,10 @@ void TcpMgr::initHandlers()
             auto msg_content = data["content"].toString();
             QString chat_time = data["chat_time"].toString();
             int status = data["status"].toInt();
+            int msg_type = data["msg_type"].toInt();
+            if (msg_type < 0 || msg_type > 2) { msg_type = 0; }
             auto chat_data = std::make_shared<TextChatData>(msg_id,unique_id, thread_id, ChatFormType::PRIVATE,
-                ChatMsgType::TEXT, msg_content, sender, status, chat_time);
+                static_cast<ChatMsgType>(msg_type), msg_content, sender, status, chat_time);
             chat_datas.push_back(chat_data);
         }
 
@@ -467,8 +490,10 @@ void TcpMgr::initHandlers()
             auto msg_content = data["content"].toString();
             QString chat_time = data["chat_time"].toString();
             int status = data["status"].toInt();
+            int msg_type = data["msg_type"].toInt();
+            if (msg_type < 0 || msg_type > 2) { msg_type = 0; }
             auto chat_data = std::make_shared<TextChatData>(msg_id, unique_id, thread_id, ChatFormType::PRIVATE,
-                ChatMsgType::TEXT, msg_content, sender, status, chat_time);
+                static_cast<ChatMsgType>(msg_type), msg_content, sender, status, chat_time);
             chat_datas.push_back(chat_data);
         }
 
@@ -564,6 +589,11 @@ void TcpMgr::initHandlers()
         int err = jsonObj["error"].toInt();
         if (err != ErrorCodes::SUCCESS) {
             qDebug() << "get chat thread rsp failed, error is " << err;
+            // ★ 即使失败也要把信号发出去（load_more=false，列表为空）。
+            //   ChatDialog 靠这个信号的到达给加载请求计数 -1；
+            //   这里直接 return 的话计数永远减不到 0，模态 LoadingDlg
+            //   就一直挡着窗口 —— 表现就是「无限加载 + 程序卡死 + 无法退出」。
+            emit sig_load_chat_thread(false, 0, {});
             return;
         }
 
@@ -647,11 +677,18 @@ void TcpMgr::initHandlers()
 
         int err = jsonObj["error"].toInt();
         if (err != ErrorCodes::SUCCESS) {
-            qDebug() << "get create private chat failed, error is " << err;
+            qDebug() << "load chat msg rsp failed, error is " << err;
+            // ★ 失败也要 emit，ChatDialog 靠信号到达给加载计数 -1。
+            //   直接 return 的话计数永远减不到 0，模态 LoadingDlg 一直
+            //   挡着窗口，用户点什么都无效、连关闭都不行。
+            //   load_more 传 false 表示「到此为止」，不再继续翻页。
+            emit sig_load_chat_msg(jsonObj["thread_id"].toInt(),
+                                   jsonObj["last_message_id"].toInt(),
+                                   false, {});
             return;
         }
 
-        qDebug() << "Receive create private chat rsp Success";
+        qDebug() << "Receive load chat msg rsp Success";
 
         int thread_id = jsonObj["thread_id"].toInt();
         int last_msg_id = jsonObj["last_message_id"].toInt();
@@ -666,8 +703,10 @@ void TcpMgr::initHandlers()
             auto msg_content = data["msg_content"].toString();
             QString chat_time = data["chat_time"].toString();
             int status = data["status"].toInt();
+            int msg_type = data["msg_type"].toInt();
+            if (msg_type < 0 || msg_type > 2) { msg_type = 0; }
             auto chat_data = std::make_shared<TextChatData>(msg_id, thread_id, ChatFormType::PRIVATE,
-                ChatMsgType::TEXT, msg_content, send_uid, status,chat_time);
+                static_cast<ChatMsgType>(msg_type), msg_content, send_uid, status,chat_time);
             chat_datas.push_back(chat_data);
         }
 

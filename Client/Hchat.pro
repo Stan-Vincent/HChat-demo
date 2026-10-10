@@ -57,7 +57,9 @@ SOURCES += \
     timerbtn.cpp \
     userdata.cpp \
     userinfopage.cpp \
-    usermgr.cpp
+    usermgr.cpp \
+    uploadmanager.cpp \
+    imagemanager.cpp
 
 HEADERS += \
     BubbleFrame.h \
@@ -108,7 +110,9 @@ HEADERS += \
     timerbtn.h \
     userdata.h \
     userinfopage.h \
-    usermgr.h
+    usermgr.h \
+    uploadmanager.h \
+    imagemanager.h
 
 FORMS += \
     adduseritem.ui \
@@ -145,6 +149,12 @@ DISTFILES += \
     config.ini \
     icon.ico
 
+
+# 崩溃日志的符号解析库（SymFromAddrW / CaptureStackBackTrace）
+win32:LIBS += -ldbghelp
+# DPAPI 的 CryptProtectData / CryptUnprotectData 在 crypt32.dll 里
+#（注意不是 advapi32 —— 链 advapi32 会报 undefined reference to __imp_CryptProtectData）
+win32:LIBS += -lcrypt32
 
 win32:CONFIG(debug, debug | release)
 {

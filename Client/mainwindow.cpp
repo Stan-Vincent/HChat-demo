@@ -50,6 +50,9 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(TcpMgr::GetInstance().get(), &TcpMgr::sig_connection_closed,
         this, &MainWindow::slot_connection_closed);
 
+    // ★ 聊天窗口的「退出登录」：关掉自动登录 + 切回登录页
+    connect(_chat_dlg, &ChatDialog::sig_logout, this, &MainWindow::slot_logout);
+
     // 7. 默认显示登录界面
     _stacked_widget->setCurrentWidget(_login_dlg);
 }
@@ -89,12 +92,25 @@ void MainWindow::slot_switch_chatdlg()
 
     _stacked_widget->setCurrentWidget(_chat_dlg);
 
-    // 聊天界面比登录页大，按屏幕可用区域自适应，避免最小高度超过屏幕被裁掉
     QSize avail = QApplication::primaryScreen()->availableGeometry().size();
-    this->setMinimumSize(QSize(1050, qMin(900, avail.height() - 40)));
-    this->setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
+    // ★ 窗口改为可自由调整大小 / 最大化：
+    //   - 只保留一个"最小可用尺寸"，防止控件被压到看不见
+    //   - 不再设 maximumSize，Qt 默认就能放大和最大化
+    //   - 初始尺寸比最小值略大一点，进去时不会顶满屏
+    const int min_w = 900;
+    const int min_h = 600;
+    this->setMinimumSize(QSize(min_w, qMin(min_h, avail.height() - 40)));
+    this->resize(qMin(1080, avail.width() - 80), qMin(680, avail.height() - 120));
     _ui_status = CHAT_UI;
     _chat_dlg->loadChatList();
+}
+
+void MainWindow::slot_logout()
+{
+	qDebug() << "MainWindow::slot_logout";
+	// 主动退出登录的用户不该再被自动登录拉回来
+	_login_dlg->SetAutoLogin(false);
+	offlineLogin();
 }
 
 void MainWindow::slot_offline(){

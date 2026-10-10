@@ -69,6 +69,12 @@ Status ChatServiceImpl::NotifyAuthFriend(ServerContext* context, const AuthFrien
 	rtvalue["error"] = ErrorCodes::Success;
 	rtvalue["fromuid"] = request->fromuid();
 	rtvalue["touid"] = request->touid();
+	// ★ 从请求带过来的消息里取 thread_id（AuthFriendApply 里已建好会话）
+	int chat_thread_id = 0;
+	if (request->textmsgs_size() > 0) {
+		chat_thread_id = request->textmsgs(0).thread_id();
+	}
+	rtvalue["thread_id"] = chat_thread_id;
 
 	std::string base_key = USER_BASE_INFO + std::to_string(fromuid);
 	auto user_info = std::make_shared<UserInfo>();
@@ -180,7 +186,7 @@ bool ChatServiceImpl::GetBaseInfo(std::string base_key, int uid, std::shared_ptr
 		redis_root["desc"] = userinfo->desc;
 		redis_root["sex"] = userinfo->sex;
 		redis_root["icon"] = userinfo->icon;
-		RedisMgr::GetInstance()->Set(base_key, redis_root.toStyledString());
+		RedisMgr::GetInstance()->Set(base_key, redis_root.toStyledString(), USER_BASE_INFO_TTL_SEC);
 	}
 	
 	return true;

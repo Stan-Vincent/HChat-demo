@@ -15,6 +15,8 @@ namespace Ui {
 class ChatDialog;
 }
 
+class ChatDialog;
+
 class ChatDialog : public QDialog
 {
     Q_OBJECT
@@ -24,6 +26,10 @@ public:
     ~ChatDialog();
     void loadChatList();
     void loadChatMsg();
+
+    // LoadingSession 用：请求计数 +1 / -1，减到 0 时关掉加载框
+    void beginLoadingRequest();
+    void endLoadingRequest();
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override ;
 
@@ -48,13 +54,19 @@ private:
     QWidget* _last_widget;
     //todo...
     //QMap<int, QListWidgetItem*> _chat_items_added;
-    //chat_thred_id�Ͷ�Ӧ��item��ӳ���ϵ��
+    //chat_thred_id�Ͷ�Ӧ��item��ӳ���ϵ��
     QMap<int, QListWidgetItem*>  _chat_thread_items;
     int _cur_chat_thread_id;
     QTimer * _timer;
     LoadingDlg* _loading_dlg;
+    // 在途的加载请求数（链式加载，靠它配平加载框的开关）
+    int _loading_req_count = 0;
     std::shared_ptr<ChatThreadData> _cur_load_chat;
  
+signals:
+    // �� ת�����˳���¼�����ڲ�ҳ�� -> MainWindow
+    void sig_logout();
+
 public slots:
     void slot_loading_chat_user();
     void slot_side_chat();
@@ -66,6 +78,8 @@ public slots:
     void slot_switch_apply_friend_page();
     void slot_friend_info_page(std::shared_ptr<UserInfo> user_info);
     void slot_show_search(bool show);
+    // �� �յ����˳���¼����ת���� MainWindow
+    void slot_logout();
     void slot_apply_friend(std::shared_ptr<AddFriendApply> apply);
     void slot_add_auth_friend(std::shared_ptr<AuthInfo> auth_info);
     void slot_auth_rsp(std::shared_ptr<AuthRsp> auth_rsp);
@@ -86,6 +100,21 @@ private slots:
 
 };
 
+
+// ★ LoadingSession 定义在 ChatDialog 之后 —— 它要调ChatDialog 的成员函数，
+//   那要求此刻 ChatDialog 是完整类型。
+class LoadingSession
+{
+public:
+    explicit LoadingSession(ChatDialog* dlg) : _dlg(dlg) {}
+    ~LoadingSession() { _dlg->endLoadingRequest(); }
+
+    LoadingSession(const LoadingSession&) = delete;
+    LoadingSession& operator=(const LoadingSession&) = delete;
+
+private:
+    ChatDialog* _dlg;
+};
 
 
 #endif // CHATDIALOG_H

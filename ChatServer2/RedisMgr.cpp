@@ -45,13 +45,22 @@ bool RedisMgr::Get(const std::string& key, std::string& value)
 	 return true;
 }
 
-bool RedisMgr::Set(const std::string &key, const std::string &value){
+bool RedisMgr::Set(const std::string &key, const std::string &value, int expire_sec){
 	//执行redis命令行
 	auto connect = _con_pool->getConnection();
 	if (connect == nullptr) {
 		return false;
 	}
-	auto reply = (redisReply*)redisCommand(connect, "SET %s %s", key.c_str(), value.c_str());
+	// expire_sec > 0 时用 SET key value EX <sec> 让缓存自动过期；
+	// 否则退化成原来的 SET key value（永不过期）
+	redisReply* reply = nullptr;
+	if (expire_sec > 0) {
+		reply = (redisReply*)redisCommand(connect, "SET %s %s EX %d",
+			key.c_str(), value.c_str(), expire_sec);
+	}
+	else {
+		reply = (redisReply*)redisCommand(connect, "SET %s %s", key.c_str(), value.c_str());
+	}
 
 	//如果返回NULL则说明执行失败
 	if (NULL == reply)

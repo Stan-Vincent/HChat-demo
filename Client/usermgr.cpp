@@ -46,6 +46,28 @@ std::shared_ptr<UserInfo> UserMgr::GetUserInfo()
     return _user_info;
 }
 
+void UserMgr::UpdateLocalUserInfo(const QString& nick, const QString& desc,
+                                  int sex, const QString& icon)
+{
+    // ★ 提交资料成功后调用：把改动同步到内存里的 UserInfo。
+    //   不同步的话，聊天列表/联系人列表里的头像昵称还是旧的，
+    //   要重新登录才变 —— 用户会以为"提交没生效"。
+    //   空字符串表示"这次没改这个字段"，保留原值。
+    if (_user_info == nullptr) {
+        return;
+    }
+    if (!nick.isEmpty()) {
+        _user_info->_nick = nick;
+    }
+    // desc 允许为空：用户把签名清空是合法操作，要能真正清掉
+    _user_info->_desc = desc;
+    // icon 为空表示"这次没重新上传头像"，保留原值
+    if (!icon.isEmpty()) {
+        _user_info->_icon = icon;
+    }
+    _user_info->_sex = sex;
+}
+
 void UserMgr::AppendApplyList(QJsonArray array)
 {
     // 遍历 QJsonArray 并输出每个元素

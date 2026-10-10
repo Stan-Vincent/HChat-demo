@@ -76,6 +76,9 @@ enum MSG_IDS {
 #define USERTOKENPREFIX  "utoken_"
 #define IPCOUNTPREFIX  "ipcount_"
 #define USER_BASE_INFO "ubaseinfo_"
+
+//用户资料缓存的有效期（秒）。到点自动过期，避免改了数据库后缓存挡住新值。
+const int USER_BASE_INFO_TTL_SEC = 3600;
 #define LOGIN_COUNT  "logincount"
 #define NAME_INFO  "nameinfo_"
 #define LOCK_PREFIX "lock_"

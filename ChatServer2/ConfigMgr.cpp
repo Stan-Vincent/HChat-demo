@@ -1,14 +1,40 @@
 #include "ConfigMgr.h"
 ConfigMgr::ConfigMgr(){
-	// 获取当前工作目录  
-	boost::filesystem::path current_path = boost::filesystem::current_path();
-	// 构建config.ini文件的完整路径  
-	boost::filesystem::path config_path = current_path / "config.ini";
-	std::cout << "Config path: " << config_path << std::endl;
-
-	// 使用Boost.PropertyTree来读取INI文件  
+		// 按顺序尝试多个位置：当前工作目录 -> 上两级（x64/Debug -> 工程目录） -> 上一级
+	// 这样无论从工程目录运行（VS 的默认工作目录）还是从 x64/Debug 直接运行都能找到配置
+	boost::filesystem::path base = boost::filesystem::current_path();
+	boost::filesystem::path candidates[3] = {
+	    base / "config.ini",
+	    base / ".." / ".." / "config.ini",
+	    base / ".." / "config.ini"
+	};
+	
+	boost::filesystem::path config_path;
 	boost::property_tree::ptree pt;
-	boost::property_tree::read_ini(config_path.string(), pt);
+	bool b_loaded = false;
+	for (auto& candidate : candidates) {
+	    if (!boost::filesystem::exists(candidate)) {
+	        continue;
+	    }
+	    try {
+	        boost::property_tree::read_ini(candidate.string(), pt);
+	        config_path = candidate;
+	        b_loaded = true;
+	        break;
+	    } catch (const std::exception& parse_err) {
+	        std::cerr << "Failed to parse " << candidate << ": " << parse_err.what() << std::endl;
+	    }
+	}
+	
+	if (!b_loaded) {
+	    std::cerr << "FATAL: config.ini not found. Tried these paths:" << std::endl;
+	    for (auto& candidate : candidates) {
+	        std::cerr << "    " << candidate << std::endl;
+	    }
+	    throw std::runtime_error("config.ini not found");
+	}
+	
+	std::cout << "Config path: " << config_path << std::endl;
 
 
 	// 遍历INI文件中的所有section  

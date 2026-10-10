@@ -9,10 +9,14 @@
 #include <memory>
 #include "userdata.h"
 #include "loadingdlg.h"
+#include <QTimer>
 
 class SearchList: public QListWidget
 {
     Q_OBJECT
+
+    // 搜索请求超时（毫秒）：发出后这么久没回包就强制收掉 loading
+    static constexpr int SEARCH_TIMEOUT_MS = 8000;
 public:
     SearchList(QWidget *parent = nullptr);
     void CloseFindDlg();
@@ -50,7 +54,10 @@ private:
     void addTipItem();
     std::shared_ptr<QDialog> _find_dlg;
     QWidget* _search_edit;
-    LoadingDlg * _loadingDialog;
+    LoadingDlg * _loadingDialog;
+    // ★ 搜索请求的超时兜底：发出请求后启动，超过 SEARCH_TIMEOUT_MS 没回包就
+    //   强制收掉loading。否则一旦服务端没回包，界面会永久卡在转圈。
+    QTimer* _search_timeout = nullptr;
 private slots:
     void slot_item_clicked(QListWidgetItem *item);
     void slot_user_search(std::shared_ptr<SearchInfo> si);
