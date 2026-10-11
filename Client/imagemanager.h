@@ -45,6 +45,13 @@ public:
     void downloadImage(const QString &url,
                        std::function<void(bool ok, const QPixmap &pix, const QString &errMsg)> cb);
 
+    // ★ 头像专用：本地/资源路径（":/res/head_3.jpg"、"head_3.jpg"）直接加载，
+    //   空值或下载失败一律回退默认头像 ":/res/head_1.jpg"。
+    //   测试用户的 icon 存的是资源/本地路径，走 downloadImage 会被拼成
+    //   HTTP URL 去 404 —— 那就是改完后"默认头像全没了"的原因。
+    void loadAvatar(const QString &url,
+                    std::function<void(bool ok, const QPixmap &pix, const QString &errMsg)> cb);
+
     // 磁盘缓存目录（exe 同级的 cache/images），key 是 url 的 md5
     static QString cacheFilePath(const QString &fullUrl);
     // 缓存命中上限，超过就整体清空，避免无限涨

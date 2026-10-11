@@ -25,6 +25,7 @@ public:
 private:
     Ui::ConUserItem *ui;
     std::shared_ptr<UserInfo> _info;
+    void LoadIconAsync(const QString& icon);
 };
 
 #endif // CONUSERITEM_H

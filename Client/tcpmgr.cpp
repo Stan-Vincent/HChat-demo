@@ -1,8 +1,8 @@
-#include "tcpmgr.h"
+﻿#include "tcpmgr.h"
 #include <QAbstractSocket>
 #include "usermgr.h"
 
-TcpMgr::TcpMgr():_host(""),_port(0),_b_recv_pending(false),_message_id(0),_message_len(0)
+TcpMgr::TcpMgr():_host(""),_port(0),_b_recv_pending(false),_b_intentional_close(false),_message_id(0),_message_len(0)
 {
     QObject::connect(&_socket, &QTcpSocket::connected, [&]() {
            qDebug() << "Connected to server!";
@@ -61,7 +61,7 @@ TcpMgr::TcpMgr():_host(""),_port(0),_b_recv_pending(false),_message_id(0),_messa
 
                _b_recv_pending = false;
                QByteArray messageBody = _buffer.mid(0, _message_len);
-               qDebug() << "receive body msg is " << messageBody;
+               //qDebug() << "receive body msg is " << messageBody;
 
                _buffer.remove(0, _message_len);
                handleMsg(ReqId(_message_id), _message_len, messageBody);
@@ -107,8 +107,14 @@ TcpMgr::TcpMgr():_host(""),_port(0),_b_recv_pending(false),_message_id(0),_messa
         // 处理连接断开
         QObject::connect(&_socket, &QTcpSocket::disconnected, [&]() {
             qDebug() << "Disconnected from server.";
-            //并且发送通知到界面
-            emit sig_connection_closed();
+            // 主动 CloseConnection() 触发的断开（退出登录 / 被踢）不该再弹
+            // "心跳超时下线" 提示框——那个框只在【服务端真的把连接掐了】时出现。
+            // 用 _b_intentional_close 区分：主动关为 true，这里就不转发。
+            if (!_b_intentional_close) {
+                emit sig_connection_closed();
+            }
+            // 无论主动被动，处理完都复位成"非主动"，等待下一次连接
+            _b_intentional_close = false;
         });
         //连接发送信号用来发送数据
         QObject::connect(this, &TcpMgr::sig_send_data, this, &TcpMgr::slot_send_data);
@@ -117,6 +123,8 @@ TcpMgr::TcpMgr():_host(""),_port(0),_b_recv_pending(false),_message_id(0),_messa
 }
 
 void TcpMgr::CloseConnection(){
+    // 标记为主动关闭：断开后 disconnected 信号就不会再转发心跳超时提示
+    _b_intentional_close = true;
     _socket.close();
 }
 
@@ -128,7 +136,7 @@ void TcpMgr::initHandlers()
     //auto self = shared_from_this();
     _handlers.insert(ID_CHAT_LOGIN_RSP, [this](ReqId id, int len, QByteArray data){
         Q_UNUSED(len);
-        qDebug()<< "handle id is "<< id ;
+        //qDebug()<< "handle id is "<< id ;
         // 将QByteArray转换为QJsonDocument
         QJsonDocument jsonDoc = QJsonDocument::fromJson(data);
 
@@ -139,7 +147,7 @@ void TcpMgr::initHandlers()
         }
 
         QJsonObject jsonObj = jsonDoc.object();
-        qDebug()<< "data jsonobj is " << jsonObj ;
+        //qDebug()<< "data jsonobj is " << jsonObj ;
 
         if(!jsonObj.contains("error")){
             int err = ErrorCodes::ERR_JSON;
@@ -180,7 +188,7 @@ void TcpMgr::initHandlers()
 
 	_handlers.insert(ID_SEARCH_USER_RSP, [this](ReqId id, int len, QByteArray data) {
 		Q_UNUSED(len);
-		qDebug() << "handle id is " << id << " data is " << data;
+        //qDebug() << "handle id is " << id << " data is " << data;
 		// 将QByteArray转换为QJsonDocument
 		QJsonDocument jsonDoc = QJsonDocument::fromJson(data);
 
@@ -215,7 +223,7 @@ void TcpMgr::initHandlers()
 
 	_handlers.insert(ID_NOTIFY_ADD_FRIEND_REQ, [this](ReqId id, int len, QByteArray data) {
 		Q_UNUSED(len);
-		qDebug() << "handle id is " << id << " data is " << data;
+        //qDebug() << "handle id is " << id << " data is " << data;
 		// 将QByteArray转换为QJsonDocument
 		QJsonDocument jsonDoc = QJsonDocument::fromJson(data);
 
@@ -258,7 +266,7 @@ void TcpMgr::initHandlers()
 
     _handlers.insert(ID_NOTIFY_AUTH_FRIEND_REQ, [this](ReqId id, int len, QByteArray data) {
         Q_UNUSED(len);
-        qDebug() << "handle id is " << id << " data is " << data;
+        //qDebug() << "handle id is " << id << " data is " << data;
         // 将QByteArray转换为QJsonDocument
         QJsonDocument jsonDoc = QJsonDocument::fromJson(data);
 
@@ -316,7 +324,7 @@ void TcpMgr::initHandlers()
 
     _handlers.insert(ID_ADD_FRIEND_RSP, [this](ReqId id, int len, QByteArray data) {
         Q_UNUSED(len);
-        qDebug() << "handle id is " << id << " data is " << data;
+        //qDebug() << "handle id is " << id << " data is " << data;
         // 将QByteArray转换为QJsonDocument
         QJsonDocument jsonDoc = QJsonDocument::fromJson(data);
 
@@ -346,7 +354,7 @@ void TcpMgr::initHandlers()
 
     _handlers.insert(ID_AUTH_FRIEND_RSP, [this](ReqId id, int len, QByteArray data) {
         Q_UNUSED(len);
-        qDebug() << "handle id is " << id << " data is " << data;
+        //qDebug() << "handle id is " << id << " data is " << data;
         // 将QByteArray转换为QJsonDocument
         QJsonDocument jsonDoc = QJsonDocument::fromJson(data);
 
@@ -401,7 +409,7 @@ void TcpMgr::initHandlers()
 
     _handlers.insert(ID_TEXT_CHAT_MSG_RSP, [this](ReqId id, int len, QByteArray data) {
         Q_UNUSED(len);
-        qDebug() << "handle id is " << id << " data is " << data;
+        //qDebug() << "handle id is " << id << " data is " << data;
         // 将QByteArray转换为QJsonDocument
         QJsonDocument jsonDoc = QJsonDocument::fromJson(data);
 
@@ -452,7 +460,7 @@ void TcpMgr::initHandlers()
 
     _handlers.insert(ID_NOTIFY_TEXT_CHAT_MSG_REQ, [this](ReqId id, int len, QByteArray data) {
         Q_UNUSED(len);
-        qDebug() << "handle id is " << id << " data is " << data;
+        //qDebug() << "handle id is " << id << " data is " << data;
         // 将QByteArray转换为QJsonDocument
         QJsonDocument jsonDoc = QJsonDocument::fromJson(data);
 
@@ -503,7 +511,7 @@ void TcpMgr::initHandlers()
 
     _handlers.insert(ID_NOTIFY_OFF_LINE_REQ,[this](ReqId id, int len, QByteArray data){
         Q_UNUSED(len);
-        qDebug() << "handle id is " << id << " data is " << data;
+        //qDebug() << "handle id is " << id << " data is " << data;
         // 将QByteArray转换为QJsonDocument
         QJsonDocument jsonDoc = QJsonDocument::fromJson(data);
 
@@ -537,7 +545,7 @@ void TcpMgr::initHandlers()
 
     _handlers.insert(ID_HEARTBEAT_RSP,[this](ReqId id, int len, QByteArray data){
         Q_UNUSED(len);
-        qDebug() << "handle id is " << id << " data is " << data;
+        //qDebug() << "handle id is " << id << " data is " << data;
         // 将QByteArray转换为QJsonDocument
         QJsonDocument jsonDoc = QJsonDocument::fromJson(data);
 
@@ -568,7 +576,7 @@ void TcpMgr::initHandlers()
 
     _handlers.insert(ID_LOAD_CHAT_THREAD_RSP, [this](ReqId id, int len, QByteArray data) {
         Q_UNUSED(len);
-        qDebug() << "handle id is " << id << " data is " << data;
+        //qDebug() << "handle id is " << id << " data is " << data;
         // 将QByteArray转换为QJsonDocument
         QJsonDocument jsonDoc = QJsonDocument::fromJson(data);
 
@@ -619,7 +627,7 @@ void TcpMgr::initHandlers()
 
     _handlers.insert(ID_CREATE_PRIVATE_CHAT_RSP, [this](ReqId id, int len, QByteArray data) {
         Q_UNUSED(len);
-        qDebug() << "handle id is " << id << " data is " << data;
+        //qDebug() << "handle id is " << id << " data is " << data;
         // 将QByteArray转换为QJsonDocument
         QJsonDocument jsonDoc = QJsonDocument::fromJson(data);
 
@@ -657,7 +665,7 @@ void TcpMgr::initHandlers()
 
     _handlers.insert(ID_LOAD_CHAT_MSG_RSP, [this](ReqId id, int len, QByteArray data) {
         Q_UNUSED(len);
-        qDebug() << "handle id is " << id << " data is " << data;
+        //qDebug() << "handle id is " << id << " data is " << data;
         // 将QByteArray转换为QJsonDocument
         QJsonDocument jsonDoc = QJsonDocument::fromJson(data);
 
@@ -729,6 +737,8 @@ void TcpMgr::handleMsg(ReqId id, int len, QByteArray data)
 void TcpMgr::slot_tcp_connect(ServerInfo si)
 {
     qDebug()<< "receive tcp connect signal";
+    // 开始一次新连接，复位"主动关闭"标记，保证这次连接若被服务端掐掉能正常弹提示
+    _b_intentional_close = false;
     // 尝试连接到服务器
     qDebug() << "Connecting to server...";
     _host = si.Host;
@@ -758,7 +768,7 @@ void TcpMgr::slot_send_data(ReqId reqId, QByteArray dataBytes)
 
     // 发送数据
     _socket.write(block);
-    qDebug() << "tcp mgr send byte data is " << block ;
+    //qDebug() << "tcp mgr send byte data is " << block ;
 }
 
 

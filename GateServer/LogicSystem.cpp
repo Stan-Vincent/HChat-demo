@@ -4,8 +4,8 @@
 #include "RedisMgr.h"
 #include "MysqlMgr.h"
 #include "StatusGrpcClient.h"
-//¡ï Í¼Æ¬ÉÏ´«ÓÃµ½¡£×¢Òâ GateServer ÊÇ¡¾´¿ C++ ÏîÄ¿£¬¹¤³ÌÀïÃ»ÓÐ Qt ÒÀÀµ¡¿£¬
-//  ËùÒÔÕâÀïÖ»ÄÜÓÃ±ê×¼¿â + boost::filesystem£¨beast ±¾Éí¾Í´ø boost£©¡£
+//ï¿½ï¿½ Í¼Æ¬ï¿½Ï´ï¿½ï¿½Ãµï¿½ï¿½ï¿½×¢ï¿½ï¿½ GateServer ï¿½Ç¡ï¿½ï¿½ï¿½ C++ ï¿½ï¿½Ä¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ Qt ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+//  ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½ï¿½ï¿½Ã±ï¿½×¼ï¿½ï¿½ + boost::filesystemï¿½ï¿½beast ï¿½ï¿½ï¿½ï¿½ï¿½Í´ï¿½ boostï¿½ï¿½ï¿½ï¿½
 #include <boost/filesystem.hpp>
 #include <array>
 #include <fstream>
@@ -17,7 +17,7 @@
 #include <cctype>
 #include <cstdio>
 
-// base64 ½âÂë¡£Qt µÄ QByteArray::fromBase64 ÔÚÕâÀïÓÃ²»ÁË£¨Ã»ÓÐ Qt£©¡£
+// base64 ï¿½ï¿½ï¿½ë¡£Qt ï¿½ï¿½ QByteArray::fromBase64 ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã²ï¿½ï¿½Ë£ï¿½Ã»ï¿½ï¿½ Qtï¿½ï¿½ï¿½ï¿½
 static std::string base64Decode(const std::string& in) {
     static const std::string tbl =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -30,13 +30,13 @@ static std::string base64Decode(const std::string& in) {
     out.reserve(in.size() * 3 / 4);
     int val = 0, valb = -8;
     for (unsigned char c : in) {
-        // Ìø¹ý»»ÐÐ/¿Õ¸ñµÈ·Ç base64 ×Ö·û£¨´«ÊäÍ¾ÖÐ¿ÉÄÜ±»ÕÛÐÐ£©
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½/ï¿½Õ¸ï¿½È·ï¿½ base64 ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¾ï¿½Ð¿ï¿½ï¿½Ü±ï¿½ï¿½ï¿½ï¿½Ð£ï¿½
         if (c == '=' ) break;
         int d = rev[c];
         if (d < 0) {
-            // ¡ï Ö»ÔÊÐí¿Õ°××Ö·û£¨base64 ÔÚ´«ÊäÍ¾ÖÐ¿ÉÄÜ±»ÕÛÐÐ£©¡£
-            //   ÆäËûÈÎºÎ·Ç·¨×Ö·û¶¼Ö±½ÓÅÐ¶¨½âÂëÊ§°Ü ¡ª¡ª ·ñÔò "!!!not-base64!!!"
-            //   »á±»Ìø¹ý ! ºó°Ñ notbase64 Õý³£½â³öÀ´£¬µ¼ÖÂÀ¬»øÊý¾Ý±»µ±Í¼Æ¬´æÅÌ¡£
+            // ï¿½ï¿½ Ö»ï¿½ï¿½ï¿½ï¿½ï¿½Õ°ï¿½ï¿½Ö·ï¿½ï¿½ï¿½base64 ï¿½Ú´ï¿½ï¿½ï¿½Í¾ï¿½Ð¿ï¿½ï¿½Ü±ï¿½ï¿½ï¿½ï¿½Ð£ï¿½ï¿½ï¿½
+            //   ï¿½ï¿½ï¿½ï¿½ï¿½ÎºÎ·Ç·ï¿½ï¿½Ö·ï¿½ï¿½ï¿½Ö±ï¿½ï¿½ï¿½Ð¶ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ "!!!not-base64!!!"
+            //   ï¿½á±»ï¿½ï¿½ï¿½ï¿½ ! ï¿½ï¿½ï¿½ notbase64 ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý±ï¿½ï¿½ï¿½Í¼Æ¬ï¿½ï¿½ï¿½Ì¡ï¿½
             if (c != ' ' && c != '\n' && c != '\r' && c != '\t') {
                 return std::string();
             }
@@ -52,7 +52,7 @@ static std::string base64Decode(const std::string& in) {
     return out;
 }
 
-// ÇáÁ¿ FNV-1a ¹þÏ££¬È¡Ê®Áù½øÖÆ¡£½öÓÃÓÚ¸øÉÏ´«ÎÄ¼þÉú³ÉÎ¨Ò»Ãû£¬²»ÓÃÓÚ°²È«Ð£Ñé¡£
+// ï¿½ï¿½ï¿½ï¿½ FNV-1a ï¿½ï¿½Ï£ï¿½ï¿½È¡Ê®ï¿½ï¿½ï¿½ï¿½ï¿½Æ¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú¸ï¿½ï¿½Ï´ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½Î¨Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú°ï¿½È«Ð£ï¿½é¡£
 static std::string contentHash(const std::string& data) {
     unsigned long long h = 1469598103934665603ULL;
     for (unsigned char c : data) {
@@ -89,19 +89,19 @@ LogicSystem::LogicSystem() {
     });
 
     RegPost("/get_varifycode", [](std::shared_ptr<HttpConnection> connection) {
-        ///¶Á³öÇëÇóÌå _request.body() ÊÇ dynamic_body£¨multi_buffer£©¡£
-        //buffers_to_string °ÑËü×ª³É std::string
+        ///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ _request.body() ï¿½ï¿½ dynamic_bodyï¿½ï¿½multi_bufferï¿½ï¿½ï¿½ï¿½
+        //buffers_to_string ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ std::string
         auto body_str = boost::beast::buffers_to_string(connection->_request.body().data());
         std::cout << "receive body is " << body_str << std::endl;
 
-        //ÉèÖÃÏìÓ¦ÀàÐÍÎªJson
+        //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½ÎªJson
         connection->_response.set(http::field::content_type, "text/json");
 
-        //½âÎöJson
+        //ï¿½ï¿½ï¿½ï¿½Json
         Json::Value root;   
-        Json::Reader reader;    //¸ºÔð½âÎö
-        Json::Value src_root;   //½âÎöºóµÄ¸ù¶ÔÏó
-        bool parse_success = reader.parse(body_str, src_root);  //±íÊ¾ÊÇ·ñ³É¹¦
+        Json::Reader reader;    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+        Json::Value src_root;   //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¸ï¿½ï¿½ï¿½ï¿½ï¿½
+        bool parse_success = reader.parse(body_str, src_root);  //ï¿½ï¿½Ê¾ï¿½Ç·ï¿½É¹ï¿½
 
         if (!parse_success) {
             std::cout << "Failed to parse JSON data!" << std::endl;
@@ -118,13 +118,13 @@ LogicSystem::LogicSystem() {
             beast::ostream(connection->_response.body()) << jsonstr;
             return true;
         }
-        //´ÓJsonÖÐÌáÈ¡³öemail
+        //ï¿½ï¿½Jsonï¿½ï¿½ï¿½ï¿½È¡ï¿½ï¿½email
         auto email = src_root["email"].asString();
 
-        //µ÷ÓÃ gRPC ·þÎñ,ºÍ VarifyServer Í¨¹ý gRPC Í¨ÐÅ
+        //ï¿½ï¿½ï¿½ï¿½ gRPC ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½ VarifyServer Í¨ï¿½ï¿½ gRPC Í¨ï¿½ï¿½
         GetVarifyRsp rsp = VerifyGrpcClient::GetInstance()->GetVarifyCode(email);
 
-        //°Ñ gRPC ·µ»ØµÄ´íÎóÂëºÍ email Ð´½ø JSON,ÐòÁÐ»¯ºóÐ´½øÏìÓ¦ body¡£
+        //ï¿½ï¿½ gRPC ï¿½ï¿½ï¿½ØµÄ´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ email Ð´ï¿½ï¿½ JSON,ï¿½ï¿½ï¿½Ð»ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½ï¿½Ó¦ bodyï¿½ï¿½
         std::cout << "email is " << email << std::endl;
         root["error"] = rsp.error();
         root["email"] = src_root["email"];
@@ -133,7 +133,7 @@ LogicSystem::LogicSystem() {
         return true;
     });
 
-    //×¢²áÓÃ»§Âß¼­
+    //×¢ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ß¼ï¿½
     RegPost("/user_register", [](std::shared_ptr<HttpConnection> connection) {
 
         auto body_str = boost::beast::buffers_to_string(connection->_request.body().data());
@@ -168,7 +168,7 @@ LogicSystem::LogicSystem() {
             return true;
         }
 
-        //ÏÈ²éÕÒredisÖÐemail¶ÔÓ¦µÄÑéÖ¤ÂëÊÇ·ñºÏÀí
+        //ï¿½È²ï¿½ï¿½ï¿½redisï¿½ï¿½emailï¿½ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½Ö¤ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½
         std::string  varify_code;
         bool b_get_varify = RedisMgr::GetInstance()->Get(CODEPREFIX + src_root["email"].asString(), varify_code);
         if (!b_get_varify) {
@@ -187,7 +187,7 @@ LogicSystem::LogicSystem() {
             return true;
         }
 
-        //²éÕÒÊý¾Ý¿âÅÐ¶ÏÓÃ»§ÊÇ·ñ´æÔÚ
+        //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý¿ï¿½ï¿½Ð¶ï¿½ï¿½Ã»ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½
         int uid = MysqlMgr::GetInstance()->RegUser(name, email, pwd, icon);
         // 0: name or email already exists   -1: database error (schema/connection/transaction)
         if (uid == -1) {
@@ -218,7 +218,7 @@ LogicSystem::LogicSystem() {
         return true;
         });
 
-    //ÖØÖÃ»Øµ÷Âß¼­
+    //ï¿½ï¿½ï¿½Ã»Øµï¿½ï¿½ß¼ï¿½
     RegPost("/reset_pwd", [](std::shared_ptr<HttpConnection> connection) {
         auto body_str = boost::beast::buffers_to_string(connection->_request.body().data());
         //do NOT print the whole body here, it carries the new password
@@ -243,7 +243,7 @@ LogicSystem::LogicSystem() {
         auto pwd = src_root["passwd"].asString();
         std::cout << "reset_pwd request, user = " << name << ", email = " << email << std::endl;
 
-        //ÏÈ²éÕÒredisÖÐemail¶ÔÓ¦µÄÑéÖ¤ÂëÊÇ·ñºÏÀí
+        //ï¿½È²ï¿½ï¿½ï¿½redisï¿½ï¿½emailï¿½ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½Ö¤ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½
         std::string  varify_code;
         bool b_get_varify = RedisMgr::GetInstance()->Get(CODEPREFIX + src_root["email"].asString(), varify_code);
         if (!b_get_varify) {
@@ -261,7 +261,7 @@ LogicSystem::LogicSystem() {
             beast::ostream(connection->_response.body()) << jsonstr;
             return true;
         }
-        //²éÑ¯Êý¾Ý¿âÅÐ¶ÏÓÃ»§ÃûºÍÓÊÏäÊÇ·ñÆ¥Åä
+        //ï¿½ï¿½Ñ¯ï¿½ï¿½ï¿½Ý¿ï¿½ï¿½Ð¶ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç·ï¿½Æ¥ï¿½ï¿½
         bool email_valid = MysqlMgr::GetInstance()->CheckEmail(name, email);
         if (!email_valid) {
             std::cout << " user email not match" << std::endl;
@@ -271,7 +271,7 @@ LogicSystem::LogicSystem() {
             return true;
         }
 
-        //¸üÐÂÃÜÂëÎª×îÐÂÃÜÂë
+        //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         bool b_up = MysqlMgr::GetInstance()->UpdatePwd(name, pwd);
         if (!b_up) {
             std::cout << " update pwd failed" << std::endl;
@@ -292,7 +292,7 @@ LogicSystem::LogicSystem() {
         return true;
         });
 
-    //ÓÃ»§µÇÂ¼Âß¼­
+    //ï¿½Ã»ï¿½ï¿½ï¿½Â¼ï¿½ß¼ï¿½
     RegPost("/user_login", [](std::shared_ptr<HttpConnection> connection) {
 
         auto body_str = boost::beast::buffers_to_string(connection->_request.body().data());
@@ -318,7 +318,7 @@ LogicSystem::LogicSystem() {
 
         UserInfo userInfo;
 
-        //²éÑ¯Êý¾Ý¿âÅÐ¶ÏÓÃ»§ÃûºÍÃÜÂëÊÇ·ñÆ¥Åä
+        //ï¿½ï¿½Ñ¯ï¿½ï¿½ï¿½Ý¿ï¿½ï¿½Ð¶ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç·ï¿½Æ¥ï¿½ï¿½
         bool pwd_valid = MysqlMgr::GetInstance()->CheckPwd(email, pwd, userInfo);
         if (!pwd_valid) {
             std::cout << " user pwd not match" << std::endl;
@@ -328,7 +328,7 @@ LogicSystem::LogicSystem() {
             return true;
         }
 
-        //²éÑ¯StatusServerÕÒµ½ºÏÊÊµÄÁ¬½Ó
+        //ï¿½ï¿½Ñ¯StatusServerï¿½Òµï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½ï¿½ï¿½ï¿½
         auto reply = StatusGrpcClient::GetInstance()->GetChatServer(userInfo.uid);
         if (reply.error()) {
             std::cout << " grpc get chat server failed, error is " << reply.error() << std::endl;
@@ -350,12 +350,12 @@ LogicSystem::LogicSystem() {
         return true;
         });
 
-    //¡ï Í¼Æ¬ÉÏ´«£ºbody ÊÇ {uid, file_name, data(base64)}£¬·µ»Ø {error, url, unique_name, size, md5}
+    //ï¿½ï¿½ Í¼Æ¬ï¿½Ï´ï¿½ï¿½ï¿½body ï¿½ï¿½ {uid, file_name, data(base64)}ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ {error, url, unique_name, size, md5}
     //
-    //  ¡¾ÎªÊ²Ã´²»ÊÇ½Ì³ÌÀïµÄ ResourceServer¡¿½Ì³Ì day39 ÓÃµÄÊÇ¶ÀÁ¢×ÊÔ´·þÎñÆ÷ + ¶ÏµãÐø´« +
-    //  gRPC Í¨Öª ChatServer¡£ÕâÀïÏÈÓÃ GateServer ³Ðµ£Õâ¸ö½ÇÉ«£¬µ«×Ö¶ÎÃüÃû
-    //  £¨unique_name / md5 / total_size£©ÒÑ¾­¶ÔÆë½Ì³ÌµÄ MsgInfo£¬
-    //  ÒÔºó»»³É ResourceServer Ê±¿Í»§¶ËÖ»Ðè¸Ä URL Ç°×º¡£
+    //  ï¿½ï¿½ÎªÊ²Ã´ï¿½ï¿½ï¿½Ç½Ì³ï¿½ï¿½ï¿½ï¿½ ResourceServerï¿½ï¿½ï¿½Ì³ï¿½ day39 ï¿½Ãµï¿½ï¿½Ç¶ï¿½ï¿½ï¿½ï¿½ï¿½Ô´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ + ï¿½Ïµï¿½ï¿½ï¿½ï¿½ï¿½ +
+    //  gRPC Í¨Öª ChatServerï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ GateServer ï¿½Ðµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É«ï¿½ï¿½ï¿½ï¿½ï¿½Ö¶ï¿½ï¿½ï¿½ï¿½ï¿½
+    //  ï¿½ï¿½unique_name / md5 / total_sizeï¿½ï¿½ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½Ì³Ìµï¿½ MsgInfoï¿½ï¿½
+    //  ï¿½Ôºó»»³ï¿½ ResourceServer Ê±ï¿½Í»ï¿½ï¿½ï¿½Ö»ï¿½ï¿½ï¿½ URL Ç°×ºï¿½ï¿½
     RegPost("/upload_image", [](std::shared_ptr<HttpConnection> connection) {
 
         auto body_str = boost::beast::buffers_to_string(connection->_request.body().data());
@@ -381,7 +381,7 @@ LogicSystem::LogicSystem() {
             return true;
         }
 
-        // ¡ï base64 ½âÂëº¯ÊýÄÚ²¿ÒÑ¾­»áÌø¹ý»»ÐÐ/¿Õ¸ñ£¨´«ÊäÍ¾ÖÐ¿ÉÄÜ±»ÕÛÐÐ£©
+        // ï¿½ï¿½ base64 ï¿½ï¿½ï¿½ëº¯ï¿½ï¿½ï¿½Ú²ï¿½ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½/ï¿½Õ¸ñ£¨´ï¿½ï¿½ï¿½Í¾ï¿½Ð¿ï¿½ï¿½Ü±ï¿½ï¿½ï¿½ï¿½Ð£ï¿½
         auto raw = base64Decode(b64);
         if (raw.empty()) {
             root["error"] = ErrorCodes::Error_Json;
@@ -390,7 +390,20 @@ LogicSystem::LogicSystem() {
             return true;
         }
 
-        // Ö»ÈÏ³£¼ûÍ¼Æ¬ºó×º£¬²»ÈÃ¿Í»§¶Ë¾ö¶¨·þÎñ¶Ë´æÊ²Ã´ÀàÐÍ
+        // ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ë±ï¿½ï¿½ï¿½ï¿½Ô¼ï¿½ï¿½ï¿½Ò»ï¿½Î´ï¿½Ð¡ï¿½ï¿½
+        //   ï¿½Í»ï¿½ï¿½ï¿½ UploadManager ï¿½ï¿½ 5MB ï¿½ï¿½ï¿½ï¿½Ö»ï¿½Ç¿Í»ï¿½ï¿½ËµÄ£ï¿½
+        //   Ö±ï¿½ï¿½ POST ï¿½ï¿½ï¿½ï¿½ï¿½Æ¹ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½
+        //   ï¿½Ú½ï¿½ï¿½ï¿½Ö®ï¿½ï¿½ï¿½Ð¶Ï£ï¿½base64 ï¿½ï¿½ 4/3 ï¿½ï¿½ï¿½Í£ï¿½ï¿½ï¿½
+        //   raw.size() ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½Ìµï¿½ï¿½Ö½ï¿½ï¿½ï¿½ï¿½ï¿½
+        const std::size_t MAX_UPLOAD_BYTES = 5 * 1024 * 1024;   // 5MB
+        if (raw.size() > MAX_UPLOAD_BYTES) {
+            root["error"] = ErrorCodes::Error_Json;
+            root["msg"] = "file too large (max 5MB)";
+            beast::ostream(connection->_response.body()) << root.toStyledString();
+            return true;
+        }
+
+        // Ö»ï¿½Ï³ï¿½ï¿½ï¿½Í¼Æ¬ï¿½ï¿½×ºï¿½ï¿½ï¿½ï¿½ï¿½Ã¿Í»ï¿½ï¿½Ë¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë´ï¿½Ê²Ã´ï¿½ï¿½ï¿½ï¿½
         std::string ext = ".jpg";
         auto dot = file_name.rfind('.');
         if (dot != std::string::npos) {
@@ -404,14 +417,14 @@ LogicSystem::LogicSystem() {
             }
         }
 
-        // unique_name = Ê±¼ä´Á_ÄÚÈÝ¹þÏ£.ºó×º
+        // unique_name = Ê±ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½Ý¹ï¿½Ï£.ï¿½ï¿½×º
         auto now = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::system_clock::now().time_since_epoch()).count();
         char stamp[32];
         std::snprintf(stamp, sizeof(stamp), "%lld", (long long)now);
         auto unique_name = std::string(stamp) + "_" + contentHash(raw) + ext;
 
-        // ´æµ½¡¾¹¤³ÌÄ¿Â¼¡¿ÏÂµÄ upload/ ÎÄ¼þ¼Ð£¨ÓÃÅäÖÃÎÄ¼þËùÔÚÄ¿Â¼ÍÆËã exe Î»ÖÃ£©
+        // ï¿½æµ½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¿Â¼ï¿½ï¿½ï¿½Âµï¿½ upload/ ï¿½Ä¼ï¿½ï¿½Ð£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½Ä¿Â¼ï¿½ï¿½ï¿½ï¿½ exe Î»ï¿½Ã£ï¿½
         auto cfg_path = boost::filesystem::current_path() / "config.ini";
         auto base_dir = boost::filesystem::absolute(cfg_path).parent_path();
         auto dir_path = base_dir / "upload";
@@ -426,8 +439,8 @@ LogicSystem::LogicSystem() {
 
         auto abs_path = dir_path / unique_name;
         {
-            // ¡ï ÓÃ wstring()£ºWindows ÉÏ path.string() ·µ»ØÕ­×Ö·û(ANSI)£¬
-            //   Â·¾¶º¬ÖÐÎÄÊ± ofstream »á´ò²»¿ªÎÄ¼þ
+            // ï¿½ï¿½ ï¿½ï¿½ wstring()ï¿½ï¿½Windows ï¿½ï¿½ path.string() ï¿½ï¿½ï¿½ï¿½Õ­ï¿½Ö·ï¿½(ANSI)ï¿½ï¿½
+            //   Â·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê± ofstream ï¿½ï¿½ò²»¿ï¿½ï¿½Ä¼ï¿½
             std::ofstream ofs(abs_path.wstring(), std::ios::binary);
             if (!ofs) {
                 root["error"] = ErrorCodes::Error_Json;
@@ -446,7 +459,7 @@ LogicSystem::LogicSystem() {
         }
 
         root["error"] = ErrorCodes::Success;
-        root["url"] = std::string("upload/") + unique_name;  // Ïà¶ÔÂ·¾¶£¬¿Í»§¶Ë×Ô¼ºÆ´ host
+        root["url"] = std::string("upload/") + unique_name;  // ï¿½ï¿½ï¿½Â·ï¿½ï¿½ï¿½ï¿½ï¿½Í»ï¿½ï¿½ï¿½ï¿½Ô¼ï¿½Æ´ host
         root["unique_name"] = unique_name;
         root["size"] = (Json::Int64)raw.size();
         root["md5"] = contentHash(raw);
@@ -456,8 +469,8 @@ LogicSystem::LogicSystem() {
         return true;
         });
 
-    //¡ï ¸üÐÂÓÃ»§×ÊÁÏ£ºbody ÊÇ {uid, nick, desc, sex, icon}
-    //  name£¨ÓÃ»§Ãû£©ÊÇµÇÂ¼±êÊ¶£¬²»ÔÊÐíÐÞ¸Ä£¬ËùÒÔÖ»°´ uid ¸üÐÂ¡£
+    //ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½Ï£ï¿½body ï¿½ï¿½ {uid, nick, desc, sex, icon}
+    //  nameï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Çµï¿½Â¼ï¿½ï¿½Ê¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Þ¸Ä£ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½ï¿½ uid ï¿½ï¿½ï¿½Â¡ï¿½
     RegPost("/update_userinfo", [](std::shared_ptr<HttpConnection> connection) {
 
         auto body_str = boost::beast::buffers_to_string(connection->_request.body().data());
@@ -485,8 +498,8 @@ LogicSystem::LogicSystem() {
         auto sex = src_root["sex"].asInt();
         auto icon = src_root["icon"].asString();
 
-        // êÇ³ÆÏÞ³¤ 21£¨Óë×¢²áÒ³Ò»ÖÂ£©£¬¸öÐÔÇ©ÃûÏÞ³¤ 200
-        // ÓÃ std::string µÄ substr£¬²»ÊÇ QString::left ¡ª¡ª ±¾¹¤³ÌÃ»ÓÐ Qt ÒÀÀµ¡£
+        // ï¿½Ç³ï¿½ï¿½Þ³ï¿½ 21ï¿½ï¿½ï¿½ï¿½×¢ï¿½ï¿½Ò³Ò»ï¿½Â£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç©ï¿½ï¿½ï¿½Þ³ï¿½ 200
+        // ï¿½ï¿½ std::string ï¿½ï¿½ substrï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ QString::left ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ Qt ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         if (nick.length() > 21) {
             nick = nick.substr(0, 21);
         }
@@ -500,13 +513,20 @@ LogicSystem::LogicSystem() {
         }
         else {
             root["error"] = ErrorCodes::Success;
-            // °Ñ×îÐÂµÄ×ÊÁÏ»Ø¸ø¿Í»§¶Ë£¬ÈÃ½çÃæÄÜÁ¢¿ÌË¢ÐÂ
+            // ï¿½ï¿½ï¿½ï¿½ï¿½Âµï¿½ï¿½ï¿½ï¿½Ï»Ø¸ï¿½ï¿½Í»ï¿½ï¿½Ë£ï¿½ï¿½Ã½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë¢ï¿½ï¿½
             root["uid"] = uid;
             root["nick"] = nick;
             root["desc"] = desc;
             root["sex"] = sex;
             root["icon"] = icon;
             std::cout << "update_userinfo ok, uid=" << uid << std::endl;
+
+            // [cache coherence] On login ChatServer reads base info from Redis key
+            // ubaseinfo_<uid> (GetBaseInfo hits cache, TTL 3600s) but we only updated
+            // MySQL above. Delete the key so next login reloads fresh data from MySQL,
+            // otherwise the user sees the old nick/desc/sex/icon ("update not saved").
+            std::string base_key = "ubaseinfo_" + std::to_string(uid);
+            RedisMgr::GetInstance()->Del(base_key);
         }
         beast::ostream(connection->_response.body()) << root.toStyledString();
         return true;
@@ -514,9 +534,9 @@ LogicSystem::LogicSystem() {
 
 }
 
-//¡ï ¾²Ì¬×ÊÔ´Ç°×º£ºÉÏ´«µÄÍ¼Æ¬·ÅÔÚ exe Í¬¼¶µÄ upload/ ÏÂ£¬
-//  Í¨¹ý GET /upload/<ÎÄ¼þÃû> È¡»Ø¡£ÎÄ¼þÊÇ¶¯Ì¬Ãû×Ö£¬Ã»·¨ÓÃ RegGet ¾«È·Æ¥Åä£¬
-//  ËùÒÔÔÚÕâÀï×öÇ°×ºÆ¥Åä£¨¶ø²»ÊÇÔÚ HttpConnection µÄÍ¨ÓÃ·Ö·¢²ãÀï¸Ä£©¡£
+//ï¿½ï¿½ ï¿½ï¿½Ì¬ï¿½ï¿½Ô´Ç°×ºï¿½ï¿½ï¿½Ï´ï¿½ï¿½ï¿½Í¼Æ¬ï¿½ï¿½ï¿½ï¿½ exe Í¬ï¿½ï¿½ï¿½ï¿½ upload/ ï¿½Â£ï¿½
+//  Í¨ï¿½ï¿½ GET /upload/<ï¿½Ä¼ï¿½ï¿½ï¿½> È¡ï¿½Ø¡ï¿½ï¿½Ä¼ï¿½ï¿½Ç¶ï¿½Ì¬ï¿½ï¿½ï¿½Ö£ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ RegGet ï¿½ï¿½È·Æ¥ï¿½ä£¬
+//  ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç°×ºÆ¥ï¿½ä£¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ HttpConnection ï¿½ï¿½Í¨ï¿½Ã·Ö·ï¿½ï¿½ï¿½ï¿½ï¿½Ä£ï¿½ï¿½ï¿½
 static const std::string UPLOAD_PREFIX = "/upload/";
 static std::string uploadDir() {
     return (boost::filesystem::absolute(boost::filesystem::current_path() / "config.ini")
@@ -524,8 +544,8 @@ static std::string uploadDir() {
 }
 
 bool LogicSystem::HandleGet(std::string path, std::shared_ptr<HttpConnection> con) {
-    // ¡ï ÏÈ´¦Àí¾²Ì¬×ÊÔ´£ºGET /upload/<file_name>
-    //   ¡ï °²È«£º±ØÐëµ²×¡ ".."£¬·ñÔò /upload/../../config.ini ÄÜ°ÑÅäÖÃÎÄ¼þ¶Á³öÈ¥¡£
+    // ï¿½ï¿½ ï¿½È´ï¿½ï¿½ï¿½ï¿½ï¿½Ì¬ï¿½ï¿½Ô´ï¿½ï¿½GET /upload/<file_name>
+    //   ï¿½ï¿½ ï¿½ï¿½È«ï¿½ï¿½ï¿½ï¿½ï¿½ëµ²×¡ ".."ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ /upload/../../config.ini ï¿½Ü°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½È¥ï¿½ï¿½
     if (path.rfind(UPLOAD_PREFIX, 0) == 0) {
         auto file_name = path.substr(UPLOAD_PREFIX.size());
         if (file_name.find("..") != std::string::npos
@@ -553,8 +573,8 @@ bool LogicSystem::HandleGet(std::string path, std::shared_ptr<HttpConnection> co
         }
 
         con->_response.result(http::status::ok);
-        // ¡ï boost::filesystem Ã»ÓÐ×ÔÓÉº¯Êý extension()£¬
-        //   ËüÊÇ path µÄ³ÉÔ±º¯Êý£¬ËùÒÔÒªÏÈ¹¹ÔìÒ»¸ö path¡£
+        // ï¿½ï¿½ boost::filesystem Ã»ï¿½ï¿½ï¿½ï¿½ï¿½Éºï¿½ï¿½ï¿½ extension()ï¿½ï¿½
+        //   ï¿½ï¿½ï¿½ï¿½ path ï¿½Ä³ï¿½Ô±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½È¹ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ pathï¿½ï¿½
         auto ext = boost::filesystem::path(file_name).extension();
         if (ext == ".png") {
             con->_response.set(http::field::content_type, "image/png");
@@ -573,9 +593,9 @@ bool LogicSystem::HandleGet(std::string path, std::shared_ptr<HttpConnection> co
         }
         con->_response.content_length(file_size);
 
-        // ¶þ½øÖÆÎÄ¼þ¶Á½ø HttpConnection µÄ³ÉÔ±±äÁ¿¡£
-        //   ¡ï ²»ÄÜÓÃ¾Ö²¿±äÁ¿£ºbeast µÄ body Ö»ÊÇ±£´æÖ¸Õë£¬
-        //   handler Ò»·µ»ØÊý¾Ý¾ÍÃ»ÁË£¬¿Í»§¶Ë»áÊÕµ½ÂÒÂë¡£
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ HttpConnection ï¿½Ä³ï¿½Ô±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+        //   ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ã¾Ö²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½beast ï¿½ï¿½ body Ö»ï¿½Ç±ï¿½ï¿½ï¿½Ö¸ï¿½ë£¬
+        //   handler Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý¾ï¿½Ã»ï¿½Ë£ï¿½ï¿½Í»ï¿½ï¿½Ë»ï¿½ï¿½Õµï¿½ï¿½ï¿½ï¿½ë¡£
         std::ifstream ifs(abs_path.wstring(), std::ios::binary);
         if (!ifs) {
             con->_response.result(http::status::internal_server_error);
@@ -590,27 +610,27 @@ bool LogicSystem::HandleGet(std::string path, std::shared_ptr<HttpConnection> co
             return true;
         }
 
-        // ¡ï Íù body ÀïÐ´¶þ½øÖÆ£ºBoost 1.92 µÄ dynamic_body ¾ÍÊÇ multi_buffer£¬
-        //   ËüÃ»ÓÐ append(ConstBufferSequence) / net_assign ÕâÐ© 1.66 Ê±´úµÄÀÏ API¡£
+        // ï¿½ï¿½ ï¿½ï¿½ body ï¿½ï¿½Ð´ï¿½ï¿½ï¿½ï¿½ï¿½Æ£ï¿½Boost 1.92 ï¿½ï¿½ dynamic_body ï¿½ï¿½ï¿½ï¿½ multi_bufferï¿½ï¿½
+        //   ï¿½ï¿½Ã»ï¿½ï¿½ append(ConstBufferSequence) / net_assign ï¿½ï¿½Ð© 1.66 Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ APIï¿½ï¿½
         //
-        // ¡ï¡ï prepare() ·ÖÅäµÄÊÇ¡¾¿ÉÐ´¡¿¿Õ¼ä£¬¹â buffer_copy ¿½½øÈ¥»¹²»ËãÍê ¡ª¡ª
-        //   ±ØÐëÔÙ commit(n) °Ñ¿ÉÐ´Çø×ª³É¡¾¿É¶Á¡¿£¬·ñÔò body().size() ÈÔÊÇ 0£¬
-        //   WriteResponse() ÀïµÄ content_length(body().size()) ¾Í»áÐ´³É 0£¬
-        //   ¿Í»§¶ËÊÕµ½Ò»¸ö³¤¶ÈÎª 0 µÄÏìÓ¦¡£
+        // ï¿½ï¿½ï¿½ prepare() ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç¡ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½Õ¼ä£¬ï¿½ï¿½ buffer_copy ï¿½ï¿½ï¿½ï¿½È¥ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+        //   ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ commit(n) ï¿½Ñ¿ï¿½Ð´ï¿½ï¿½×ªï¿½É¡ï¿½ï¿½É¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ body().size() ï¿½ï¿½ï¿½ï¿½ 0ï¿½ï¿½
+        //   WriteResponse() ï¿½ï¿½ï¿½ content_length(body().size()) ï¿½Í»ï¿½Ð´ï¿½ï¿½ 0ï¿½ï¿½
+        //   ï¿½Í»ï¿½ï¿½ï¿½ï¿½Õµï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îª 0 ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½
         auto& mb = con->_response.body();
         mb.clear();
         {
             auto dst = mb.prepare(con->_file_body.size());
             boost::asio::buffer_copy(dst, boost::asio::buffer(con->_file_body));
-            mb.commit(con->_file_body.size());   // ¡ï ¹Ø¼ü£º¿ÉÐ´ -> ¿É¶Á
+            mb.commit(con->_file_body.size());   // ï¿½ï¿½ ï¿½Ø¼ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ -> ï¿½É¶ï¿½
         }
     }
 
-    // ¡ï ±ØÐë return true£¬²»ÄÜ fallthrough µ½ÏÂÃæµÄ _get_handlers.find(path)¡£
-    //   ÉÏ´«ÎÄ¼þÃûÊÇ¶¯Ì¬µÄ£¨Ê±¼ä´Á_¹þÏ£.png£©£¬ÓÀÔ¶²»ÔÚ _get_handlers Àï£¬
-    //   find Ò»¶¨Ê§°Ü -> return false£¬HandleReq ÓÚÊÇ°Ñ½á¹û¸²¸Ç³É 404£¬
-    //   ÔÙÍùÍ¬Ò»¸ö body ×·¼Ó "url not found"£¨body Ã»±» clear£©£¬
-    //   ¿Í»§¶ËÄÃµ½µÄ¾ÍÊÇ¡¸404 + Í¼Æ¬ + ´íÎóÎÄ±¾¡¹£¬Í¼Æ¬Ò²·ÏÁË¡£
+    // ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ return trueï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ fallthrough ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ _get_handlers.find(path)ï¿½ï¿½
+    //   ï¿½Ï´ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½Ç¶ï¿½Ì¬ï¿½Ä£ï¿½Ê±ï¿½ï¿½ï¿½_ï¿½ï¿½Ï£.pngï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô¶ï¿½ï¿½ï¿½ï¿½ _get_handlers ï¿½ï£¬
+    //   find Ò»ï¿½ï¿½Ê§ï¿½ï¿½ -> return falseï¿½ï¿½HandleReq ï¿½ï¿½ï¿½Ç°Ñ½ï¿½ï¿½ï¿½ï¿½ï¿½Ç³ï¿½ 404ï¿½ï¿½
+    //   ï¿½ï¿½ï¿½ï¿½Í¬Ò»ï¿½ï¿½ body ×·ï¿½ï¿½ "url not found"ï¿½ï¿½body Ã»ï¿½ï¿½ clearï¿½ï¿½ï¿½ï¿½
+    //   ï¿½Í»ï¿½ï¿½ï¿½ï¿½Ãµï¿½ï¿½Ä¾ï¿½ï¿½Ç¡ï¿½404 + Í¼Æ¬ + ï¿½ï¿½ï¿½ï¿½ï¿½Ä±ï¿½ï¿½ï¿½ï¿½ï¿½Í¼Æ¬Ò²ï¿½ï¿½ï¿½Ë¡ï¿½
     return true;
 
     if (_get_handlers.find(path) == _get_handlers.end()) {

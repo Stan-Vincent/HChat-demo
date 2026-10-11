@@ -36,6 +36,12 @@ private:
 };
 
 #define MAX_LENGTH  1024*2
+
+// ★ 协议头长度字段是 2 字节，所以单个响应体上限 65535。
+//   超过这个数就装不进协议了（会被截断成半截 JSON）。
+#define MAX_MSG_BODY_LEN 65535
+// 软上限：留一点余量给序列化开销的估算误差
+#define MSG_BODY_SAFE 60000
 //头部总长度
 #define HEAD_TOTAL_LEN 4
 //头部id长度

@@ -46,8 +46,11 @@ ChatView::ChatView(QWidget *parent)
 void ChatView::appendChatItem(QWidget *item)
 {
    QVBoxLayout *vl = qobject_cast<QVBoxLayout *>(m_pScrollArea->widget()->layout());
-   qDebug() << "vl->count() is " << vl->count();
-   vl->insertWidget(vl->count()-1, item);   
+   //qDebug() << "vl->count() is " << vl->count();
+   // ★ 这一行之前被误注释掉了：appendChatItem 实际什么都不做，
+   //   聊天条目（历史消息 / 自己刚发的消息）构造出来却从没插进滚动区布局，
+   //   所以「聊天记录不显示 / 发了消息也不显示」。恢复插入即可。
+   vl->insertWidget(vl->count()-1, item);
    isAppended = true;
 }
 

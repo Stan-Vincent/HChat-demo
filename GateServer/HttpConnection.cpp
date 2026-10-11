@@ -9,15 +9,41 @@ void HttpConnection::Start()
 {
     //当前对象的shared_ptr 捕获进 lambda，保证异步读完成前，当前对象不会被销毁
     auto self = shared_from_this();
-    http::async_read(_socket, _buffer, _request, 
+
+    // ★ 显式设置 body_limit。
+    //   默认 1MB 太小：图片 base64 会膨胀 4/3，
+    //   原图超过 ~750KB 就被拒，而且是直接断连接、
+    //   客户端没有任何错误提示（只会收到 10053）。
+    //   客户端上限 5MB -> base64 后约 6.7MB，这里给 8MB 留足量。
+    self->_parser.body_limit(8 * 1024 * 1024);
+
+    http::async_read(_socket, _buffer, self->_parser,
         [self](beast::error_code ec,std::size_t bytes_transferred) 
         {
             try {
                 std::cout << "HttpConnection Async_read...\n";
                 if (ec) {
+                    // ★ 超限时给一个干净的 413，
+                    //   而不是默默断开连接
+                    if (ec == http::error::body_limit) {
+                        std::cout << "request body too large (>=8MB), rejected" << std::endl;
+                        // ★ 必须显式设置 version / keep_alive：HandleReq() 没被调用，
+                        //   这两个还是默认值，不设就发不出去。
+                        self->_response.version(11);
+                        self->_response.keep_alive(false);
+                        self->_response.result(http::status::payload_too_large);
+                        self->_response.set(http::field::content_type, "text/plain");
+                        beast::ostream(self->_response.body()) << "request body too large";
+                        self->_response.content_length(self->_response.body().size());
+                        self->WriteResponse();
+                        return;
+                    }
                     std::cout << "Http read err is " << ec.what() << std::endl;
                     return;
                 }
+
+                // 解析完成，把消息取出来存到 _request
+                self->_request = self->_parser.release();
 
                 //bytes_transferred：本次读到的字节数。这里用不到，就用 boost::ignore_unused 忽略掉
                 boost::ignore_unused(bytes_transferred);

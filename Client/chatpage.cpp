@@ -12,6 +12,7 @@
 #include <QJsonObject>
 #include "tcpmgr.h"
 #include <QUuid>
+#include <QPointer>
 
 ChatPage::ChatPage(QWidget *parent) :
     QWidget(parent),
@@ -149,7 +150,17 @@ void ChatPage::AppendChatMsg(std::shared_ptr<ChatDataBase> msg)
 
     ChatItemBase* pChatItem = new ChatItemBase(role);
     pChatItem->setUserName(userName);
-    pChatItem->setUserIcon(QPixmap(userIcon));
+    // ★ userIcon 是服务端 URL，不能 QPixmap(url) 当本地文件读（必空白）。
+    //   走 ImageManager 异步拉，QPointer 兜底防 use-after-free。
+    if (!userIcon.isEmpty()) {
+        QPointer<ChatItemBase> guard(pChatItem);
+        ImageManager::instance()->loadAvatar(
+            userIcon, [guard](bool ok, const QPixmap& pix, const QString& err) {
+                if (!guard) { return; }
+                if (ok && !pix.isNull()) { guard->setUserIcon(pix); }
+                else { qDebug() << "ChatPage load msg avatar failed:" << err; }
+            });
+    }
     pChatItem->setWidget(pBubble);
     auto status = msg->GetStatus();
     pChatItem->setStatus(status);
@@ -227,7 +238,16 @@ void ChatPage::on_send_btn_clicked()
 
         ChatItemBase *pChatItem = new ChatItemBase(role);
         pChatItem->setUserName(userName);
-        pChatItem->setUserIcon(QPixmap(userIcon));
+        // ★ userIcon 是服务端 URL，不能 QPixmap(url) 当文件读（空白）。异步拉取。
+        if (!userIcon.isEmpty()) {
+            QPointer<ChatItemBase> guard(pChatItem);
+            ImageManager::instance()->loadAvatar(
+                userIcon, [guard](bool ok, const QPixmap& pix, const QString& err) {
+                    if (!guard) { return; }
+                    if (ok && !pix.isNull()) { guard->setUserIcon(pix); }
+                    else { qDebug() << "ChatPage load self msg avatar failed:" << err; }
+                });
+        }
         QWidget *pBubble = nullptr;
         //生成唯一id
         QUuid uuid = QUuid::createUuid();
@@ -383,7 +403,16 @@ void ChatPage::on_receive_btn_clicked()
         QString type = msgList[i].msgFlag;
         ChatItemBase *pChatItem = new ChatItemBase(role);
         pChatItem->setUserName(userName);
-        pChatItem->setUserIcon(QPixmap(userIcon));
+        // ★ userIcon 是服务端 URL，不能 QPixmap(url) 当文件读（空白）。异步拉取。
+        if (!userIcon.isEmpty()) {
+            QPointer<ChatItemBase> guard(pChatItem);
+            ImageManager::instance()->loadAvatar(
+                userIcon, [guard](bool ok, const QPixmap& pix, const QString& err) {
+                    if (!guard) { return; }
+                    if (ok && !pix.isNull()) { guard->setUserIcon(pix); }
+                    else { qDebug() << "ChatPage load other msg avatar failed:" << err; }
+                });
+        }
         QWidget *pBubble = nullptr;
         if(type == "text")
         {

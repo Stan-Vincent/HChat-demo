@@ -3,11 +3,6 @@
       "user": "19178223162@163.com",
       "pass": "VFnwmdku5LArXmSm"
     },
-    "mysql":{
-      "host": "127.0.0.1",
-      "user": "3308",
-      "password": "123456"
-    },
     "redis":{
       "host": "127.0.0.1",
       "port": 6380,

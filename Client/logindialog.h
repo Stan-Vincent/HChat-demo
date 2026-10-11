@@ -17,6 +17,10 @@ public:
     //   否则下次启动会被自动登录又拉回去。
     void SetAutoLogin(bool on);
 
+    // ★ 登出后回到登录页时调用：清掉登录过程中显示的"聊天服务连接成功，正在登录..."
+    //   提示、恢复按钮可用状态。否则界面会停在"正在登录"且按钮被禁用，无法使用。
+    void resetUIState();
+
     explicit LoginDialog(QWidget *parent = nullptr);
     ~LoginDialog();
 

@@ -34,6 +34,10 @@ private:
     uint16_t _port;
     QByteArray _buffer;
     bool _b_recv_pending;
+    // ★ 主动关闭标记：CloseConnection() 置 true，disconnected 信号据此决定是否
+    //   转发 sig_connection_closed（心跳超时提示框）。用来区分"用户主动退出登录"
+    //   和"服务端真的把连接掐了"这两种断开。
+    bool _b_intentional_close;
     quint16 _message_id;
     quint16 _message_len;
     QMap<ReqId, std::function<void(ReqId id, int len, QByteArray data)>> _handlers;

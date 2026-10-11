@@ -192,6 +192,15 @@ void LoginDialog::SetAutoLogin(bool on)
     }
 }
 
+void LoginDialog::resetUIState()
+{
+    // 登录成功后按钮被禁用、提示停在"正在登录..."；回到登录页时复位，
+    // 否则界面卡在"正在登录"且按钮灰色、点不动。
+    enableBtn(true);
+    _tip_errs.clear();
+    ui->err_tip->clear();
+}
+
 void LoginDialog::saveSettings()
 {
     QSettings st(loginSettingsPath(), QSettings::IniFormat);

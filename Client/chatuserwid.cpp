@@ -1,6 +1,8 @@
 #include "chatuserwid.h"
 #include "ui_chatuserwid.h"
 #include "usermgr.h"
+#include "imagemanager.h"
+#include <QPointer>
 
 ChatUserWid::ChatUserWid(QWidget *parent) :
     ListItemBase(parent),
@@ -32,12 +34,21 @@ void ChatUserWid::SetChatData(std::shared_ptr<ChatThreadData> chat_data) {
         qDebug() << "SetChatData: friend info not found, other_id =" << other_id;
         return;
     }
-    // 加载图片
-    QPixmap pixmap(other_info->_icon);
-
-    // 设置图片自动缩放
-    ui->icon_lb->setPixmap(pixmap.scaled(ui->icon_lb->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
-    ui->icon_lb->setScaledContents(true);
+    // _icon 是服务端 URL，QPixmap(url) 会当本地文件读 → 空白。异步拉取。
+    if (!other_info->_icon.isEmpty()) {
+        QPointer<ChatUserWid> guard(this);
+        ImageManager::instance()->loadAvatar(
+            other_info->_icon, [guard, this](bool ok, const QPixmap& pix, const QString& err) {
+                if (!guard) { return; }
+                if (ok && !pix.isNull()) {
+                    ui->icon_lb->setPixmap(pix.scaled(ui->icon_lb->size(),
+                        Qt::KeepAspectRatio, Qt::SmoothTransformation));
+                } else {
+                    qDebug() << "ChatUserWid load avatar failed:" << err;
+                }
+            });
+        ui->icon_lb->setScaledContents(true);
+    }
 
     ui->user_name_lb->setText(other_info->_name);
     

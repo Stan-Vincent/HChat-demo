@@ -50,8 +50,10 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(TcpMgr::GetInstance().get(), &TcpMgr::sig_connection_closed,
         this, &MainWindow::slot_connection_closed);
 
-    // ★ 聊天窗口的「退出登录」：关掉自动登录 + 切回登录页
-    connect(_chat_dlg, &ChatDialog::sig_logout, this, &MainWindow::slot_logout);
+    // ★ 聊天窗口的「退出登录」信号不在这里连：构造期 _chat_dlg 还是 nullptr，
+    //   连了也是空操作（Qt 报 "cannot connect to a null pointer" 且不生效），
+    //   会导致登出切不回登录页。真正的连接放到 slot_switch_chatdlg 里
+    //   _chat_dlg 第一次被 new 出来之后。
 
     // 7. 默认显示登录界面
     _stacked_widget->setCurrentWidget(_login_dlg);
@@ -84,6 +86,9 @@ void MainWindow::slot_switch_chatdlg()
 {
     if (_chat_dlg == nullptr) {
         _chat_dlg = new ChatDialog(this);
+        // ★ 关键：_chat_dlg 在这里才第一次被创建，信号连接必须放这之后。
+        //   构造期连（当时为 nullptr）是空操作，登出就会"什么都没发生"。
+        connect(_chat_dlg, &ChatDialog::sig_logout, this, &MainWindow::slot_logout);
         // ChatDialog 现在是 QStackedWidget 的子页面，不是顶层窗口，
         // 所以不能再设 FramelessWindowHint —— 对子窗口设置窗口标志
         // 只会触发 Qt 的隐藏/重显，而且没有意义（无边框由 MainWindow 决定）。
@@ -130,6 +135,13 @@ void MainWindow::slot_connection_closed()
 
 
 void MainWindow::offlineLogin(){
+    // ★ 每次回到登录页都先复位它的 UI 状态：清掉"正在登录..."提示、恢复按钮可用。
+    //   否则会停在"聊天服务连接成功，正在登录..."且按钮被禁用，界面无法使用。
+    //   必须放在 LOGIN_UI 守卫之前——因为心跳超时那条路径可能先一步把状态切成
+    //   LOGIN_UI，等 sig_logout 再到 offlineLogin 时如果先看守卫就直接 return，
+    //   复位就跳过了。
+    _login_dlg->resetUIState();
+
     if(_ui_status == LOGIN_UI){
         return;
     }

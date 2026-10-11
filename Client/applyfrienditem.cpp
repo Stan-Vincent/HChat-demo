@@ -1,5 +1,7 @@
 #include "applyfrienditem.h"
 #include "ui_applyfrienditem.h"
+#include "imagemanager.h"
+#include <QPointer>
 
 ApplyFriendItem::ApplyFriendItem(QWidget *parent) :
     ListItemBase(parent), _added(false),
@@ -22,12 +24,21 @@ ApplyFriendItem::~ApplyFriendItem()
 void ApplyFriendItem::SetInfo(std::shared_ptr<ApplyInfo> apply_info)
 {
     _apply_info = apply_info;
-    // 加载图片
-    QPixmap pixmap(_apply_info->_icon);
-
-    // 设置图片自动缩放
-    ui->icon_lb->setPixmap(pixmap.scaled(ui->icon_lb->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
-    ui->icon_lb->setScaledContents(true);
+    // _icon 是服务端 URL，QPixmap(url) 会当本地文件读 → 空白。异步拉取。
+    if (!_apply_info->_icon.isEmpty()) {
+        QPointer<ApplyFriendItem> guard(this);
+        ImageManager::instance()->loadAvatar(
+            _apply_info->_icon, [guard, this](bool ok, const QPixmap& pix, const QString& err) {
+                if (!guard) { return; }
+                if (ok && !pix.isNull()) {
+                    ui->icon_lb->setPixmap(pix.scaled(ui->icon_lb->size(),
+                        Qt::KeepAspectRatio, Qt::SmoothTransformation));
+                } else {
+                    qDebug() << "ApplyFriendItem load avatar failed:" << err;
+                }
+            });
+        ui->icon_lb->setScaledContents(true);
+    }
 
     ui->user_name_lb->setText(_apply_info->_name);
     ui->user_chat_lb->setText(_apply_info->_desc);

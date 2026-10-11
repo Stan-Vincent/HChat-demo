@@ -9,6 +9,8 @@
 #include <QNetworkReply>
 #include "imagecropperdialog.h"
 #include "imagecropperlabel.h"
+#include "imagemanager.h"
+#include <QPointer>
 #include <QFileDialog>
 #include <QPushButton>
 #include <QJsonDocument>
@@ -33,10 +35,23 @@ UserInfoPage::UserInfoPage(QWidget *parent) :
     if (info == nullptr) {
         qDebug() << "UserInfoPage: user info is null";
     } else {
-        QPixmap pixmap(info->_icon);
-        if (!pixmap.isNull()) {
-            ui->head_lb->setPixmap(pixmap.scaled(ui->head_lb->size(), Qt::KeepAspectRatio,
-                                                 Qt::SmoothTransformation));
+        // ★ _icon 是服务端返回的 URL（"upload/xxx.png"），不是本地文件路径，
+        //   不能用 QPixmap(_icon) 直接构造（那会当成文件去读，必然加载失败 → 头像空白）。
+        //   必须走 ImageManager::downloadImage 异步从 gate 服务器拉取，
+        //   否则重启程序后头像永远空白（之前只靠上传后的内存预览撑着，一重启就没了）。
+        if (!info->_icon.isEmpty()) {
+            QPointer<UserInfoPage> guard(this);
+            ImageManager::instance()->loadAvatar(
+                info->_icon, [guard](bool ok, const QPixmap& pix, const QString& err) {
+                    if (!guard) {
+                        return;     // 页面已被销毁（比如下载途中退出了登录）
+                    }
+                    if (ok && !pix.isNull()) {
+                        guard->refreshHeadPreview(pix);
+                    } else {
+                        qDebug() << "UserInfoPage load self avatar failed:" << err;
+                    }
+                });
         }
         ui->head_lb->setScaledContents(true);
 
@@ -56,8 +71,11 @@ UserInfoPage::UserInfoPage(QWidget *parent) :
     // 「退出登录」：只发信号，断开连接和切页面交给 ChatDialog / MainWindow
     connect(ui->logout_btn, &QPushButton::clicked, this, &UserInfoPage::sig_logout);
 
-    //提交按钮：真正发 HTTP 请求到 GateServer 的 /update_userinfo
-    connect(ui->submit_btn, &QPushButton::clicked, this, &UserInfoPage::on_submit_btn_clicked);
+    // ★ 提交按钮【不要】再手动 connect：on_submit_btn_clicked 已经是 private slots，
+    //   且 .ui 里按钮的 objectName 就是 "submit_btn"，setupUi 会自动把
+    //   submit_btn->clicked 连到 on_submit_btn_clicked。之前这里又手动 connect 了一次，
+    //   导致一次点击触发两次提交（弹两次"资料已保存"，并发上传头像/提交还会互相覆盖）。
+    //   删掉手动 connect，只保留自动连接，点一次就提交一次。
 }
 
 UserInfoPage::~UserInfoPage()

@@ -2,6 +2,8 @@
 #include "ui_findsuccessdlg.h"
 #include <QDir>
 #include "applyfriend.h"
+#include "imagemanager.h"
+#include <QPointer>
 #include <memory>
 FindSuccessDlg::FindSuccessDlg(QWidget *parent) :
     QDialog(parent),
@@ -33,12 +35,21 @@ FindSuccessDlg::~FindSuccessDlg()
 void FindSuccessDlg::SetSearchInfo(std::shared_ptr<SearchInfo> si)
 {
     ui->name_lb->setText(si->_name);
-    // 加载图片
-    QPixmap pixmap(si->_icon);
-
-    // 设置图片自动缩放
-    ui->head_lb->setPixmap(pixmap.scaled(ui->head_lb->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
-    ui->head_lb->setScaledContents(true);
+    // _icon 是服务端 URL，QPixmap(url) 会当本地文件读 → 空白。异步拉取。
+    if (!si->_icon.isEmpty()) {
+        QPointer<FindSuccessDlg> guard(this);
+        ImageManager::instance()->loadAvatar(
+            si->_icon, [guard, this](bool ok, const QPixmap& pix, const QString& err) {
+                if (!guard) { return; }   // 弹窗已关闭
+                if (ok && !pix.isNull()) {
+                    ui->head_lb->setPixmap(pix.scaled(ui->head_lb->size(),
+                        Qt::KeepAspectRatio, Qt::SmoothTransformation));
+                } else {
+                    qDebug() << "FindSuccessDlg load avatar failed:" << err;
+                }
+            });
+        ui->head_lb->setScaledContents(true);
+    }
     _si = si;
 }
 

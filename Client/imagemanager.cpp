@@ -138,3 +138,31 @@ void ImageManager::downloadImage(const QString &url,
     });
     qDebug() << "download image:" << full;
 }
+
+void ImageManager::loadAvatar(const QString &url,
+                              std::function<void(bool, const QPixmap &, const QString &)> cb)
+{
+    // 1) 本地/资源路径直接加载：QPixmap 能识别 ":/res/xxx"（qrc 资源）
+    //    和相对 cwd 的本地文件，这两种都是"默认头像"用户的存法。
+    if (!url.isEmpty()) {
+        QPixmap pm;
+        if (pm.load(url)) {
+            cb(true, pm, "");
+            return;
+        }
+    }
+    // 2) 空路径或本地加载失败 → 交给下载（服务端 upload/xxx.png 走这条）
+    downloadImage(url, [cb](bool ok, const QPixmap &pix, const QString &err) {
+        if (ok && !pix.isNull()) {
+            cb(true, pix, "");
+            return;
+        }
+        // 3) 下载也失败（含空路径）→ 回退默认头像，保证永不空白
+        QPixmap fallback(":/res/head_1.jpg");
+        if (!fallback.isNull()) {
+            cb(true, fallback, QString("fallback to default avatar: %1").arg(err));
+        } else {
+            cb(false, QPixmap(), err);
+        }
+    });
+}

@@ -18,6 +18,8 @@
 #include "lineitem.h"
 #include "tcpmgr.h"
 #include "usermgr.h"
+#include "imagemanager.h"
+#include <QPointer>
 #include <QTimer>
 
 
@@ -77,10 +79,27 @@ ChatDialog::ChatDialog(QWidget* parent) :
 	//连接加载信号和槽
 	connect(ui->chat_user_list, &ChatUserList::sig_loading_chat_user, this, &ChatDialog::slot_loading_chat_user);
 	//模拟加载自己头像
+	// ★ _icon 是服务端返回的 URL（"upload/xxx.png"），不是本地文件路径，
+	//   不能用 QPixmap(_icon) 直接构造（当成文件读必然失败 → 头像空白）。
+	//   必须走 ImageManager::downloadImage 异步从 gate 服务器拉取，
+	//   这样冷启动（重启程序）后左侧头像也能正确显示，而不是空白。
 	QString head_icon = UserMgr::GetInstance()->GetIcon();
-	QPixmap pixmap(head_icon); // 加载图片
-	QPixmap scaledPixmap = pixmap.scaled(ui->side_head_lb->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation); // 将图片缩放到label的大小
-	ui->side_head_lb->setPixmap(scaledPixmap); // 将缩放后的图片设置到QLabel上
+	if (!head_icon.isEmpty()) {
+		QPointer<ChatDialog> guard(this);
+		ImageManager::instance()->loadAvatar(
+			head_icon, [guard](bool ok, const QPixmap& pix, const QString& err) {
+				if (!guard) {
+					return;     // 窗口已销毁（下载途中退出登录）
+				}
+				if (ok && !pix.isNull()) {
+					QPixmap scaledPixmap = pix.scaled(guard->ui->side_head_lb->size(),
+						Qt::KeepAspectRatio, Qt::SmoothTransformation);
+					guard->ui->side_head_lb->setPixmap(scaledPixmap);
+				} else {
+					qDebug() << "ChatDialog load self avatar failed:" << err;
+				}
+			});
+	}
 	ui->side_head_lb->setScaledContents(true); // 设置QLabel自动缩放图片内容以适应大小
 
 	ui->side_chat_lb->setProperty("state", "normal");

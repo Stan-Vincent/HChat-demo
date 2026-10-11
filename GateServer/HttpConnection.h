@@ -28,6 +28,12 @@ private:
     beast::flat_buffer  _buffer{ 8192 };
 
     // _request 用来解析请求 在async_read时填充内容
+    // ★ 改成 request_parser，才能设置 body_limit。
+    //   原来用 http::request 直接 async_read，beast 默认 body_limit 只有 1MB：
+    //   图片经 base64 会膨胀 4/3，所以原图超过 ~750KB 就被拒（且是直接断连接，
+    //   客户端收不到任何错误提示）。手机照片 3-5MB 根本传不了。
+    http::request_parser<http::dynamic_body> _parser;
+    // 解析完成后把消息取出来（原 _request 的用法保持不变）
     http::request<http::dynamic_body> _request;
 
     // _response 用来回应客户端 在HandleReq()里填充内容

@@ -50,7 +50,16 @@ void CSession::Send(std::string msg, short msgid) {
 		return;
 	}
 
-	_send_que.push(make_shared<SendNode>(msg.c_str(), msg.length(), msgid));
+	// ★ 协议头的长度字段只有 2 字节，单个响应体上限 65535。
+	//   超过就装不下了：原来会被 (short) 截断，
+	//   发一个被剪掉的 JSON 给客户端（实测：断在 \u4e2d... 半路）。
+	//   发半截数据比不发更糟 —— 客户端解析必然失败。
+	if (msg.length() > MAX_MSG_BODY_LEN) {
+		std::cerr << "ERROR: 响应体过大 (" << msg.length() << " > " << MAX_MSG_BODY_LEN
+			<< "), msgid=" << msgid << ", 已丢弃（不发半截数据）" << std::endl;
+		return;
+	}
+	_send_que.push(make_shared<SendNode>(msg.c_str(), (int)msg.length(), msgid));
 	if (send_que_size > 0) {
 		return;
 	}
@@ -59,7 +68,7 @@ void CSession::Send(std::string msg, short msgid) {
 		std::bind(&CSession::HandleWrite, this, std::placeholders::_1, SharedSelf()));
 }
 
-void CSession::Send(char* msg, short max_length, short msgid) {
+void CSession::Send(char* msg, int max_length, short msgid) {
 	std::lock_guard<std::mutex> lock(_send_lock);
 	int send_que_size = _send_que.size();
 	if (send_que_size > MAX_SENDQUE) {
@@ -159,7 +168,10 @@ void CSession::AsyncReadHead(int total_len)
 			memcpy(_recv_head_node->_data, _data, bytes_transfered);
 
 			//获取头部MSGID数据
-			short msg_id = 0;
+			// ★ 必须用 uint16_t：协议里这个字段是 2 字节无符号。
+			//   用 short 接收的话，0xFFFF 会变成 -1，
+			//   而 -1 > MAX_LENGTH 为假 -> 校验被绕过 -> 堆缓冲区溢出。
+			uint16_t msg_id = 0;
 			memcpy(&msg_id, _recv_head_node->_data, HEAD_ID_LEN);
 			//网络字节序转化为本地字节序
 			msg_id = boost::asio::detail::socket_ops::network_to_host_short(msg_id);
@@ -170,14 +182,16 @@ void CSession::AsyncReadHead(int total_len)
 				_server->ClearSession(_session_id);
 				return;
 			}
-			short msg_len = 0;
-			memcpy(&msg_len, _recv_head_node->_data + HEAD_ID_LEN, HEAD_DATA_LEN);
+			// ★ 同理：用 uint16_t 接，再转 int 比较。
+			uint16_t msg_len_raw = 0;
+			memcpy(&msg_len_raw, _recv_head_node->_data + HEAD_ID_LEN, HEAD_DATA_LEN);
 			//网络字节序转化为本地字节序
-			msg_len = boost::asio::detail::socket_ops::network_to_host_short(msg_len);
+			int msg_len = (int)boost::asio::detail::socket_ops::network_to_host_short(msg_len_raw);
 			std::cout << "msg_len is " << msg_len << endl;
 
 			//id非法
-			if (msg_len > MAX_LENGTH) {
+			// ★ 必须同时拒绝 <= 0 和超过缓冲区的长度
+			if (msg_len <= 0 || msg_len > MAX_LENGTH) {
 				std::cout << "invalid data length is " << msg_len << endl;
 				_server->ClearSession(_session_id);
 				return;

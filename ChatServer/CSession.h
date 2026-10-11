@@ -32,7 +32,7 @@ public:
 	void SetUserId(int uid);
 	int GetUserId();
 	void Start();
-	void Send(char* msg,  short max_length, short msgid);
+	void Send(char* msg, int max_length, short msgid);
 	void Send(std::string msg, short msgid);
 	void Close();
 	std::shared_ptr<CSession> SharedSelf();

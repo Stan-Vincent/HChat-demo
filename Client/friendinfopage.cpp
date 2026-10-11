@@ -1,5 +1,7 @@
 #include "friendinfopage.h"
 #include "ui_friendinfopage.h"
+#include "imagemanager.h"
+#include <QPointer>
 #include <QDebug>
 
 FriendInfoPage::FriendInfoPage(QWidget *parent) :
@@ -20,12 +22,21 @@ FriendInfoPage::~FriendInfoPage()
 void FriendInfoPage::SetInfo(std::shared_ptr<UserInfo> user_info)
 {
     _user_info = user_info;
-    // 加载图片
-    QPixmap pixmap(user_info->_icon);
-
-    // 设置图片自动缩放
-    ui->icon_lb->setPixmap(pixmap.scaled(ui->icon_lb->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
-    ui->icon_lb->setScaledContents(true);
+    // _icon 是服务端 URL，QPixmap(url) 会当本地文件读 → 空白。异步拉取。
+    if (!user_info->_icon.isEmpty()) {
+        QPointer<FriendInfoPage> guard(this);
+        ImageManager::instance()->loadAvatar(
+            user_info->_icon, [guard, this](bool ok, const QPixmap& pix, const QString& err) {
+                if (!guard) { return; }
+                if (ok && !pix.isNull()) {
+                    ui->icon_lb->setPixmap(pix.scaled(ui->icon_lb->size(),
+                        Qt::KeepAspectRatio, Qt::SmoothTransformation));
+                } else {
+                    qDebug() << "FriendInfoPage load avatar failed:" << err;
+                }
+            });
+        ui->icon_lb->setScaledContents(true);
+    }
 
     ui->name_lb->setText(user_info->_name);
     ui->nick_lb->setText(user_info->_nick);

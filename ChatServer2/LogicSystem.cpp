@@ -1008,4 +1008,27 @@ void LogicSystem::LoadChatMsg(std::shared_ptr<CSession> session,
 		rtvalue["chat_datas"].append(chat_data);
 	}
 
+	// ★ 按字节预算裁剪：装不下就少放几条，并置 load_more 让客户端继续拉。
+	//   硬截会把 JSON 剪断（实测断在 \u4e2d 半路），客户端解析必失败。
+	while (rtvalue["chat_datas"].size() > 0) {
+		std::string tmp = rtvalue.toStyledString();
+		if ((int)tmp.size() <= MSG_BODY_SAFE) {
+			break;
+		}
+		Json::Value arr = rtvalue["chat_datas"];
+		int lastIdx = arr.size() - 1;
+		int dropped_id = arr[lastIdx]["msg_id"].asInt();
+		rtvalue["chat_datas"].removeIndex(lastIdx, nullptr);
+		rtvalue["load_more"] = true;
+		// 游标回退到「现在最后一条」，下次从它之后开始
+		if (rtvalue["chat_datas"].size() > 0) {
+			int n = rtvalue["chat_datas"].size() - 1;
+			rtvalue["last_message_id"] = rtvalue["chat_datas"][n]["msg_id"].asInt();
+		} else {
+			// 一条都装不下（单条本身就超限）—— 保留原游标，避免死循环
+			rtvalue["last_message_id"] = res->next_cursor;
+		}
+		std::cerr << "LoadChatMsg: 响应超过 " << MSG_BODY_SAFE
+			<< " 字节，丢弃 msg_id=" << dropped_id << std::endl;
+	}
 }
