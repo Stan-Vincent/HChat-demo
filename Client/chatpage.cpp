@@ -13,6 +13,7 @@
 #include "tcpmgr.h"
 #include <QUuid>
 #include <QPointer>
+#include "logcategory.h"
 
 ChatPage::ChatPage(QWidget *parent) :
     QWidget(parent),
@@ -73,7 +74,7 @@ QWidget* ChatPage::makeBubble(ChatMsgType type, const QString& content, ChatRole
     }
     if (type == ChatMsgType::PIC) {
         if (content.isEmpty()) {
-            qDebug() << "makeBubble: PIC message with empty content";
+            qCDebug(lcChat) << "makeBubble: PIC message with empty content";
             return nullptr;
         }
         auto* bubble = new PictureBubble(content, role);
@@ -86,7 +87,7 @@ QWidget* ChatPage::makeBubble(ChatMsgType type, const QString& content, ChatRole
                         return;         // 气泡已被销毁
                     }
                     if (!ok) {
-                        qDebug() << "load bubble image failed:" << err;
+                        qCDebug(lcChat) << "load bubble image failed:" << err;
                     }
                     // 存进内存缓存：同一张图常被多条消息引用（自己发的+对方发的+历史），
                     // 不缓存的话每条消息都会重新下一次
@@ -111,7 +112,7 @@ void ChatPage::AppendChatMsg(std::shared_ptr<ChatDataBase> msg)
     }
     auto self_info = UserMgr::GetInstance()->GetUserInfo();
     if (self_info == nullptr) {
-        qDebug() << "AppendChatMsg: self info is null";
+        qCDebug(lcChat) << "AppendChatMsg: self info is null";
         return;
     }
     ChatRole role;
@@ -133,7 +134,7 @@ void ChatPage::AppendChatMsg(std::shared_ptr<ChatDataBase> msg)
         if (friend_info == nullptr) {
             // ★ 对方还没进好友列表（比如消息先于 AuthFriend 回包到达）。
             //   这里必须 return：继续走下去 pChatItem 的用户名/头像都是空的。
-            qDebug() << "AppendChatMsg: friend not found, uid =" << msg->GetSendUid();
+            qCDebug(lcChat) << "AppendChatMsg: friend not found, uid =" << msg->GetSendUid();
             return;
         }
         userName = friend_info->_name;
@@ -158,7 +159,7 @@ void ChatPage::AppendChatMsg(std::shared_ptr<ChatDataBase> msg)
             userIcon, [guard](bool ok, const QPixmap& pix, const QString& err) {
                 if (!guard) { return; }
                 if (ok && !pix.isNull()) { guard->setUserIcon(pix); }
-                else { qDebug() << "ChatPage load msg avatar failed:" << err; }
+                else { qCDebug(lcChat) << "ChatPage load msg avatar failed:" << err; }
             });
     }
     pChatItem->setWidget(pBubble);
@@ -200,14 +201,14 @@ struct PendingImage {
 void ChatPage::on_send_btn_clicked()
 {
     if (_chat_data == nullptr) {
-        qDebug() << "on_send_btn_clicked: chat_data is empty";
+        qCDebug(lcChat) << "on_send_btn_clicked: chat_data is empty";
         return;
     }
 
     auto user_info = UserMgr::GetInstance()->GetUserInfo();
     // ★ 登录回包没到之前 user_info 是空的，原来直接 user_info->_name 直接崩
     if (user_info == nullptr) {
-        qDebug() << "on_send_btn_clicked: user info is null";
+        qCDebug(lcChat) << "on_send_btn_clicked: user info is null";
         return;
     }
     auto pTextEdit = ui->chatEdit;
@@ -245,7 +246,7 @@ void ChatPage::on_send_btn_clicked()
                 userIcon, [guard](bool ok, const QPixmap& pix, const QString& err) {
                     if (!guard) { return; }
                     if (ok && !pix.isNull()) { guard->setUserIcon(pix); }
-                    else { qDebug() << "ChatPage load self msg avatar failed:" << err; }
+                    else { qCDebug(lcChat) << "ChatPage load self msg avatar failed:" << err; }
                 });
         }
         QWidget *pBubble = nullptr;
@@ -322,7 +323,7 @@ void ChatPage::on_send_btn_clicked()
 
     }
 
-    qDebug() << "textArray is " << textArray ;
+    qCDebug(lcChat) << "textArray is " << textArray ;
     // ★ 只有真的攒到了文本才发文本包。
     //   原来这里是无条件 emit，结果拖图片/文件时循环走的是 image/file 分支，
     //   textArray 始终是空的 —— 每点一次发送就往服务器发一个 {"text_array":[]} 空包，
@@ -346,7 +347,7 @@ void ChatPage::on_send_btn_clicked()
         //发送tcp请求给chat server
         emit TcpMgr::GetInstance()->sig_send_data(ReqId::ID_TEXT_CHAT_MSG_REQ, jsonData);
     } else {
-        qDebug() << "no text to send, skip empty text request";
+        qCDebug(lcChat) << "no text to send, skip empty text request";
     }
 
     // ---------- 图片：上传成功后再把消息发给服务端 ----------
@@ -360,7 +361,7 @@ void ChatPage::on_send_btn_clicked()
                     return;                      // 页面已经没了
                 }
                 if (!ok) {
-                    qDebug() << "upload image failed:" << errMsg;
+                    qCDebug(lcChat) << "upload image failed:" << errMsg;
                     return;
                 }
                 // ★ 把自己刚上传的这张图塞进内存缓存：
@@ -384,7 +385,7 @@ void ChatPage::on_send_btn_clicked()
                 req["text_array"] = arr;
                 QByteArray imgData = QJsonDocument(req).toJson(QJsonDocument::Compact);
                 emit TcpMgr::GetInstance()->sig_send_data(ReqId::ID_TEXT_CHAT_MSG_REQ, imgData);
-                qDebug() << "image msg sent, url =" << urlPath;
+                qCDebug(lcChat) << "image msg sent, url =" << urlPath;
             });
     }
 }
@@ -410,7 +411,7 @@ void ChatPage::on_receive_btn_clicked()
                 userIcon, [guard](bool ok, const QPixmap& pix, const QString& err) {
                     if (!guard) { return; }
                     if (ok && !pix.isNull()) { guard->setUserIcon(pix); }
-                    else { qDebug() << "ChatPage load other msg avatar failed:" << err; }
+                    else { qCDebug(lcChat) << "ChatPage load other msg avatar failed:" << err; }
                 });
         }
         QWidget *pBubble = nullptr;

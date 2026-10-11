@@ -3,6 +3,7 @@
 #include "imagemanager.h"
 #include <QPointer>
 #include <QDebug>
+#include "logcategory.h"
 
 FriendInfoPage::FriendInfoPage(QWidget *parent) :
     QWidget(parent),
@@ -32,7 +33,7 @@ void FriendInfoPage::SetInfo(std::shared_ptr<UserInfo> user_info)
                     ui->icon_lb->setPixmap(pix.scaled(ui->icon_lb->size(),
                         Qt::KeepAspectRatio, Qt::SmoothTransformation));
                 } else {
-                    qDebug() << "FriendInfoPage load avatar failed:" << err;
+                    qCDebug(lcAvatar) << "FriendInfoPage load avatar failed:" << err;
                 }
             });
         ui->icon_lb->setScaledContents(true);
@@ -45,6 +46,6 @@ void FriendInfoPage::SetInfo(std::shared_ptr<UserInfo> user_info)
 
 void FriendInfoPage::on_msg_chat_clicked()
 {
-    qDebug() << "msg chat btn clicked";
+    qCDebug(lcAvatar) << "msg chat btn clicked";
     emit sig_jump_chat_item(_user_info);
 }

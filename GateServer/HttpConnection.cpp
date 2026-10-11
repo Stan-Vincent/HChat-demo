@@ -1,5 +1,6 @@
 #include "HttpConnection.h"
 #include "LogicSystem.h"
+#include "logger.h"
 
 HttpConnection::HttpConnection(boost::asio::io_context& ioc)
     : _socket(ioc) {
@@ -21,12 +22,12 @@ void HttpConnection::Start()
         [self](beast::error_code ec,std::size_t bytes_transferred) 
         {
             try {
-                std::cout << "HttpConnection Async_read...\n";
+                LOG_INFO("开始异步读取 HTTP 请求...");
                 if (ec) {
                     // ★ 超限时给一个干净的 413，
                     //   而不是默默断开连接
                     if (ec == http::error::body_limit) {
-                        std::cout << "request body too large (>=8MB), rejected" << std::endl;
+                        LOG_ERROR("请求体过大（>=8MB），已拒绝");
                         // ★ 必须显式设置 version / keep_alive：HandleReq() 没被调用，
                         //   这两个还是默认值，不设就发不出去。
                         self->_response.version(11);
@@ -38,7 +39,7 @@ void HttpConnection::Start()
                         self->WriteResponse();
                         return;
                     }
-                    std::cout << "Http read err is " << ec.what() << std::endl;
+                    LOG_ERROR("HTTP 读取错误: {}", ec.what());
                     return;
                 }
 
@@ -53,7 +54,7 @@ void HttpConnection::Start()
                 self->CheckDeadline();
             }
             catch (std::exception& exp) {
-                std::cout << "HttpConnection Exception is " << exp.what() << std::endl;
+                LOG_ERROR("HTTP 连接异常: {}", exp.what());
             }
         }
     );
@@ -189,7 +190,7 @@ void HttpConnection::HandleReq() {
             return;
         }
 
-        std::cout << "HttpConnection::HandleReq() success...\n\n";
+        LOG_INFO("处理 GET 请求成功");
         _response.result(http::status::ok);
         _response.set(http::field::server, "GateServer");
 
@@ -209,7 +210,7 @@ void HttpConnection::HandleReq() {
             return;
         }
 
-        std::cout << "HttpConnection::HandlePost() success...\n\n";
+        LOG_INFO("处理 POST 请求成功");
         _response.result(http::status::ok);
         _response.set(http::field::server, "GateServer");
         WriteResponse();
@@ -228,7 +229,7 @@ void HttpConnection::WriteResponse() {
         _response,
         [self](beast::error_code ec, std::size_t)
         {
-            std::cout << "Async_write...(HttpConnection:Start())\n\n";
+            LOG_INFO("异步写（连接启动）");
             //只关闭发送端,接收方向还开着
             self->_socket.shutdown(tcp::socket::shutdown_send, ec);
             //取消超时定时器

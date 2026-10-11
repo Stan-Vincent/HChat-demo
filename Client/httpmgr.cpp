@@ -1,4 +1,5 @@
 #include "httpmgr.h"
+#include "logcategory.h"
 
 HttpMgr::~HttpMgr()
 {
@@ -20,7 +21,7 @@ void HttpMgr::PostHttpReq(QUrl url, QJsonObject json, ReqId req_id, Modules mod)
     QObject::connect(reply, &QNetworkReply::finished, [reply, self, req_id, mod](){
         //处理错误的情况
         if(reply->error() != QNetworkReply::NoError){
-            qDebug() << reply->errorString();
+            qCDebug(lcNetwork) << reply->errorString();
             //发送信号通知完成
             emit self->sig_http_finish(req_id, "", ErrorCodes::ERR_NETWORK, mod);
             reply->deleteLater();
@@ -62,7 +63,7 @@ void HttpMgr::PostHttpReqRaw(QUrl url, const QJsonObject& json,
     {
         reply->deleteLater();
         if (reply->error() != QNetworkReply::NoError) {
-            qDebug() << "http raw failed:" << reply->errorString();
+            qCDebug(lcNetwork) << "http raw failed:" << reply->errorString();
             cb(false, "", reply->errorString());
             return;
         }

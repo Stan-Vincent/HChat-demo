@@ -11,6 +11,7 @@
 #include <csignal>
 #include <cstdio>
 #include <cstdlib>
+#include "logcategory.h"
 
 #ifdef _WIN32
 // ★ 必须先定这两个宏再包含 windows.h：
@@ -137,6 +138,11 @@ int main(int argc, char *argv[])
         });
 
     QApplication a(argc, argv);
+
+    // 初始化客户端日志分类（hchat.network / chat / ui / user / avatar）。
+    // 必须在 QApplication 之后，因为 QLoggingCategory 依赖 Qt 的日志系统。
+    // 运行时控制示例：$env:QT_LOGGING_RULES="hchat.network.debug=true"
+    init_log_categories();
 
     QFile qss(":/style/stylesheet.qss");
 

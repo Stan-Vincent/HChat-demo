@@ -1,11 +1,12 @@
 #include "LogicSystem.h"
+#include "logger.h"
 #include "HttpConnection.h"
 #include "VarifyGrpcClient.h"
 #include "RedisMgr.h"
 #include "MysqlMgr.h"
 #include "StatusGrpcClient.h"
-//ï¿½ï¿½ Í¼Æ¬ï¿½Ï´ï¿½ï¿½Ãµï¿½ï¿½ï¿½×¢ï¿½ï¿½ GateServer ï¿½Ç¡ï¿½ï¿½ï¿½ C++ ï¿½ï¿½Ä¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ Qt ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-//  ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½ï¿½ï¿½Ã±ï¿½×¼ï¿½ï¿½ + boost::filesystemï¿½ï¿½beast ï¿½ï¿½ï¿½ï¿½ï¿½Í´ï¿½ boostï¿½ï¿½ï¿½ï¿½
+//?? ????????????? GateServer ????? C++ ?????????????? Qt ????????
+//  ????????????????? + boost::filesystem??beast ??????? boost????
 #include <boost/filesystem.hpp>
 #include <array>
 #include <fstream>
@@ -17,7 +18,7 @@
 #include <cctype>
 #include <cstdio>
 
-// base64 ï¿½ï¿½ï¿½ë¡£Qt ï¿½ï¿½ QByteArray::fromBase64 ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã²ï¿½ï¿½Ë£ï¿½Ã»ï¿½ï¿½ Qtï¿½ï¿½ï¿½ï¿½
+// base64 ????Qt ?? QByteArray::fromBase64 ???????¨°??????? Qt????
 static std::string base64Decode(const std::string& in) {
     static const std::string tbl =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -30,13 +31,13 @@ static std::string base64Decode(const std::string& in) {
     out.reserve(in.size() * 3 / 4);
     int val = 0, valb = -8;
     for (unsigned char c : in) {
-        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½/ï¿½Õ¸ï¿½È·ï¿½ base64 ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¾ï¿½Ð¿ï¿½ï¿½Ü±ï¿½ï¿½ï¿½ï¿½Ð£ï¿½
+        // ????????/????? base64 ???????????§á???????§µ?
         if (c == '=' ) break;
         int d = rev[c];
         if (d < 0) {
-            // ï¿½ï¿½ Ö»ï¿½ï¿½ï¿½ï¿½ï¿½Õ°ï¿½ï¿½Ö·ï¿½ï¿½ï¿½base64 ï¿½Ú´ï¿½ï¿½ï¿½Í¾ï¿½Ð¿ï¿½ï¿½Ü±ï¿½ï¿½ï¿½ï¿½Ð£ï¿½ï¿½ï¿½
-            //   ï¿½ï¿½ï¿½ï¿½ï¿½ÎºÎ·Ç·ï¿½ï¿½Ö·ï¿½ï¿½ï¿½Ö±ï¿½ï¿½ï¿½Ð¶ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ "!!!not-base64!!!"
-            //   ï¿½á±»ï¿½ï¿½ï¿½ï¿½ ! ï¿½ï¿½ï¿½ notbase64 ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý±ï¿½ï¿½ï¿½Í¼Æ¬ï¿½ï¿½ï¿½Ì¡ï¿½
+            // ?? ?????????????base64 ???????§á???????§µ???
+            //   ?????¦Ê¦Ç???????????§Ø???????? ???? ???? "!!!not-base64!!!"
+            //   ?????? ! ??? notbase64 ?????????????????????????????????
             if (c != ' ' && c != '\n' && c != '\r' && c != '\t') {
                 return std::string();
             }
@@ -52,7 +53,7 @@ static std::string base64Decode(const std::string& in) {
     return out;
 }
 
-// ï¿½ï¿½ï¿½ï¿½ FNV-1a ï¿½ï¿½Ï£ï¿½ï¿½È¡Ê®ï¿½ï¿½ï¿½ï¿½ï¿½Æ¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú¸ï¿½ï¿½Ï´ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½Î¨Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú°ï¿½È«Ð£ï¿½é¡£
+// ???? FNV-1a ???????????????????????????????¦·?????????????§µ?î•
 static std::string contentHash(const std::string& data) {
     unsigned long long h = 1469598103934665603ULL;
     for (unsigned char c : data) {
@@ -89,22 +90,21 @@ LogicSystem::LogicSystem() {
     });
 
     RegPost("/get_varifycode", [](std::shared_ptr<HttpConnection> connection) {
-        ///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ _request.body() ï¿½ï¿½ dynamic_bodyï¿½ï¿½multi_bufferï¿½ï¿½ï¿½ï¿½
-        //buffers_to_string ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ std::string
+        ///?????????? _request.body() ?? dynamic_body??multi_buffer????
+        //buffers_to_string ??????? std::string
         auto body_str = boost::beast::buffers_to_string(connection->_request.body().data());
-        std::cout << "receive body is " << body_str << std::endl;
 
-        //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½ÎªJson
+        //????????????Json
         connection->_response.set(http::field::content_type, "text/json");
 
-        //ï¿½ï¿½ï¿½ï¿½Json
+        //????Json
         Json::Value root;   
-        Json::Reader reader;    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-        Json::Value src_root;   //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¸ï¿½ï¿½ï¿½ï¿½ï¿½
-        bool parse_success = reader.parse(body_str, src_root);  //ï¿½ï¿½Ê¾ï¿½Ç·ï¿½É¹ï¿½
+        Json::Reader reader;    //???????
+        Json::Value src_root;   //????????????
+        bool parse_success = reader.parse(body_str, src_root);  //????????
 
         if (!parse_success) {
-            std::cout << "Failed to parse JSON data!" << std::endl;
+            LOG_ERROR("JSON ½âÎöÊ§°Ü");
             root["error"] = ErrorCodes::Error_Json;
             std::string jsonstr = root.toStyledString();
             beast::ostream(connection->_response.body()) << jsonstr;
@@ -112,20 +112,20 @@ LogicSystem::LogicSystem() {
         }
 
         if (!src_root.isMember("email")) {
-            std::cout << "Failed to parse JSON data!" << std::endl;
+            LOG_ERROR("JSON ½âÎöÊ§°Ü");
             root["error"] = ErrorCodes::Error_Json;
             std::string jsonstr = root.toStyledString();
             beast::ostream(connection->_response.body()) << jsonstr;
             return true;
         }
-        //ï¿½ï¿½Jsonï¿½ï¿½ï¿½ï¿½È¡ï¿½ï¿½email
+        //??Json???????email
         auto email = src_root["email"].asString();
 
-        //ï¿½ï¿½ï¿½ï¿½ gRPC ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½ VarifyServer Í¨ï¿½ï¿½ gRPC Í¨ï¿½ï¿½
+        //???? gRPC ????,?? VarifyServer ??? gRPC ???
         GetVarifyRsp rsp = VerifyGrpcClient::GetInstance()->GetVarifyCode(email);
 
-        //ï¿½ï¿½ gRPC ï¿½ï¿½ï¿½ØµÄ´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ email Ð´ï¿½ï¿½ JSON,ï¿½ï¿½ï¿½Ð»ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½ï¿½Ó¦ bodyï¿½ï¿½
-        std::cout << "email is " << email << std::endl;
+        //?? gRPC ??????????? email §Õ?? JSON,???§Ý???§Õ????? body??
+        LOG_INFO("ÓÊÏä: {}", email);
         root["error"] = rsp.error();
         root["email"] = src_root["email"];
         std::string jsonstr = root.toStyledString();
@@ -133,11 +133,10 @@ LogicSystem::LogicSystem() {
         return true;
     });
 
-    //×¢ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ß¼ï¿½
+    //?????????
     RegPost("/user_register", [](std::shared_ptr<HttpConnection> connection) {
 
         auto body_str = boost::beast::buffers_to_string(connection->_request.body().data());
-        std::cout << "receive body is " << body_str << std::endl;
 
         connection->_response.set(http::field::content_type, "text/json");
 
@@ -147,7 +146,7 @@ LogicSystem::LogicSystem() {
 
         bool parse_success = reader.parse(body_str, src_root);
         if (!parse_success) {
-            std::cout << "Failed to parse JSON data!" << std::endl;
+            LOG_ERROR("JSON ½âÎöÊ§°Ü");
             root["error"] = ErrorCodes::Error_Json;
             std::string jsonstr = root.toStyledString();
             beast::ostream(connection->_response.body()) << jsonstr;
@@ -161,18 +160,18 @@ LogicSystem::LogicSystem() {
         auto icon = src_root["icon"].asString();
 
         if (pwd != confirm) {
-            std::cout << "password err " << std::endl;
+            LOG_ERROR("ÃÜÂë´íÎó");
             root["error"] = ErrorCodes::PasswdErr;
             std::string jsonstr = root.toStyledString();
             beast::ostream(connection->_response.body()) << jsonstr;
             return true;
         }
 
-        //ï¿½È²ï¿½ï¿½ï¿½redisï¿½ï¿½emailï¿½ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½Ö¤ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½
+        //?????redis??email????????????????
         std::string  varify_code;
         bool b_get_varify = RedisMgr::GetInstance()->Get(CODEPREFIX + src_root["email"].asString(), varify_code);
         if (!b_get_varify) {
-            std::cout << " get varify code expired" << std::endl;
+            LOG_ERROR("ÑéÖ¤ÂëÒÑ¹ýÆÚ");
             root["error"] = ErrorCodes::VarifyExpired;
             std::string jsonstr = root.toStyledString();
             beast::ostream(connection->_response.body()) << jsonstr;
@@ -180,25 +179,25 @@ LogicSystem::LogicSystem() {
         }
 
         if (varify_code != src_root["varifycode"].asString()) {
-            std::cout << " varify code error" << std::endl;
+            LOG_ERROR("ÑéÖ¤Âë´íÎó");
             root["error"] = ErrorCodes::VarifyCodeErr;
             std::string jsonstr = root.toStyledString();
             beast::ostream(connection->_response.body()) << jsonstr;
             return true;
         }
 
-        //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý¿ï¿½ï¿½Ð¶ï¿½ï¿½Ã»ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½
+        //??????????§Ø??????????
         int uid = MysqlMgr::GetInstance()->RegUser(name, email, pwd, icon);
         // 0: name or email already exists   -1: database error (schema/connection/transaction)
         if (uid == -1) {
-            std::cout << " reg user failed, mysql error" << std::endl;
+            LOG_ERROR("×¢²áÊ§°Ü£ºÊý¾Ý¿â´íÎó");
             root["error"] = ErrorCodes::DbErr;
             std::string jsonstr = root.toStyledString();
             beast::ostream(connection->_response.body()) << jsonstr;
             return true;
         }
         if (uid == 0) {
-            std::cout << " user or email exist" << std::endl;
+            LOG_INFO("ÓÃ»§Ãû»òÓÊÏäÒÑ´æÔÚ");
             root["error"] = ErrorCodes::UserExist;
             std::string jsonstr = root.toStyledString();
             beast::ostream(connection->_response.body()) << jsonstr;
@@ -211,14 +210,14 @@ LogicSystem::LogicSystem() {
         // root["passwd"] = pwd;   
         // root["confirm"] = confirm;  
         root["icon"] = icon;
-        std::cout << " register success, uid = " << uid << std::endl;
+        LOG_INFO("×¢²á³É¹¦£¬uid: {}", uid);
         root["varifycode"] = src_root["varifycode"].asString();
         std::string jsonstr = root.toStyledString();
         beast::ostream(connection->_response.body()) << jsonstr;
         return true;
         });
 
-    //ï¿½ï¿½ï¿½Ã»Øµï¿½ï¿½ß¼ï¿½
+    //?????????
     RegPost("/reset_pwd", [](std::shared_ptr<HttpConnection> connection) {
         auto body_str = boost::beast::buffers_to_string(connection->_request.body().data());
         //do NOT print the whole body here, it carries the new password
@@ -231,7 +230,7 @@ LogicSystem::LogicSystem() {
 
         bool parse_success = reader.parse(body_str, src_root);
         if (!parse_success) {
-            std::cout << "Failed to parse JSON data!" << std::endl;
+            LOG_ERROR("JSON ½âÎöÊ§°Ü");
             root["error"] = ErrorCodes::Error_Json;
             std::string jsonstr = root.toStyledString();
             beast::ostream(connection->_response.body()) << jsonstr;
@@ -241,13 +240,13 @@ LogicSystem::LogicSystem() {
         auto email = src_root["email"].asString();
         auto name = src_root["user"].asString();
         auto pwd = src_root["passwd"].asString();
-        std::cout << "reset_pwd request, user = " << name << ", email = " << email << std::endl;
+        LOG_INFO("ÖØÖÃÃÜÂëÇëÇó: ÓÃ»§Ãû={}, ÓÊÏä={}", name, email);
 
-        //ï¿½È²ï¿½ï¿½ï¿½redisï¿½ï¿½emailï¿½ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½Ö¤ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½
+        //?????redis??email????????????????
         std::string  varify_code;
         bool b_get_varify = RedisMgr::GetInstance()->Get(CODEPREFIX + src_root["email"].asString(), varify_code);
         if (!b_get_varify) {
-            std::cout << " get varify code expired" << std::endl;
+            LOG_ERROR("ÑéÖ¤ÂëÒÑ¹ýÆÚ");
             root["error"] = ErrorCodes::VarifyExpired;
             std::string jsonstr = root.toStyledString();
             beast::ostream(connection->_response.body()) << jsonstr;
@@ -255,33 +254,33 @@ LogicSystem::LogicSystem() {
         }
 
         if (varify_code != src_root["varifycode"].asString()) {
-            std::cout << " varify code error" << std::endl;
+            LOG_ERROR("ÑéÖ¤Âë´íÎó");
             root["error"] = ErrorCodes::VarifyCodeErr;
             std::string jsonstr = root.toStyledString();
             beast::ostream(connection->_response.body()) << jsonstr;
             return true;
         }
-        //ï¿½ï¿½Ñ¯ï¿½ï¿½ï¿½Ý¿ï¿½ï¿½Ð¶ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç·ï¿½Æ¥ï¿½ï¿½
+        //?????????§Ø??????????????????
         bool email_valid = MysqlMgr::GetInstance()->CheckEmail(name, email);
         if (!email_valid) {
-            std::cout << " user email not match" << std::endl;
+            LOG_ERROR("ÓÊÏä²»Æ¥Åä");
             root["error"] = ErrorCodes::EmailNotMatch;
             std::string jsonstr = root.toStyledString();
             beast::ostream(connection->_response.body()) << jsonstr;
             return true;
         }
 
-        //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+        //?????????????????
         bool b_up = MysqlMgr::GetInstance()->UpdatePwd(name, pwd);
         if (!b_up) {
-            std::cout << " update pwd failed" << std::endl;
+            LOG_ERROR("¸üÐÂÃÜÂëÊ§°Ü");
             root["error"] = ErrorCodes::PasswdUpFailed;
             std::string jsonstr = root.toStyledString();
             beast::ostream(connection->_response.body()) << jsonstr;
             return true;
         }
 
-        std::cout << "succeed to update password, user = " << name << std::endl;
+        LOG_INFO("¸üÐÂÃÜÂë³É¹¦£¬ÓÃ»§Ãû: {}", name);
         root["error"] = 0;
         root["email"] = email;
         root["user"] = name;
@@ -292,11 +291,10 @@ LogicSystem::LogicSystem() {
         return true;
         });
 
-    //ï¿½Ã»ï¿½ï¿½ï¿½Â¼ï¿½ß¼ï¿½
+    //?????????
     RegPost("/user_login", [](std::shared_ptr<HttpConnection> connection) {
 
         auto body_str = boost::beast::buffers_to_string(connection->_request.body().data());
-        std::cout << "receive body is " << body_str << std::endl;
 
         connection->_response.set(http::field::content_type, "text/json");
 
@@ -306,7 +304,7 @@ LogicSystem::LogicSystem() {
 
         bool parse_success = reader.parse(body_str, src_root);
         if (!parse_success) {
-            std::cout << "Failed to parse JSON data!" << std::endl;
+            LOG_ERROR("JSON ½âÎöÊ§°Ü");
             root["error"] = ErrorCodes::Error_Json;
             std::string jsonstr = root.toStyledString();
             beast::ostream(connection->_response.body()) << jsonstr;
@@ -318,27 +316,27 @@ LogicSystem::LogicSystem() {
 
         UserInfo userInfo;
 
-        //ï¿½ï¿½Ñ¯ï¿½ï¿½ï¿½Ý¿ï¿½ï¿½Ð¶ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç·ï¿½Æ¥ï¿½ï¿½
+        //?????????§Ø??????????????????
         bool pwd_valid = MysqlMgr::GetInstance()->CheckPwd(email, pwd, userInfo);
         if (!pwd_valid) {
-            std::cout << " user pwd not match" << std::endl;
+            LOG_INFO("ÃÜÂë²»Æ¥Åä");
             root["error"] = ErrorCodes::PasswdInvalid;
             std::string jsonstr = root.toStyledString();
             beast::ostream(connection->_response.body()) << jsonstr;
             return true;
         }
 
-        //ï¿½ï¿½Ñ¯StatusServerï¿½Òµï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½ï¿½ï¿½ï¿½
+        //???StatusServer????????????
         auto reply = StatusGrpcClient::GetInstance()->GetChatServer(userInfo.uid);
         if (reply.error()) {
-            std::cout << " grpc get chat server failed, error is " << reply.error() << std::endl;
+            LOG_ERROR("gRPC »ñÈ¡ÁÄÌì·þÎñÆ÷Ê§°Ü: {}", reply.error());
             root["error"] = ErrorCodes::RPCFailed;
             std::string jsonstr = root.toStyledString();
             beast::ostream(connection->_response.body()) << jsonstr;
             return true;
         }
 
-        std::cout << "succeed to load userinfo uid is " << userInfo.uid << std::endl;
+        LOG_INFO("¼ÓÔØÓÃ»§ÐÅÏ¢³É¹¦£¬uid: {}", userInfo.uid);
         root["error"] = 0;
         root["email"] = email;
         root["uid"] = userInfo.uid;
@@ -350,12 +348,12 @@ LogicSystem::LogicSystem() {
         return true;
         });
 
-    //ï¿½ï¿½ Í¼Æ¬ï¿½Ï´ï¿½ï¿½ï¿½body ï¿½ï¿½ {uid, file_name, data(base64)}ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ {error, url, unique_name, size, md5}
+    //?? ???????body ?? {uid, file_name, data(base64)}?????? {error, url, unique_name, size, md5}
     //
-    //  ï¿½ï¿½ÎªÊ²Ã´ï¿½ï¿½ï¿½Ç½Ì³ï¿½ï¿½ï¿½ï¿½ ResourceServerï¿½ï¿½ï¿½Ì³ï¿½ day39 ï¿½Ãµï¿½ï¿½Ç¶ï¿½ï¿½ï¿½ï¿½ï¿½Ô´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ + ï¿½Ïµï¿½ï¿½ï¿½ï¿½ï¿½ +
-    //  gRPC Í¨Öª ChatServerï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ GateServer ï¿½Ðµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É«ï¿½ï¿½ï¿½ï¿½ï¿½Ö¶ï¿½ï¿½ï¿½ï¿½ï¿½
-    //  ï¿½ï¿½unique_name / md5 / total_sizeï¿½ï¿½ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½Ì³Ìµï¿½ MsgInfoï¿½ï¿½
-    //  ï¿½Ôºó»»³ï¿½ ResourceServer Ê±ï¿½Í»ï¿½ï¿½ï¿½Ö»ï¿½ï¿½ï¿½ URL Ç°×ºï¿½ï¿½
+    //  ?????????????? ResourceServer????? day39 ????????????????? + ??????? +
+    //  gRPC ?? ChatServer?????????? GateServer ?§Ö??????????????????
+    //  ??unique_name / md5 / total_size???????????? MsgInfo??
+    //  ???? ResourceServer ?????????? URL ????
     RegPost("/upload_image", [](std::shared_ptr<HttpConnection> connection) {
 
         auto body_str = boost::beast::buffers_to_string(connection->_request.body().data());
@@ -381,7 +379,7 @@ LogicSystem::LogicSystem() {
             return true;
         }
 
-        // ï¿½ï¿½ base64 ï¿½ï¿½ï¿½ëº¯ï¿½ï¿½ï¿½Ú²ï¿½ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½/ï¿½Õ¸ñ£¨´ï¿½ï¿½ï¿½Í¾ï¿½Ð¿ï¿½ï¿½Ü±ï¿½ï¿½ï¿½ï¿½Ð£ï¿½
+        // ?? base64 ??????????????????????/????????§á???????§µ?
         auto raw = base64Decode(b64);
         if (raw.empty()) {
             root["error"] = ErrorCodes::Error_Json;
@@ -390,11 +388,11 @@ LogicSystem::LogicSystem() {
             return true;
         }
 
-        // ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ë±ï¿½ï¿½ï¿½ï¿½Ô¼ï¿½ï¿½ï¿½Ò»ï¿½Î´ï¿½Ð¡ï¿½ï¿½
-        //   ï¿½Í»ï¿½ï¿½ï¿½ UploadManager ï¿½ï¿½ 5MB ï¿½ï¿½ï¿½ï¿½Ö»ï¿½Ç¿Í»ï¿½ï¿½ËµÄ£ï¿½
-        //   Ö±ï¿½ï¿½ POST ï¿½ï¿½ï¿½ï¿½ï¿½Æ¹ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½
-        //   ï¿½Ú½ï¿½ï¿½ï¿½Ö®ï¿½ï¿½ï¿½Ð¶Ï£ï¿½base64 ï¿½ï¿½ 4/3 ï¿½ï¿½ï¿½Í£ï¿½ï¿½ï¿½
-        //   raw.size() ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½Ìµï¿½ï¿½Ö½ï¿½ï¿½ï¿½ï¿½ï¿½
+        // ?? ???????????????¦Ä?§³??
+        //   ????? UploadManager ?? 5MB ?????????????
+        //   ??? POST ??????? ???? ????????????????§Õ???????????
+        //   ?????????§Ø??base64 ?? 4/3 ???????
+        //   raw.size() ?????????????????????
         const std::size_t MAX_UPLOAD_BYTES = 5 * 1024 * 1024;   // 5MB
         if (raw.size() > MAX_UPLOAD_BYTES) {
             root["error"] = ErrorCodes::Error_Json;
@@ -403,7 +401,7 @@ LogicSystem::LogicSystem() {
             return true;
         }
 
-        // Ö»ï¿½Ï³ï¿½ï¿½ï¿½Í¼Æ¬ï¿½ï¿½×ºï¿½ï¿½ï¿½ï¿½ï¿½Ã¿Í»ï¿½ï¿½Ë¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë´ï¿½Ê²Ã´ï¿½ï¿½ï¿½ï¿½
+        // ????????????????????????????????????
         std::string ext = ".jpg";
         auto dot = file_name.rfind('.');
         if (dot != std::string::npos) {
@@ -417,14 +415,14 @@ LogicSystem::LogicSystem() {
             }
         }
 
-        // unique_name = Ê±ï¿½ï¿½ï¿½_ï¿½ï¿½ï¿½Ý¹ï¿½Ï£.ï¿½ï¿½×º
+        // unique_name = ????_??????.???
         auto now = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::system_clock::now().time_since_epoch()).count();
         char stamp[32];
         std::snprintf(stamp, sizeof(stamp), "%lld", (long long)now);
         auto unique_name = std::string(stamp) + "_" + contentHash(raw) + ext;
 
-        // ï¿½æµ½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¿Â¼ï¿½ï¿½ï¿½Âµï¿½ upload/ ï¿½Ä¼ï¿½ï¿½Ð£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½Ä¿Â¼ï¿½ï¿½ï¿½ï¿½ exe Î»ï¿½Ã£ï¿½
+        // ?›Ô????????????? upload/ ????§µ???????????????????? exe ¦Ë???
         auto cfg_path = boost::filesystem::current_path() / "config.ini";
         auto base_dir = boost::filesystem::absolute(cfg_path).parent_path();
         auto dir_path = base_dir / "upload";
@@ -439,8 +437,8 @@ LogicSystem::LogicSystem() {
 
         auto abs_path = dir_path / unique_name;
         {
-            // ï¿½ï¿½ ï¿½ï¿½ wstring()ï¿½ï¿½Windows ï¿½ï¿½ path.string() ï¿½ï¿½ï¿½ï¿½Õ­ï¿½Ö·ï¿½(ANSI)ï¿½ï¿½
-            //   Â·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê± ofstream ï¿½ï¿½ò²»¿ï¿½ï¿½Ä¼ï¿½
+            // ?? ?? wstring()??Windows ?? path.string() ????????(ANSI)??
+            //   ¡¤????????? ofstream ???????
             std::ofstream ofs(abs_path.wstring(), std::ios::binary);
             if (!ofs) {
                 root["error"] = ErrorCodes::Error_Json;
@@ -459,18 +457,17 @@ LogicSystem::LogicSystem() {
         }
 
         root["error"] = ErrorCodes::Success;
-        root["url"] = std::string("upload/") + unique_name;  // ï¿½ï¿½ï¿½Â·ï¿½ï¿½ï¿½ï¿½ï¿½Í»ï¿½ï¿½ï¿½ï¿½Ô¼ï¿½Æ´ host
+        root["url"] = std::string("upload/") + unique_name;  // ???¡¤????????????? host
         root["unique_name"] = unique_name;
         root["size"] = (Json::Int64)raw.size();
         root["md5"] = contentHash(raw);
-        std::cout << "upload_image ok: " << unique_name
-                  << " size=" << raw.size() << std::endl;
+        LOG_INFO("ÉÏ´«Í¼Æ¬³É¹¦: ÎÄ¼þÃû={}, ´óÐ¡={}", unique_name, raw.size());
         beast::ostream(connection->_response.body()) << root.toStyledString();
         return true;
         });
 
-    //ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½Ï£ï¿½body ï¿½ï¿½ {uid, nick, desc, sex, icon}
-    //  nameï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Çµï¿½Â¼ï¿½ï¿½Ê¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Þ¸Ä£ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½ï¿½ uid ï¿½ï¿½ï¿½Â¡ï¿½
+    //?? ????????????body ?? {uid, nick, desc, sex, icon}
+    //  name??????????????????????????????????? uid ?????
     RegPost("/update_userinfo", [](std::shared_ptr<HttpConnection> connection) {
 
         auto body_str = boost::beast::buffers_to_string(connection->_request.body().data());
@@ -498,8 +495,8 @@ LogicSystem::LogicSystem() {
         auto sex = src_root["sex"].asInt();
         auto icon = src_root["icon"].asString();
 
-        // ï¿½Ç³ï¿½ï¿½Þ³ï¿½ 21ï¿½ï¿½ï¿½ï¿½×¢ï¿½ï¿½Ò³Ò»ï¿½Â£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç©ï¿½ï¿½ï¿½Þ³ï¿½ 200
-        // ï¿½ï¿½ std::string ï¿½ï¿½ substrï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ QString::left ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ Qt ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+        // ?????? 21???????????????????????? 200
+        // ?? std::string ?? substr?????? QString::left ???? ????????? Qt ??????
         if (nick.length() > 21) {
             nick = nick.substr(0, 21);
         }
@@ -513,13 +510,13 @@ LogicSystem::LogicSystem() {
         }
         else {
             root["error"] = ErrorCodes::Success;
-            // ï¿½ï¿½ï¿½ï¿½ï¿½Âµï¿½ï¿½ï¿½ï¿½Ï»Ø¸ï¿½ï¿½Í»ï¿½ï¿½Ë£ï¿½ï¿½Ã½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë¢ï¿½ï¿½
+            // ?????????????????????????????????
             root["uid"] = uid;
             root["nick"] = nick;
             root["desc"] = desc;
             root["sex"] = sex;
             root["icon"] = icon;
-            std::cout << "update_userinfo ok, uid=" << uid << std::endl;
+            LOG_INFO("¸üÐÂÓÃ»§ÐÅÏ¢³É¹¦£¬uid: {}", uid);
 
             // [cache coherence] On login ChatServer reads base info from Redis key
             // ubaseinfo_<uid> (GetBaseInfo hits cache, TTL 3600s) but we only updated
@@ -534,9 +531,9 @@ LogicSystem::LogicSystem() {
 
 }
 
-//ï¿½ï¿½ ï¿½ï¿½Ì¬ï¿½ï¿½Ô´Ç°×ºï¿½ï¿½ï¿½Ï´ï¿½ï¿½ï¿½Í¼Æ¬ï¿½ï¿½ï¿½ï¿½ exe Í¬ï¿½ï¿½ï¿½ï¿½ upload/ ï¿½Â£ï¿½
-//  Í¨ï¿½ï¿½ GET /upload/<ï¿½Ä¼ï¿½ï¿½ï¿½> È¡ï¿½Ø¡ï¿½ï¿½Ä¼ï¿½ï¿½Ç¶ï¿½Ì¬ï¿½ï¿½ï¿½Ö£ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ RegGet ï¿½ï¿½È·Æ¥ï¿½ä£¬
-//  ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç°×ºÆ¥ï¿½ä£¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ HttpConnection ï¿½ï¿½Í¨ï¿½Ã·Ö·ï¿½ï¿½ï¿½ï¿½ï¿½Ä£ï¿½ï¿½ï¿½
+//?? ????????????????????? exe ????? upload/ ???
+//  ??? GET /upload/<?????> ????????????????????? RegGet ??????
+//  ????????????????????????? HttpConnection ????¡Â??????????
 static const std::string UPLOAD_PREFIX = "/upload/";
 static std::string uploadDir() {
     return (boost::filesystem::absolute(boost::filesystem::current_path() / "config.ini")
@@ -544,8 +541,8 @@ static std::string uploadDir() {
 }
 
 bool LogicSystem::HandleGet(std::string path, std::shared_ptr<HttpConnection> con) {
-    // ï¿½ï¿½ ï¿½È´ï¿½ï¿½ï¿½ï¿½ï¿½Ì¬ï¿½ï¿½Ô´ï¿½ï¿½GET /upload/<file_name>
-    //   ï¿½ï¿½ ï¿½ï¿½È«ï¿½ï¿½ï¿½ï¿½ï¿½ëµ²×¡ ".."ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ /upload/../../config.ini ï¿½Ü°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½È¥ï¿½ï¿½
+    // ?? ?????????????GET /upload/<file_name>
+    //   ?? ?????????? ".."?????? /upload/../../config.ini ?????????????????
     if (path.rfind(UPLOAD_PREFIX, 0) == 0) {
         auto file_name = path.substr(UPLOAD_PREFIX.size());
         if (file_name.find("..") != std::string::npos
@@ -573,8 +570,8 @@ bool LogicSystem::HandleGet(std::string path, std::shared_ptr<HttpConnection> co
         }
 
         con->_response.result(http::status::ok);
-        // ï¿½ï¿½ boost::filesystem Ã»ï¿½ï¿½ï¿½ï¿½ï¿½Éºï¿½ï¿½ï¿½ extension()ï¿½ï¿½
-        //   ï¿½ï¿½ï¿½ï¿½ path ï¿½Ä³ï¿½Ô±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½È¹ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ pathï¿½ï¿½
+        // ?? boost::filesystem ?????????? extension()??
+        //   ???? path ??????????????????????? path??
         auto ext = boost::filesystem::path(file_name).extension();
         if (ext == ".png") {
             con->_response.set(http::field::content_type, "image/png");
@@ -593,9 +590,9 @@ bool LogicSystem::HandleGet(std::string path, std::shared_ptr<HttpConnection> co
         }
         con->_response.content_length(file_size);
 
-        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ HttpConnection ï¿½Ä³ï¿½Ô±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-        //   ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ã¾Ö²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½beast ï¿½ï¿½ body Ö»ï¿½Ç±ï¿½ï¿½ï¿½Ö¸ï¿½ë£¬
-        //   handler Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý¾ï¿½Ã»ï¿½Ë£ï¿½ï¿½Í»ï¿½ï¿½Ë»ï¿½ï¿½Õµï¿½ï¿½ï¿½ï¿½ë¡£
+        // ????????????? HttpConnection ??????????
+        //   ?? ??????????????beast ?? body ?????????
+        //   handler ???????????????????????????
         std::ifstream ifs(abs_path.wstring(), std::ios::binary);
         if (!ifs) {
             con->_response.result(http::status::internal_server_error);
@@ -610,27 +607,27 @@ bool LogicSystem::HandleGet(std::string path, std::shared_ptr<HttpConnection> co
             return true;
         }
 
-        // ï¿½ï¿½ ï¿½ï¿½ body ï¿½ï¿½Ð´ï¿½ï¿½ï¿½ï¿½ï¿½Æ£ï¿½Boost 1.92 ï¿½ï¿½ dynamic_body ï¿½ï¿½ï¿½ï¿½ multi_bufferï¿½ï¿½
-        //   ï¿½ï¿½Ã»ï¿½ï¿½ append(ConstBufferSequence) / net_assign ï¿½ï¿½Ð© 1.66 Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ APIï¿½ï¿½
+        // ?? ?? body ??§Õ???????Boost 1.92 ?? dynamic_body ???? multi_buffer??
+        //   ????? append(ConstBufferSequence) / net_assign ??§» 1.66 ??????? API??
         //
-        // ï¿½ï¿½ï¿½ prepare() ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç¡ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½Õ¼ä£¬ï¿½ï¿½ buffer_copy ï¿½ï¿½ï¿½ï¿½È¥ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
-        //   ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ commit(n) ï¿½Ñ¿ï¿½Ð´ï¿½ï¿½×ªï¿½É¡ï¿½ï¿½É¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ body().size() ï¿½ï¿½ï¿½ï¿½ 0ï¿½ï¿½
-        //   WriteResponse() ï¿½ï¿½ï¿½ content_length(body().size()) ï¿½Í»ï¿½Ð´ï¿½ï¿½ 0ï¿½ï¿½
-        //   ï¿½Í»ï¿½ï¿½ï¿½ï¿½Õµï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îª 0 ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½
+        // ??? prepare() ??????????§Õ??????? buffer_copy ????????????? ????
+        //   ?????? commit(n) ???§Õ????¨À???????????? body().size() ???? 0??
+        //   WriteResponse() ??? content_length(body().size()) ???§Õ?? 0??
+        //   ???????????????? 0 ???????
         auto& mb = con->_response.body();
         mb.clear();
         {
             auto dst = mb.prepare(con->_file_body.size());
             boost::asio::buffer_copy(dst, boost::asio::buffer(con->_file_body));
-            mb.commit(con->_file_body.size());   // ï¿½ï¿½ ï¿½Ø¼ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ -> ï¿½É¶ï¿½
+            mb.commit(con->_file_body.size());   // ?? ???????§Õ -> ???
         }
     }
 
-    // ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ return trueï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ fallthrough ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ _get_handlers.find(path)ï¿½ï¿½
-    //   ï¿½Ï´ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½Ç¶ï¿½Ì¬ï¿½Ä£ï¿½Ê±ï¿½ï¿½ï¿½_ï¿½ï¿½Ï£.pngï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô¶ï¿½ï¿½ï¿½ï¿½ _get_handlers ï¿½ï£¬
-    //   find Ò»ï¿½ï¿½Ê§ï¿½ï¿½ -> return falseï¿½ï¿½HandleReq ï¿½ï¿½ï¿½Ç°Ñ½ï¿½ï¿½ï¿½ï¿½ï¿½Ç³ï¿½ 404ï¿½ï¿½
-    //   ï¿½ï¿½ï¿½ï¿½Í¬Ò»ï¿½ï¿½ body ×·ï¿½ï¿½ "url not found"ï¿½ï¿½body Ã»ï¿½ï¿½ clearï¿½ï¿½ï¿½ï¿½
-    //   ï¿½Í»ï¿½ï¿½ï¿½ï¿½Ãµï¿½ï¿½Ä¾ï¿½ï¿½Ç¡ï¿½404 + Í¼Æ¬ + ï¿½ï¿½ï¿½ï¿½ï¿½Ä±ï¿½ï¿½ï¿½ï¿½ï¿½Í¼Æ¬Ò²ï¿½ï¿½ï¿½Ë¡ï¿½
+    // ?? ???? return true?????? fallthrough ??????? _get_handlers.find(path)??
+    //   ???????????????????_???.png??????????? _get_handlers ??
+    //   find ?????? -> return false??HandleReq ???????????? 404??
+    //   ???????? body ??? "url not found"??body ??? clear????
+    //   ??????????????404 + ?? + ???????????????????
     return true;
 
     if (_get_handlers.find(path) == _get_handlers.end()) {

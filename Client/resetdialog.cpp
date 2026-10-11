@@ -4,6 +4,7 @@
 #include <QRegularExpression>
 #include "global.h"
 #include "httpmgr.h"
+#include "logcategory.h"
 
 ResetDialog::ResetDialog(QWidget *parent) :
     QDialog(parent),
@@ -43,13 +44,13 @@ ResetDialog::~ResetDialog()
 
 void ResetDialog::on_return_btn_clicked()
 {
-    //qDebug() << "sure btn clicked ";
+    //qCDebug(lcUser) << "sure btn clicked ";
     emit switchLogin();
 }
 
 void ResetDialog::on_varify_btn_clicked()
 {
-    qDebug()<<"receive varify btn clicked ";
+    qCDebug(lcUser) <<"receive varify btn clicked ";
     auto email = ui->email_edit->text();
     auto bcheck = checkEmailValid();
     if(!bcheck){
@@ -89,7 +90,7 @@ void ResetDialog::slot_reset_mod_finish(ReqId id, QString res, ErrorCodes err)
     //注意:QMap::operator[] 对不存在的 key 会插入一个空的 std::function,
     //再调用它会抛出 std::bad_function_call 直接崩溃,所以必须先判断 key 是否存在
     if(!_handlers.contains(id)){
-        qDebug() << "no handler registered for req id " << id;
+        qCDebug(lcUser) << "no handler registered for req id " << id;
         return;
     }
     _handlers[id](jsonDoc.object());
@@ -194,7 +195,7 @@ void ResetDialog::initHandlers()
         }
         auto email = jsonObj["email"].toString();
         showTip(tr("验证码已发送到邮箱，注意查收"), true);
-        qDebug()<< "email is " << email ;
+        qCDebug(lcUser) << "email is " << email ;
     });
 
     //注册注册用户回包逻辑
@@ -206,10 +207,10 @@ void ResetDialog::initHandlers()
         }
         auto email = jsonObj["email"].toString();
         showTip(tr("重置成功,点击返回登录"), true);
-        qDebug()<< "email is " << email ;
+        qCDebug(lcUser) << "email is " << email ;
         //服务端 /reset_pwd 只回 {error,email,user,varifycode},没有 uuid 字段,
         //读 uuid 只会得到空串,改用服务端真实返回的 user
-        qDebug()<< "user is " << jsonObj["user"].toString();
+        qCDebug(lcUser) << "user is " << jsonObj["user"].toString();
     });
 }
 

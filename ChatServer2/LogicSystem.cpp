@@ -10,6 +10,7 @@
 #include "CServer.h"
 #include "utils.h"
 #include <vector>
+#include "logger.h"
 
 using namespace std;
 
@@ -81,7 +82,7 @@ void LogicSystem::DealMsg() {
 		auto call_back_iter = _fun_callbacks.find(msg_node->_recvnode->_msg_id);
 		if (call_back_iter == _fun_callbacks.end()) {
 			_msg_que.pop();
-			std::cout << "msg id [" << msg_node->_recvnode->_msg_id << "] handler not found" << std::endl;
+			LOG_INFO("消息ID {} 无对应处理器", msg_node->_recvnode->_msg_id);
 			continue;
 		}
 		call_back_iter->second(msg_node->_session, msg_node->_recvnode->_msg_id, 
@@ -125,8 +126,7 @@ void LogicSystem::LoginHandler(shared_ptr<CSession> session, const short &msg_id
 	reader.parse(msg_data, root);
 	auto uid = root["uid"].asInt();
 	auto token = root["token"].asString();
-	std::cout << "user login uid is  " << uid << " user token  is "
-		<< token << endl;
+	LOG_INFO("聊天登录请求: uid={}, token=[已隐藏]", uid);
 
 	Json::Value  rtvalue;
 	Defer defer([this, &rtvalue, session]() {
@@ -264,7 +264,7 @@ void LogicSystem::SearchInfo(std::shared_ptr<CSession> session, const short& msg
 	Json::Value root;
 	reader.parse(msg_data, root);
 	auto uid_str = root["uid"].asString();
-	std::cout << "user SearchInfo uid is  " << uid_str << endl;
+	LOG_INFO("搜索用户信息");
 
 	Json::Value  rtvalue;
 
@@ -278,7 +278,7 @@ void LogicSystem::SearchInfo(std::shared_ptr<CSession> session, const short& msg
 	// ★ 空输入直接回错误包，别往下查 —— 既省一次查询，也避免踩数字转换的坑
 	if (uid_str.empty()) {
 	    rtvalue["error"] = ErrorCodes::UidInvalid;   // 枚举里没有 ErrParams，用 UidInvalid
-	    std::cout << "SearchInfo: empty search string" << std::endl;
+	    LOG_ERROR("搜索字符串为空");
 	    return;
 	}
 
@@ -304,8 +304,7 @@ void LogicSystem::AddFriendApply(std::shared_ptr<CSession> session, const short&
 	auto desc = root["applyname"].asString();
 	auto bakname = root["bakname"].asString();
 	auto touid = root["touid"].asInt();
-	std::cout << "user login uid is  " << uid << " applydesc  is "
-		<< desc << " bakname is " << bakname << " touid is " << touid << endl;
+	LOG_INFO("添加好友申请: uid={}, 备注={}, 昵称={}, 目标uid={}", uid, desc, bakname, touid);
 
 	Json::Value  rtvalue;
 	rtvalue["error"] = ErrorCodes::Success;
@@ -383,7 +382,7 @@ void LogicSystem::AuthFriendApply(std::shared_ptr<CSession> session, const short
 	auto uid = root["fromuid"].asInt();
 	auto touid = root["touid"].asInt();
 	auto back_name = root["back"].asString();
-	std::cout << "from " << uid << " auth friend to " << touid << std::endl;
+	LOG_INFO("用户 {} 验证好友 {}", uid, touid);
 
 	Json::Value  rtvalue;
 	rtvalue["error"] = ErrorCodes::Success;
@@ -539,9 +538,9 @@ void LogicSystem::DealChatTextMsg(std::shared_ptr<CSession> session, const short
 		auto msg_type = txt_obj.get("msg_type", 0).asInt();
 		auto total_size = txt_obj.get("total_size", 0).asInt64();
 		auto md5 = txt_obj.get("md5", "").asString();
-		std::cout << "content is " << content << std::endl;
-		std::cout << "unique_id is " << unique_id << std::endl;
-		std::cout << "msg_type is " << msg_type << std::endl;
+		LOG_INFO("消息内容: {}", content);
+		LOG_INFO("unique_id: {}", unique_id);
+		LOG_INFO("消息类型: {}", msg_type);
 		// 非法类型一律当文本
 		if (msg_type < 0 || msg_type > 2) {
 			msg_type = 0;
@@ -635,7 +634,7 @@ void LogicSystem::HeartBeatHandler(std::shared_ptr<CSession> session, const shor
 	Json::Value root;
 	reader.parse(msg_data, root);
 	auto uid = root["fromuid"].asInt();
-	std::cout << "receive heart beat msg, uid is " << uid << std::endl;
+	LOG_INFO("收到心跳，uid: {}", uid);
 	Json::Value  rtvalue;
 	rtvalue["error"] = ErrorCodes::Success;
 	session->Send(rtvalue.toStyledString(), ID_HEARTBEAT_RSP);
@@ -672,8 +671,7 @@ void LogicSystem::GetUserByUid(std::string uid_str, Json::Value& rtvalue)
 		auto desc = root["desc"].asString();
 		auto sex = root["sex"].asInt();
 		auto icon = root["icon"].asString();
-		std::cout << "user  uid is  " << uid << " name  is "
-			<< name << " pwd is " << pwd << " email is " << email <<" icon is " << icon << endl;
+		LOG_INFO("用户信息: uid={}, name={}, email={}, icon={}", uid, name, email, icon);
 
 		rtvalue["uid"] = uid;
 		rtvalue["pwd"] = pwd;
@@ -743,8 +741,7 @@ void LogicSystem::GetUserByName(std::string name, Json::Value& rtvalue)
 		auto desc = root["desc"].asString();
 		auto sex = root["sex"].asInt();
 		auto icon = root["icon"].asString();
-		std::cout << "user  uid is  " << uid << " name  is "
-			<< name << " pwd is " << pwd << " email is " << email << endl;
+		LOG_INFO("用户信息: uid={}, name={}, email={}", uid, name, email);
 
 		rtvalue["uid"] = uid;
 		rtvalue["pwd"] = pwd;
@@ -797,7 +794,7 @@ void LogicSystem::GetUserByEmail(const std::string& email, Json::Value& rtvalue)
 	auto user_info = MysqlMgr::GetInstance()->GetUserByEmail(email);
 	if (user_info == nullptr) {
 		rtvalue["error"] = ErrorCodes::UidInvalid;
-		std::cout << "GetUserByEmail: not found, email is " << email << std::endl;
+		LOG_ERROR("按邮箱查询未找到: {}", email);
 		return;
 	}
 
@@ -809,8 +806,7 @@ void LogicSystem::GetUserByEmail(const std::string& email, Json::Value& rtvalue)
 	rtvalue["icon"] = user_info->icon;
 	rtvalue["sex"] = user_info->sex;
 	rtvalue["desc"] = user_info->desc;
-	std::cout << "GetUserByEmail hit, uid is " << user_info->uid
-		<< " name is " << user_info->name << std::endl;
+	LOG_INFO("按邮箱查询命中: uid={}, name={}", user_info->uid, user_info->name);
 }
 
 
@@ -831,8 +827,7 @@ bool LogicSystem::GetBaseInfo(std::string base_key, int uid, std::shared_ptr<Use
 		userinfo->desc = root["desc"].asString();
 		userinfo->sex = root["sex"].asInt();
 		userinfo->icon = root["icon"].asString();
-		std::cout << "user login uid is  " << userinfo->uid << " name  is "
-			<< userinfo->name << " pwd is " << userinfo->pwd << " email is " << userinfo->email << endl;
+		LOG_INFO("用户登录成功: uid={}, name={}, email={}", userinfo->uid, userinfo->name, userinfo->email);
 	}
 	else {
 		//redis中没有则查询mysql
@@ -882,7 +877,7 @@ void LogicSystem::GetUserThreadsHandler(std::shared_ptr<CSession> session,
 	reader.parse(msg_data, root);
 	auto uid = root["uid"].asInt();
 	int last_id = root["thread_id"].asInt();
-	std::cout << "get uid  threads  " << uid << std::endl;
+	LOG_INFO("获取uid: {}", uid);
 
 	Json::Value  rtvalue;
 	rtvalue["error"] = ErrorCodes::Success;

@@ -1,5 +1,6 @@
 #include "VarifyGrpcClient.h"
 #include "ConfigMgr.h"
+#include "logger.h"
 
 RPConPool::RPConPool(size_t poolsize, std::string host, std::string port)
 	:poolsize_(poolsize),host_(host),port_(port),b_stop_(false)
@@ -43,8 +44,7 @@ std::unique_ptr<VarifyService::Stub> RPConPool::getConnection()
 	});
 
 	if (!got) {
-		std::cout << "grpc pool exhausted, wait for connection timeout ("
-			<< POOL_WAIT_TIMEOUT_SEC << "s)" << std::endl;
+		LOG_ERROR("gRPC 连接池耗尽，等待连接超时（{}s）", POOL_WAIT_TIMEOUT_SEC);
 		return nullptr;
 	}
 
@@ -103,7 +103,7 @@ GetVarifyRsp VerifyGrpcClient::GetVarifyCode(std::string email)
 	Status status = stub->GetVarifyCode(&context, request, &reply);
 
 	if (!status.ok()) {
-		std::cout << "gRPC 调用失败: " << status.error_message() << std::endl;
+		LOG_INFO("gRPC 调用失败:  {}", status.error_message());
 		reply.set_error(ErrorCodes::RPCFailed);
 	}
 	return reply;    // guard 在这里析构，自动归还 stub

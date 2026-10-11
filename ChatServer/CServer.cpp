@@ -4,6 +4,7 @@
 #include "UserMgr.h"
 #include "RedisMgr.h"
 #include "ConfigMgr.h"
+#include "logger.h"
 
 CServer::CServer(boost::asio::io_context& io_context, short port):_io_context(io_context), _port(port),
 _acceptor(io_context, tcp::endpoint(tcp::v4(),port)), _timer(_io_context, std::chrono::seconds(60))
@@ -74,7 +75,7 @@ bool CServer::CheckValid(std::string uuid)
 
 void CServer::on_timer(const boost::system::error_code& ec) {
 	if (ec) {
-		std::cout << "timer error: " << ec.message() << std::endl;
+		LOG_ERROR("¶¨Ê±Æ÷´íÎó: {}", ec.message());
 		return;
 	}
 	std::vector<std::shared_ptr<CSession>> _expired_sessions;

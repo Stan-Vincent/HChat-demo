@@ -1,4 +1,4 @@
-ï»¿#include <iostream>
+#include <iostream>
 #include <json/json.h>
 #include <json/value.h>
 #include <json/reader.h>
@@ -14,6 +14,7 @@
 #include <thread>
 #include <boost/asio.hpp>
 #include "StatusServiceImpl.h"
+#include "logger.h"
 void RunServer() {
 	auto& cfg = ConfigMgr::Inst();
 
@@ -21,47 +22,52 @@ void RunServer() {
 	StatusServiceImpl service;
 
 	grpc::ServerBuilder builder;
-	// ç›‘å¬ç«¯å£å’Œæ·»åŠ æœåŠ¡
+	// ¼àÌı¶Ë¿ÚºÍÌí¼Ó·şÎñ
 	builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
 	builder.RegisterService(&service);
 
-	// æ„å»ºå¹¶å¯åŠ¨gRPCæœåŠ¡å™¨
+	// ¹¹½¨²¢Æô¶¯gRPC·şÎñÆ÷
 	std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
-	std::cout << "Server listening on " << server_address << std::endl;
+	LOG_INFO("·şÎñÒÑ¼àÌı: {}", server_address);
 
-	// åˆ›å»ºBoost.Asioçš„io_context
+	// ´´½¨Boost.AsioµÄio_context
 	boost::asio::io_context io_context;
-	// åˆ›å»ºsignal_setç”¨äºæ•è·SIGINT
+	// ´´½¨signal_setÓÃÓÚ²¶»ñSIGINT
 	boost::asio::signal_set signals(io_context, SIGINT, SIGTERM);
 
-	// è®¾ç½®å¼‚æ­¥ç­‰å¾…SIGINTä¿¡å·
+	// ÉèÖÃÒì²½µÈ´ıSIGINTĞÅºÅ
 	signals.async_wait([&server, &io_context](const boost::system::error_code& error, int signal_number) {
 		if (!error) {
-			std::cout << "Shutting down server..." << std::endl;
-			server->Shutdown(); // ä¼˜é›…åœ°å…³é—­æœåŠ¡å™¨
-			io_context.stop(); // åœæ­¢io_context
+			LOG_INFO("ÕıÔÚ¹Ø±Õ·şÎñ...");
+			server->Shutdown(); // ÓÅÑÅµØ¹Ø±Õ·şÎñÆ÷
+			io_context.stop(); // Í£Ö¹io_context
 		}
 		});
 
-	// åœ¨å•ç‹¬çš„çº¿ç¨‹ä¸­è¿è¡Œio_context
+	// ÔÚµ¥¶ÀµÄÏß³ÌÖĞÔËĞĞio_context
 	std::thread([&io_context]() { io_context.run(); }).detach();
 
-	// ç­‰å¾…æœåŠ¡å™¨å…³é—­
+	// µÈ´ı·şÎñÆ÷¹Ø±Õ
 	server->Wait();
 
 }
 
 int main(int argc, char** argv) {
+	hchat::log::init("status");
+
 	try {
 		RunServer();
 		RedisMgr::GetInstance()->Close();
 	}
 	catch (std::exception const& e) {
-		std::cerr << "Error: " << e.what() << std::endl;
+		LOG_ERROR("×´Ì¬·şÎñÖÂÃü´íÎó: {}", e.what());
 		RedisMgr::GetInstance()->Close();
+		hchat::log::shutdown();
 		return EXIT_FAILURE;
 	}
 
+	LOG_INFO("×´Ì¬·şÎñÕı³£ÍË³ö");
+	hchat::log::shutdown();
 	return 0;
 }
 

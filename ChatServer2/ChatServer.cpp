@@ -1,4 +1,4 @@
-ï»¿// ChatServer.cpp : æ­¤æ–‡ä»¶åŒ…å« "main" å‡½æ•°ã€‚ç¨‹åºæ‰§è¡Œå°†åœ¨æ­¤å¤„å¼€å§‹å¹¶ç»“æŸã€‚
+// ChatServer.cpp : ´ËÎÄ¼ş°üº¬ "main" º¯Êı¡£³ÌĞòÖ´ĞĞ½«ÔÚ´Ë´¦¿ªÊ¼²¢½áÊø¡£
 //
 
 #include "LogicSystem.h"
@@ -11,6 +11,7 @@
 #include "RedisMgr.h"
 #include "ChatServiceImpl.h"
 #include "const.h"
+#include "logger.h"
 
 using namespace std;
 bool bstop = false;
@@ -19,11 +20,13 @@ std::mutex mutex_quit;
 
 int main()
 {
+    hchat::log::init("chat2");
+
 	auto& cfg = ConfigMgr::Inst();
 	auto server_name = cfg["SelfServer"]["Name"];
 	try {
 		auto pool = AsioIOServicePool::GetInstance();
-		//å°†ç™»å½•æ•°è®¾ç½®ä¸º0
+		//½«µÇÂ¼ÊıÉèÖÃÎª0
 		RedisMgr::GetInstance()->HSet(LOGIN_COUNT, server_name, "0");
 		Defer derfer ([server_name]() {
 				RedisMgr::GetInstance()->HDel(LOGIN_COUNT, server_name);
@@ -32,34 +35,34 @@ int main()
 
 		boost::asio::io_context  io_context;
 		auto port_str = cfg["SelfServer"]["Port"];
-		//åˆ›å»ºCserveræ™ºèƒ½æŒ‡é’ˆ
+		//´´½¨CserverÖÇÄÜÖ¸Õë
 		auto pointer_server = std::make_shared<CServer>(io_context, atoi(port_str.c_str()));
-		//å¯åŠ¨å®šæ—¶å™¨
+		//Æô¶¯¶¨Ê±Æ÷
 		pointer_server->StartTimer();
 
-		//å®šä¹‰ä¸€ä¸ªGrpcServer
+		//¶¨ÒåÒ»¸öGrpcServer
 
 		std::string server_address(cfg["SelfServer"]["Host"] + ":" + cfg["SelfServer"]["RPCPort"]);
 		ChatServiceImpl service;
 		grpc::ServerBuilder builder;
-		// ç›‘å¬ç«¯å£å’Œæ·»åŠ æœåŠ¡
+		// ¼àÌı¶Ë¿ÚºÍÌí¼Ó·şÎñ
 		builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
 		builder.RegisterService(&service);
 		service.RegisterServer(pointer_server);
-		// æ„å»ºå¹¶å¯åŠ¨gRPCæœåŠ¡å™¨
+		// ¹¹½¨²¢Æô¶¯gRPC·şÎñÆ÷
 		std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
-		// â˜… å¿…é¡»åˆ¤ç©ºï¼šç«¯å£è¢«å ç”¨ / åœ°å€éæ³•æ—¶ BuildAndStart è¿”å› nullptrã€‚
-		//   åŸæ¥ç›´æ¥å¾€ä¸‹èµ° â€”â€” å…ˆæ‰“å°ä¸€å¥å‡çš„ "RPC Server listening"ï¼Œ
-		//   ç´§æ¥ç€ RPC çº¿ç¨‹è°ƒ server->Wait() è§£å¼•ç”¨ç©ºæŒ‡é’ˆ -> Segmentation faultã€‚
+		// ¡ï ±ØĞëÅĞ¿Õ£º¶Ë¿Ú±»Õ¼ÓÃ / µØÖ··Ç·¨Ê± BuildAndStart ·µ»Ø nullptr¡£
+		//   Ô­À´Ö±½ÓÍùÏÂ×ß ¡ª¡ª ÏÈ´òÓ¡Ò»¾ä¼ÙµÄ "RPC Server listening"£¬
+		//   ½ô½Ó×Å RPC Ïß³Ìµ÷ server->Wait() ½âÒıÓÃ¿ÕÖ¸Õë -> Segmentation fault¡£
 		if (server == nullptr) {
-			std::cerr << "FATAL: gRPC æœåŠ¡å¯åŠ¨å¤±è´¥ï¼Œæ— æ³•ç›‘å¬ " << server_address << std::endl;
-			std::cerr << "       å¸¸è§åŸå› ï¼šç«¯å£å·²è¢«å ç”¨ï¼ˆæ˜¯å¦å·²ç»æœ‰ä¸€ä¸ª ChatServer åœ¨è·‘ï¼Ÿï¼‰ï¼Œæˆ– Host/RPCPort é…ç½®ä¸å¯¹ã€‚" << std::endl;
-			std::cerr << "       RPC æ˜¯ ChatServer ä¹‹é—´è½¬å‘æ¶ˆæ¯ç”¨çš„ï¼Œèµ·ä¸æ¥å°±æ— æ³•å·¥ä½œï¼Œè¿™é‡Œç›´æ¥é€€å‡ºã€‚" << std::endl;
+			std::cerr << "FATAL: gRPC ·şÎñÆô¶¯Ê§°Ü£¬ÎŞ·¨¼àÌı " << server_address << std::endl;
+			std::cerr << "       ³£¼ûÔ­Òò£º¶Ë¿ÚÒÑ±»Õ¼ÓÃ£¨ÊÇ·ñÒÑ¾­ÓĞÒ»¸ö ChatServer ÔÚÅÜ£¿£©£¬»ò Host/RPCPort ÅäÖÃ²»¶Ô¡£" << std::endl;
+			std::cerr << "       RPC ÊÇ ChatServer Ö®¼ä×ª·¢ÏûÏ¢ÓÃµÄ£¬Æğ²»À´¾ÍÎŞ·¨¹¤×÷£¬ÕâÀïÖ±½ÓÍË³ö¡£" << std::endl;
 			return 1;
 		}
-		std::cout << "RPC Server listening on " << server_address << std::endl;
+		LOG_INFO("RPC ·şÎñÒÑ¼àÌı: {}", server_address);
 
-		//å•ç‹¬å¯åŠ¨ä¸€ä¸ªçº¿ç¨‹å¤„ç†grpcæœåŠ¡
+		//µ¥¶ÀÆô¶¯Ò»¸öÏß³Ì´¦Àígrpc·şÎñ
 		std::thread  grpc_server_thread([&server]() {
 				server->Wait();
 			});
@@ -73,9 +76,11 @@ int main()
 			});
 		
 	
-		//å°†Cserveræ³¨å†Œç»™é€»è¾‘ç±»æ–¹ä¾¿ä»¥åæ¸…é™¤è¿æ¥
+		//½«Cserver×¢²á¸øÂß¼­Àà·½±ãÒÔºóÇå³ıÁ¬½Ó
 		LogicSystem::GetInstance()->SetServer(pointer_server);
 		io_context.run();
+		LOG_INFO("ÁÄÌì·şÎñ2Õı³£ÍË³ö");
+		hchat::log::shutdown();
 
 		grpc_server_thread.join();
 		pointer_server->StopTimer();

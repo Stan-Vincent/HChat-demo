@@ -7,6 +7,7 @@
 #include "RedisMgr.h"
 #include "MysqlMgr.h"
 #include "utils.h"
+#include "logger.h"
 
 ChatServiceImpl::ChatServiceImpl()
 {
@@ -162,8 +163,7 @@ bool ChatServiceImpl::GetBaseInfo(std::string base_key, int uid, std::shared_ptr
 		userinfo->desc = root["desc"].asString();
 		userinfo->sex = root["sex"].asInt();
 		userinfo->icon = root["icon"].asString();
-		std::cout << "user login uid is  " << userinfo->uid << " name  is "
-			<< userinfo->name << " pwd is " << userinfo->pwd << " email is " << userinfo->email << endl;
+		LOG_INFO("用户登录成功: uid={}, name={}, email={}", userinfo->uid, userinfo->name, userinfo->email);
 	}
 	else {
 		//redis中没有则查询mysql

@@ -1,5 +1,6 @@
-ï»¿#include "AsioIOServicePool.h"
+#include "AsioIOServicePool.h"
 #include <iostream>
+#include "logger.h"
 using namespace std;
 
 AsioIOServicePool::AsioIOServicePool(std::size_t size):_ioServices(size),_works(size), _nextIOService(0)
@@ -8,7 +9,7 @@ AsioIOServicePool::AsioIOServicePool(std::size_t size):_ioServices(size),_works(
 		_works[i] = std::make_unique<Work>(_ioServices[i].get_executor());
 	}
 
-	//éå†å¤šä¸ªioserviceï¼Œåˆ›å»ºå¤šä¸ªçº¿ç¨‹ï¼Œæ¯ä¸ªçº¿ç¨‹å†…éƒ¨å¯åŠ¨ioservice
+	//±éÀú¶à¸öioservice£¬´´½¨¶à¸öÏß³Ì£¬Ã¿¸öÏß³ÌÄÚ²¿Æô¶¯ioservice
 	for (std::size_t i = 0; i < _ioServices.size(); ++i) {
 		_threads.emplace_back([this, i]() {
 			_ioServices[i].run();
@@ -18,7 +19,7 @@ AsioIOServicePool::AsioIOServicePool(std::size_t size):_ioServices(size),_works(
 
 AsioIOServicePool::~AsioIOServicePool() {
 	Stop();
-	std::cout << "AsioIOServicePool destruct" << endl;
+	LOG_INFO("AsioIOServicePool Îö¹¹");
 }
 
 boost::asio::io_context& AsioIOServicePool::GetIOService() {
@@ -30,11 +31,11 @@ boost::asio::io_context& AsioIOServicePool::GetIOService() {
 }
 
 void AsioIOServicePool::Stop() {
-	// å› ä¸ºä»…ä»…æ‰§è¡Œ work.reset å¹¶ä¸èƒ½è®© io_context ä» run çš„çŠ¶æ€ä¸­é€€å‡º
-	// å½“ io_context å·²ç»ç»‘å®šäº†è¯»æˆ–å†™çš„ç›‘å¬äº‹ä»¶åï¼Œè¿˜éœ€è¦æ‰‹åŠ¨ stop è¯¥æœåŠ¡
+	// ÒòÎª½ö½öÖ´ĞĞ work.reset ²¢²»ÄÜÈÃ io_context ´Ó run µÄ×´Ì¬ÖĞÍË³ö
+	// µ± io_context ÒÑ¾­°ó¶¨ÁË¶Á»òĞ´µÄ¼àÌıÊÂ¼şºó£¬»¹ĞèÒªÊÖ¶¯ stop ¸Ã·şÎñ
 	for (std::size_t i = 0; i < _works.size(); ++i) {
-		_ioServices[i].stop();   // ç›´æ¥åœå¯¹åº”çš„ io_context
-		_works[i].reset();       // é‡Šæ”¾ workï¼Œå…è®¸ io_context é€€å‡º
+		_ioServices[i].stop();   // Ö±½ÓÍ£¶ÔÓ¦µÄ io_context
+		_works[i].reset();       // ÊÍ·Å work£¬ÔÊĞí io_context ÍË³ö
 	}
 
 	for (auto& t : _threads) {

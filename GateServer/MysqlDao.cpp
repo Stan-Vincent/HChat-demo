@@ -1,5 +1,6 @@
 #include "MysqlDao.h"
 #include "ConfigMgr.h"
+#include "logger.h"
 
 // ============================================================
 //                     MySqlPool 实现
@@ -30,7 +31,7 @@ MySqlPool::MySqlPool(const std::string& host, int port,
             pool_.push(std::make_unique<SqlConnection>(con, timestamp));
         }
 
-        std::cout << "MySQL 连接池初始化完成，成功连接数: " << pool_.size() << std::endl;
+        LOG_INFO("MySQL 连接池初始化完成，成功连接数:  {}", pool_.size());
 
         //后台保活线程
         _check_thread = std::thread([this]() {
@@ -46,14 +47,14 @@ MySqlPool::MySqlPool(const std::string& host, int port,
             });
     }
     catch (sql::SQLException& e) {
-        std::cout << "mysql pool init failed, error is " << e.what() << std::endl;
+        LOG_ERROR("MySQL 连接池初始化失败: {}", e.what());
     }
     catch (std::exception& e) {
         // 非 SQLException 也兜住，避免异常穿过连接池构造函数把整个进程打死
-        std::cout << "mysql pool init threw: " << e.what() << std::endl;
+        LOG_INFO("MySQL 连接池初始化异常: {}", e.what());
     }
     catch (...) {
-        std::cout << "mysql pool init threw unknown exception" << std::endl;
+        LOG_ERROR("MySQL 连接池初始化抛出未知异常");
     }
 }
 
@@ -104,8 +105,7 @@ std::unique_ptr<SqlConnection> MySqlPool::getConnection()
     });
 
     if (!got) {
-        std::cout << "mysql pool exhausted, wait for connection timeout ("
-            << POOL_WAIT_TIMEOUT_SEC << "s)" << std::endl;
+        LOG_ERROR("MySQL 连接池耗尽，等待连接超时（{}s）", POOL_WAIT_TIMEOUT_SEC);
         return nullptr;
     }
 
@@ -153,7 +153,7 @@ void MySqlPool::checkConnectionPro()
                 con->_last_oper_time = timestamp;
             }
             catch (sql::SQLException& e) {
-                std::cout << "Error keeping connection alive: " << e.what() << std::endl;
+                LOG_ERROR("保活连接出错: {}", e.what());
                 healthy = false;
                 _fail_count++;
             }
@@ -199,11 +199,11 @@ bool MySqlPool::reconnect(long long timestamp)
             std::lock_guard<std::mutex> guard(mutex_);
             pool_.push(std::move(newCon));
         }
-        std::cout << "mysql connection reconnect success" << std::endl;
+        LOG_INFO("MySQL 连接重连成功");
         return true;
     }
     catch (sql::SQLException& e) {
-        std::cout << "Reconnect failed, error is " << e.what() << std::endl;
+        LOG_ERROR("重连失败: {}", e.what());
         return false;
     }
 }
@@ -263,7 +263,7 @@ int MysqlDao::RegUser(const std::string& name, const std::string& email, const s
         //返回结果
         if (res->next()) {
             int result = res->getInt("result");
-            std::cout << "Result: " << result << std::endl;
+            LOG_INFO("查询结果: {}", result);
             return result;
         }
         return -1;
@@ -307,7 +307,7 @@ int MysqlDao::RegUserTransaction(const std::string& name, const std::string& ema
 
         if (res_email->next()) {
             con->_con->rollback();
-            std::cout << "email " << email << " exist" << std::endl;
+            LOG_INFO("邮箱 {} 已存在", email);
             return 0;
         }
 
@@ -320,7 +320,7 @@ int MysqlDao::RegUserTransaction(const std::string& name, const std::string& ema
 
         if (res_name->next()) {
             con->_con->rollback();
-            std::cout << "name " << name << " exist" << std::endl;
+            LOG_INFO("用户名 {} 已存在", name);
             return 0;
         }
 
@@ -342,7 +342,7 @@ int MysqlDao::RegUserTransaction(const std::string& name, const std::string& ema
         }
         else 
         {
-            std::cout << "select id from user_id failed" << std::endl;
+            LOG_ERROR("查询 user_id 自增表失败");
             con->_con->rollback();
             return -1;
         }
@@ -363,7 +363,7 @@ int MysqlDao::RegUserTransaction(const std::string& name, const std::string& ema
 
         // 6. 提交事务
         con->_con->commit();
-        std::cout << "newuser insert into user success" << std::endl;
+        LOG_INFO("新用户写入 user 表成功");
         return newId;
     }
     catch (sql::SQLException& e) {
@@ -408,7 +408,7 @@ bool MysqlDao::CheckEmail(const std::string& name, const std::string& email)
         std::unique_ptr<sql::ResultSet> res(pstmt->executeQuery());
         while (res->next()) {
             std::string dbEmail = res->getString("email");
-            std::cout << "Check Email: " << dbEmail << std::endl;
+            LOG_INFO("校验邮箱: {}", dbEmail);
             return (email == dbEmail);   // 直接返回，Defer 保证归还
         }
         return false;
@@ -439,7 +439,7 @@ bool MysqlDao::UpdatePwd(const std::string& name, const std::string& newpwd)
         pstmt->setString(2, name);
 
         int updateCount = pstmt->executeUpdate();
-        std::cout << "Updated rows: " << updateCount << std::endl;
+        LOG_INFO("更新行数: {}", updateCount);
         return true;
     }
     catch (sql::SQLException& e) {
@@ -474,7 +474,7 @@ bool MysqlDao::UpdateUserInfo(int uid, const std::string& nick, const std::strin
 		pstmt->setInt(5, uid);
 
 		int updateCount = pstmt->executeUpdate();
-		std::cout << "UpdateUserInfo rows: " << updateCount << std::endl;
+		LOG_INFO("更新用户信息行数: {}", updateCount);
 		if (updateCount > 0) {
 			return true;
 		}
@@ -491,8 +491,7 @@ bool MysqlDao::UpdateUserInfo(int uid, const std::string& nick, const std::strin
 		chk->setInt(1, uid);
 		std::unique_ptr<sql::ResultSet> rs(chk->executeQuery());
 		if (rs->next()) {
-			std::cout << "UpdateUserInfo: uid=" << uid
-			          << " exists, values unchanged -> success" << std::endl;
+			LOG_INFO("更新用户信息: uid={}，值未变化视为成功", uid);
 			return true;
 		}
 		return false;
@@ -528,7 +527,7 @@ bool MysqlDao::CheckPwd(const std::string& email, const std::string& pwd, UserIn
         }
 
         std::string origin_pwd = res->getString("pwd");
-        std::cout << "Password: " << origin_pwd << std::endl;
+        LOG_WARN("校验邮箱 {} 的密码（原始密码已隐藏）", email);
 
         if (pwd != origin_pwd) {
             return false;
@@ -573,7 +572,7 @@ bool MysqlDao::TestProcedure(const std::string& email, int& uid, std::string& na
             return false;
         }
         uid = res->getInt("uid");
-        std::cout << "uid: " << uid << std::endl;
+        LOG_INFO("uid: {}", uid);
 
         // 读输出参数 @userName
         stmtResult.reset(con->_con->createStatement());
@@ -582,7 +581,7 @@ bool MysqlDao::TestProcedure(const std::string& email, int& uid, std::string& na
             return false;
         }
         name = res->getString("name");
-        std::cout << "name: " << name << std::endl;
+        LOG_INFO("用户名: {}", name);
         return true;
     }
     catch (sql::SQLException& e) {

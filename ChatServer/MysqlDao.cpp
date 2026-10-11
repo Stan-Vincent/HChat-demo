@@ -1,5 +1,6 @@
 #include "MysqlDao.h"
 #include "ConfigMgr.h"
+#include "logger.h"
 
 MysqlDao::MysqlDao()
 {
@@ -40,7 +41,7 @@ int MysqlDao::RegUser(const std::string& name, const std::string& email, const s
 		std::unique_ptr<sql::ResultSet> res(stmtResult->executeQuery("SELECT @result AS result"));
 		if (res->next()) {
 			int result = res->getInt("result");
-			std::cout << "Result: " << result << std::endl;
+			LOG_INFO("查询结果: {}", result);
 			pool_->returnConnection(std::move(con));
 			return result;
 		}
@@ -74,7 +75,7 @@ bool MysqlDao::CheckEmail(const std::string& name, const std::string& email) {
 
 		// 遍历结果集
 		while (res->next()) {
-			std::cout << "Check Email: " << res->getString("email") << std::endl;
+			LOG_INFO("邮箱 {} 已存在", res->getString("email").c_str());
 			if (email != res->getString("email")) {
 				pool_->returnConnection(std::move(con));
 				return false;
@@ -110,7 +111,7 @@ bool MysqlDao::UpdatePwd(const std::string& name, const std::string& newpwd) {
 		// 执行更新
 		int updateCount = pstmt->executeUpdate();
 
-		std::cout << "Updated rows: " << updateCount << std::endl;
+		LOG_INFO("更新行数: {}", updateCount);
 		pool_->returnConnection(std::move(con));
 		return true;
 	}
@@ -145,7 +146,7 @@ bool MysqlDao::CheckPwd(const std::string& name, const std::string& pwd, UserInf
 		while (res->next()) {
 			origin_pwd = res->getString("pwd");
 			// 输出查询到的密码
-			std::cout << "Password: " << origin_pwd << std::endl;
+			LOG_WARN("校验密码（原始密码已隐藏）");
 			break;
 		}
 
@@ -398,7 +399,7 @@ bool MysqlDao::AddFriend(const int& from, const int& to, std::string back_name,
 				tx_data->set_thread_id(threadId);
 				tx_data->set_unique_id("");
 				tx_data->set_status(2);
-				std::cout << "addfriend insert message success" << std::endl;
+				LOG_INFO("好友申请消息写入成功");
 				chat_datas.push_back(tx_data);
 			}
 			else {
@@ -442,7 +443,7 @@ bool MysqlDao::AddFriend(const int& from, const int& to, std::string back_name,
 
 		// 提交事务
 		con->_con->commit();
-		std::cout << "addfriend insert friends success" << std::endl;
+		LOG_INFO("好友关系写入成功");
 
 		return true;
 	}

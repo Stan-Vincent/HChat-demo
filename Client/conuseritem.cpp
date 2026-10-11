@@ -2,6 +2,7 @@
 #include "ui_conuseritem.h"
 #include "imagemanager.h"
 #include <QPointer>
+#include "logcategory.h"
 
 ConUserItem::ConUserItem(QWidget *parent) :
     ListItemBase(parent),
@@ -38,7 +39,7 @@ void ConUserItem::LoadIconAsync(const QString& icon)
                 ui->icon_lb->setPixmap(pix.scaled(ui->icon_lb->size(),
                     Qt::KeepAspectRatio, Qt::SmoothTransformation));
             } else {
-                qDebug() << "ConUserItem load avatar failed:" << err;
+                qCDebug(lcAvatar) << "ConUserItem load avatar failed:" << err;
             }
         });
     ui->icon_lb->setScaledContents(true);

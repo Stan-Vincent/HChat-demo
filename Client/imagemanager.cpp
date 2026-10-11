@@ -11,6 +11,7 @@
 #include <QCryptographicHash>
 #include <QStandardPaths>
 #include <QDebug>
+#include "logcategory.h"
 
 std::shared_ptr<ImageManager> ImageManager::instance()
 {
@@ -74,7 +75,7 @@ bool ImageManager::saveToDiskCache(const QString &fullUrl, const QPixmap &pix)
         return false;
     }
     if (!pix.save(path, "PNG")) {
-        qDebug() << "save image cache failed:" << path;
+        qCDebug(lcAvatar) << "save image cache failed:" << path;
         return false;
     }
     return true;
@@ -118,7 +119,7 @@ void ImageManager::downloadImage(const QString &url,
     QObject::connect(r2, &QNetworkReply::finished, this, [r2, cb, full]() {
         r2->deleteLater();
         if (r2->error() != QNetworkReply::NoError) {
-            qDebug() << "download image failed:" << full << r2->errorString();
+            qCDebug(lcAvatar) << "download image failed:" << full << r2->errorString();
             cb(false, QPixmap(), r2->errorString());
             return;
         }
@@ -136,7 +137,7 @@ void ImageManager::downloadImage(const QString &url,
         ImageManager::instance()->saveToDiskCache(full, pix);
         cb(true, pix, "");
     });
-    qDebug() << "download image:" << full;
+    qCDebug(lcAvatar) << "download image:" << full;
 }
 
 void ImageManager::loadAvatar(const QString &url,

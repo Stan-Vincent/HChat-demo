@@ -59,9 +59,11 @@ SOURCES += \
     userinfopage.cpp \
     usermgr.cpp \
     uploadmanager.cpp \
-    imagemanager.cpp
+    imagemanager.cpp \
+    logcategory.cpp
 
 HEADERS += \
+    logcategory.h \
     BubbleFrame.h \
     ChatItemBase.h \
     ChatView.h \

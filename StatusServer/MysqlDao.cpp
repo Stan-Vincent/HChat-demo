@@ -1,5 +1,6 @@
 #include "MysqlDao.h"
 #include "ConfigMgr.h"
+#include "logger.h"
 
 MysqlDao::MysqlDao()
 {
@@ -74,7 +75,7 @@ bool MysqlDao::CheckEmail(const std::string& name, const std::string& email) {
 
 		// 遍历结果集
 		while (res->next()) {
-			std::cout << "Check Email: " << res->getString("email") << std::endl;
+			LOG_INFO("邮箱 {} 已存在", res->getString("email").c_str());
 			if (email != res->getString("email")) {
 				pool_->returnConnection(std::move(con));
 				return false;
@@ -110,7 +111,7 @@ bool MysqlDao::UpdatePwd(const std::string& name, const std::string& newpwd) {
 		// 执行更新
 		int updateCount = pstmt->executeUpdate();
 
-		std::cout << "Updated rows: " << updateCount << std::endl;
+		LOG_INFO("更新行数: {}", updateCount);
 		pool_->returnConnection(std::move(con));
 		return true;
 	}
@@ -147,7 +148,7 @@ bool MysqlDao::CheckPwd(const std::string& name, const std::string& pwd, UserInf
 		while (res->next()) {
 			origin_pwd = res->getString("pwd");
 			// 输出查询到的密码
-			std::cout << "Password: " << origin_pwd << std::endl;
+			LOG_WARN("校验密码（原始密码已隐藏）");
 			break;
 		}
 

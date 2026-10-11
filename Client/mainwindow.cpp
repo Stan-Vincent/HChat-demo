@@ -6,6 +6,7 @@
 #include <QMessageBox>
 #include <QApplication>
 #include <QScreen>
+#include "logcategory.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -112,7 +113,7 @@ void MainWindow::slot_switch_chatdlg()
 
 void MainWindow::slot_logout()
 {
-	qDebug() << "MainWindow::slot_logout";
+	qCDebug(lcChat) << "MainWindow::slot_logout";
 	// 主动退出登录的用户不该再被自动登录拉回来
 	_login_dlg->SetAutoLogin(false);
 	offlineLogin();

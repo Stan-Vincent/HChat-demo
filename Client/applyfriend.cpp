@@ -5,6 +5,7 @@
 #include <QScrollBar>
 #include "usermgr.h"
 #include "tcpmgr.h"
+#include "logcategory.h"
 
 ApplyFriend::ApplyFriend(QWidget *parent) :
     QDialog(parent),
@@ -51,7 +52,7 @@ ApplyFriend::ApplyFriend(QWidget *parent) :
 
 ApplyFriend::~ApplyFriend()
 {
-    qDebug()<< "ApplyFriend destruct";
+    qCDebug(lcUser) << "ApplyFriend destruct";
     delete ui;
 }
 
@@ -128,7 +129,7 @@ void ApplyFriend::SetSearchInfo(std::shared_ptr<SearchInfo> si)
 
 void ApplyFriend::ShowMoreLabel()
 {
-    qDebug()<< "ApplyFriend [receive more label clicked]";
+    qCDebug(lcUser) << "ApplyFriend [receive more label clicked]";
     ui->more_lb_wid->hide();
 
     ui->lb_list->setFixedWidth(325);
@@ -193,7 +194,7 @@ void ApplyFriend::ShowMoreLabel()
    int diff_height = next_point.y() + textHeight + tip_offset - ui->lb_list->height();
    ui->lb_list->setFixedHeight(next_point.y() + textHeight + tip_offset);
 
-    //qDebug()<<"after resize ui->lb_list size is " <<  ui->lb_list->size();
+    //qCDebug(lcUser) <<"after resize ui->lb_list size is " <<  ui->lb_list->size();
     ui->scrollcontent->setFixedHeight(ui->scrollcontent->height()+diff_height);
 }
 
@@ -303,13 +304,13 @@ void ApplyFriend::SlotLabelEnter()
     lb->setObjectName("tipslb");
     lb->setText(text);
     connect(lb, &ClickedLabel::clicked, this, &ApplyFriend::SlotChangeFriendLabelByTip);
-    qDebug() << "ui->lb_list->width() is " << ui->lb_list->width();
-    qDebug() << "_tip_cur_point.x() is " << _tip_cur_point.x();
+    qCDebug(lcUser) << "ui->lb_list->width() is " << ui->lb_list->width();
+    qCDebug(lcUser) << "_tip_cur_point.x() is " << _tip_cur_point.x();
 
     QFontMetrics fontMetrics(lb->font()); // 获取QLabel控件的字体信息
     int textWidth = fontMetrics.horizontalAdvance(lb->text()); // 获取文本的宽度
     int textHeight = fontMetrics.height(); // 获取文本的高度
-    qDebug() << "textWidth is " << textWidth;
+    qCDebug(lcUser) << "textWidth is " << textWidth;
 
     if (_tip_cur_point.x() + textWidth + tip_offset + 3 > ui->lb_list->width()) {
 
@@ -333,7 +334,7 @@ void ApplyFriend::SlotLabelEnter()
 
 void ApplyFriend::SlotRemoveFriendLabel(QString name)
 {
-    qDebug() << "receive close signal";
+    qCDebug(lcUser) << "receive close signal";
 
     _label_point.setX(2);
     _label_point.setY(6);
@@ -446,13 +447,13 @@ void ApplyFriend::SlotAddFirendLabelByClickTip(QString text)
 	lb->setObjectName("tipslb");
 	lb->setText(text);
 	connect(lb, &ClickedLabel::clicked, this, &ApplyFriend::SlotChangeFriendLabelByTip);
-    qDebug() << "ui->lb_list->width() is " << ui->lb_list->width();
-    qDebug() << "_tip_cur_point.x() is " << _tip_cur_point.x();
+    qCDebug(lcUser) << "ui->lb_list->width() is " << ui->lb_list->width();
+    qCDebug(lcUser) << "_tip_cur_point.x() is " << _tip_cur_point.x();
    
 	QFontMetrics fontMetrics(lb->font()); // 获取QLabel控件的字体信息
 	int textWidth = fontMetrics.horizontalAdvance(lb->text()); // 获取文本的宽度
 	int textHeight = fontMetrics.height(); // 获取文本的高度
-    qDebug() << "textWidth is " << textWidth;
+    qCDebug(lcUser) << "textWidth is " << textWidth;
 
 	if (_tip_cur_point.x() + textWidth+ tip_offset+3 > ui->lb_list->width()) {
 
@@ -476,7 +477,7 @@ void ApplyFriend::SlotAddFirendLabelByClickTip(QString text)
 
 void ApplyFriend::SlotApplySure()
 {
-    qDebug()<<"Slot Apply Sure called" ;
+    qCDebug(lcUser) <<"Slot Apply Sure called" ;
     //发送请求逻辑
     QJsonObject jsonObj;
     auto uid = UserMgr::GetInstance()->GetUid();
@@ -507,7 +508,7 @@ void ApplyFriend::SlotApplySure()
 
 void ApplyFriend::SlotApplyCancel()
 {
-    qDebug() << "Slot Apply Cancel";
+    qCDebug(lcUser) << "Slot Apply Cancel";
     this->hide();
     deleteLater();
 }

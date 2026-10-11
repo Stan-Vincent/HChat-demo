@@ -1,4 +1,5 @@
 #include "ConfigMgr.h"
+#include "logger.h"
 
 ConfigMgr::~ConfigMgr()
 {
@@ -55,7 +56,7 @@ ConfigMgr::ConfigMgr() {
         throw std::runtime_error("config.ini not found");
     }
     
-    std::cout << "Config path: " << config_path << std::endl;
+    LOG_INFO("配置文件路径: {}", config_path.string());
 
 
     // 遍历INI文件中的所有section  
@@ -80,9 +81,9 @@ ConfigMgr::ConfigMgr() {
     for (const auto& section_entry : _config_map) {
         const std::string& section_name = section_entry.first;
         SectionInfo section_config = section_entry.second;
-        std::cout << "[" << section_name << "]" << std::endl;
+        LOG_INFO("[配置节 {}]", section_name);
         for (const auto& key_value_pair : section_config._section_datas) {
-            std::cout << key_value_pair.first << "=" << key_value_pair.second << std::endl;
+            LOG_INFO("配置项 {} = {}", key_value_pair.first, key_value_pair.second);
         }
     }
     

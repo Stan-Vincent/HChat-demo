@@ -3,6 +3,7 @@
 #include "usermgr.h"
 #include "imagemanager.h"
 #include <QPointer>
+#include "logcategory.h"
 
 ChatUserWid::ChatUserWid(QWidget *parent) :
     ListItemBase(parent),
@@ -31,7 +32,7 @@ void ChatUserWid::SetChatData(std::shared_ptr<ChatThreadData> chat_data) {
     // ★ 必须判空：GetFriendById 查不到会返回 nullptr，
     //   之前这里直接 other_info->_icon，库里一旦有 uid=0 的坏会话就会闪退。
     if (other_info == nullptr) {
-        qDebug() << "SetChatData: friend info not found, other_id =" << other_id;
+        qCDebug(lcChat) << "SetChatData: friend info not found, other_id =" << other_id;
         return;
     }
     // _icon 是服务端 URL，QPixmap(url) 会当本地文件读 → 空白。异步拉取。
@@ -44,7 +45,7 @@ void ChatUserWid::SetChatData(std::shared_ptr<ChatThreadData> chat_data) {
                     ui->icon_lb->setPixmap(pix.scaled(ui->icon_lb->size(),
                         Qt::KeepAspectRatio, Qt::SmoothTransformation));
                 } else {
-                    qDebug() << "ChatUserWid load avatar failed:" << err;
+                    qCDebug(lcChat) << "ChatUserWid load avatar failed:" << err;
                 }
             });
         ui->icon_lb->setScaledContents(true);

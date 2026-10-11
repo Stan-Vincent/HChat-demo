@@ -9,6 +9,7 @@
 #include "loadingdlg.h"
 #include "userdata.h"
 #include "usermgr.h"
+#include "logcategory.h"
 
 // ★ 初始化顺序必须跟 searchlist.h 里成员的【声明顺序】一致，
 //   否则编译器会报 -Wreorder（并且实际初始化顺序是声明顺序，不是这里写的顺序）。
@@ -70,7 +71,7 @@ void SearchList::addTipItem()
 {
     auto *invalid_item = new QWidget();
     QListWidgetItem *item_tmp = new QListWidgetItem;
-    //qDebug()<<"chat_user_wid sizeHint is " << chat_user_wid->sizeHint();
+    //qCDebug(lcUser) <<"chat_user_wid sizeHint is " << chat_user_wid->sizeHint();
     item_tmp->setSizeHint(QSize(250,10));
     this->addItem(item_tmp);
     invalid_item->setObjectName("invalid_item");
@@ -80,7 +81,7 @@ void SearchList::addTipItem()
 
     auto *add_user_item = new AddUserItem();
     QListWidgetItem *item = new QListWidgetItem;
-    //qDebug()<<"chat_user_wid sizeHint is " << chat_user_wid->sizeHint();
+    //qCDebug(lcUser) <<"chat_user_wid sizeHint is " << chat_user_wid->sizeHint();
     item->setSizeHint(add_user_item->sizeHint());
     this->addItem(item);
     this->setItemWidget(item, add_user_item);
@@ -90,20 +91,20 @@ void SearchList::slot_item_clicked(QListWidgetItem *item)
 {
     QWidget *widget = this->itemWidget(item); // 获取自定义widget对象
     if(!widget){
-        qDebug()<< "slot item clicked widget is nullptr";
+        qCDebug(lcUser) << "slot item clicked widget is nullptr";
         return;
     }
 
     // 对自定义widget进行操作， 将item 转化为基类ListItemBase
     ListItemBase *customItem = qobject_cast<ListItemBase*>(widget);
     if(!customItem){
-        qDebug()<< "slot item clicked widget is nullptr";
+        qCDebug(lcUser) << "slot item clicked widget is nullptr";
         return;
     }
 
     auto itemType = customItem->GetItemType();
     if(itemType == ListItemType::INVALID_ITEM){
-        qDebug()<< "slot invalid item clicked ";
+        qCDebug(lcUser) << "slot invalid item clicked ";
         return;
     }
 
@@ -119,7 +120,7 @@ void SearchList::slot_item_clicked(QListWidgetItem *item)
 
            auto search_edit = dynamic_cast<CustomizeEdit*>(_search_edit);
            if (search_edit == nullptr) {
-               qDebug() << "search_edit is not a CustomizeEdit, give up";
+               qCDebug(lcUser) << "search_edit is not a CustomizeEdit, give up";
                return;
            }
 
@@ -130,7 +131,7 @@ void SearchList::slot_item_clicked(QListWidgetItem *item)
            //   -> 客户端收不到回包永远转圈 -> 心跳超时掉线。
            auto uid_str = search_edit->text().trimmed();
            if (uid_str.isEmpty()) {
-               qDebug() << "search text is empty, do not send request";
+               qCDebug(lcUser) << "search text is empty, do not send request";
                _find_dlg = std::make_shared<FindFailDlg>(this);
                _find_dlg->show();
                return;

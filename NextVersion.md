@@ -15,7 +15,7 @@
 | P0 | 客户端 | 聊天链路错误无用户提示 | `[ ]` |
 | P0 | 客户端 | Enter 发送快捷键 | `[ ]` |
 | P0 | 客户端 | 槽函数无 try/catch 兜底 | `[ ]` |
-| P1 | 后端 | 结构化日志 | `[ ]` |
+| P1 | 后端 | 结构化日志 | `[x]` 已完成 |
 | P1 | 后端 | Redis 重连 + 健康检查 | `[ ]` |
 | P1 | 客户端 | 断线自动重连 | `[ ]` |
 | P2 | 后端 | token 生命周期 | `[ ]` |
@@ -28,18 +28,46 @@
 
 ## 🖥 后端服务
 
-### 1. 结构化日志（P1）
+### 1. 结构化日志（P1）~~✅ 已完成~~
 
 **现状**：全靠 `std::cout` / `qDebug`，无级别、无时间戳、无请求 ID。线上出问题只能翻控制台。
 
-- [ ] 引入轻量日志库（如 spdlog）或自建 `LOG_INFO/WARN/ERROR` 宏
-- [ ] 每条日志带模块名 + 时间戳 + 会话/请求 ID
-- [ ] 分级可配置（开发期 DEBUG，线上 INFO+）
+- [x] 引入 spdlog（header-only + bundled fmt，零额外依赖），统一门面 `common/logger.h`
+- [x] 后端 289 处 `std::cout` 甄别转换 → `LOG_INFO/WARN/ERROR`
+- [x] 客户端 216 处 `qDebug/qWarning` → `qCDebug(lcNetwork/lcChat/lcUi/lcUser/lcAvatar)`
+- [x] **安全修复**：3 处明文密码打印 + 1 处 token 明文打印 → 全部脱敏
+- [x] 删除 3 处 `receive body is ...` 全量报文打印（噪音 + 性能 + 泄露风险）
+- [x] 审计脚本 `test/audit_log_calls.py`（防占位符/参数不匹配导致**运行时**抛异常）
+- [ ] ~~分级可配置~~ 已实现：环境变量 `HCHAT_LOG_LEVEL` / `QT_LOGGING_RULES`
+- [ ] 请求 ID 串联（便于追踪单次请求全链路）
 
-**代码位置**：各服务 `*.cpp` 中大量 `std::cout << ...`；客户端 `*.cpp` 中大量 `qDebug() << ...`
+**代码位置**：`common/logger.h`、`Client/logcategory.h`、`test/audit_log_calls.py`
+
+**使用方式**：
+```cpp
+// 后端
+hchat::log::init("gate");            // main 里调一次
+LOG_INFO("user {} login ok, uid={}", name, uid);
+
+// 客户端
+qCDebug(lcNetwork) << "recv msg id =" << id;
+$env:QT_LOGGING_RULES="hchat.network.debug=true"   # 打开调试
+$env:HCHAT_LOG_LEVEL="debug"                        # 后端打开调试
+```
+日志落盘：`logs/<module>_<日期>.log`，按天轮转保留 7 天。
 
 **我的体验感受 / 改进方案**：
 <!-- 在此填写 -->
+
+---
+
+### 1b. 安全：密码/token 明文打印 ~~✅ 已修复~~
+
+原代码在 4 处把**数据库明文密码**和**登录 token** 直接打进日志，属于严重安全隐患，已全部脱敏：
+- `GateServer/MysqlDao.cpp`、`ChatServer/MysqlDao.cpp`、`StatusServer/MysqlDao.cpp`（密码比对处）
+- `ChatServer/LogicSystem.cpp`（chat 登录 token）
+
+**遗留**：数据库本身仍存明文密码（未做加盐哈希），属独立议题。
 
 ---
 

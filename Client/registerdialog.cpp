@@ -5,6 +5,7 @@
 #include <QRegularExpressionValidator>
 #include <QRandomGenerator>
 #include <QRegularExpression>
+#include "logcategory.h"
 
 RegisterDialog::RegisterDialog(QWidget *parent) :
     QDialog(parent),
@@ -61,7 +62,7 @@ RegisterDialog::RegisterDialog(QWidget *parent) :
         }else{
             ui->pass_edit->setEchoMode(QLineEdit::Normal);
         }
-        qDebug() << "Label was clicked!";
+        qCDebug(lcUser) << "Label was clicked!";
     });
 
     connect(ui->confirm_visible, &ClickedLabel::clicked, this, [this]() {
@@ -71,7 +72,7 @@ RegisterDialog::RegisterDialog(QWidget *parent) :
         }else{
             ui->confirm_edit->setEchoMode(QLineEdit::Normal);
         }
-        qDebug() << "Label was clicked!";
+        qCDebug(lcUser) << "Label was clicked!";
     });
 
     // 创建定时器
@@ -91,13 +92,13 @@ RegisterDialog::RegisterDialog(QWidget *parent) :
 
 RegisterDialog::~RegisterDialog()
 {
-    qDebug()<<"destruct RegDlg";
+    qCDebug(lcUser) <<"destruct RegDlg";
     delete ui;
 }
 
 void RegisterDialog::on_get_code_clicked()
 {
-    qDebug()<<"receive varify btn clicked ";
+    qCDebug(lcUser) <<"receive varify btn clicked ";
     //验证邮箱的地址正则表达式
     auto email = ui->email_edit->text();
     bool valid = checkEmailValid();
@@ -136,7 +137,7 @@ void RegisterDialog::slot_reg_mod_finish(ReqId id, QString res, ErrorCodes err)
     //注意:QMap::operator[] 对不存在的 key 会插入一个空的 std::function,
     //再调用它会抛出 std::bad_function_call 直接崩溃,所以必须先判断 key 是否存在
     if(!_handlers.contains(id)){
-        qDebug() << "no handler registered for req id " << id;
+        qCDebug(lcUser) << "no handler registered for req id " << id;
         return;
     }
     _handlers[id](jsonDoc.object());
@@ -264,7 +265,7 @@ void RegisterDialog::initHttpHandlers()
         }
         auto email = jsonObj["email"].toString();
         showTip(tr("验证码已发送到邮箱，注意查收"), true);
-        qDebug()<< "email is " << email ;
+        qCDebug(lcUser) << "email is " << email ;
     });
 
     //注册注册用户回包逻辑
@@ -276,8 +277,8 @@ void RegisterDialog::initHttpHandlers()
         }
         auto email = jsonObj["email"].toString();
         showTip(tr("用户注册成功"), true);
-        qDebug()<< "email is " << email ;
-        qDebug()<< "user uuid is " <<  jsonObj["uid"].toString();
+        qCDebug(lcUser) << "email is " << email ;
+        qCDebug(lcUser) << "user uuid is " <<  jsonObj["uid"].toString();
         ChangeTipPage();
     });
 }

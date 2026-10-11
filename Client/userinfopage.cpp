@@ -15,6 +15,7 @@
 #include <QPushButton>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include "logcategory.h"
 
 UserInfoPage::UserInfoPage(QWidget *parent) :
     QWidget(parent),
@@ -33,7 +34,7 @@ UserInfoPage::UserInfoPage(QWidget *parent) :
     // ★ GetIcon()/GetNick() 等内部直接解引用 _user_info，
     //   登录回包没到时会崩。所以先判空。
     if (info == nullptr) {
-        qDebug() << "UserInfoPage: user info is null";
+        qCDebug(lcAvatar) << "UserInfoPage: user info is null";
     } else {
         // ★ _icon 是服务端返回的 URL（"upload/xxx.png"），不是本地文件路径，
         //   不能用 QPixmap(_icon) 直接构造（那会当成文件去读，必然加载失败 → 头像空白）。
@@ -49,7 +50,7 @@ UserInfoPage::UserInfoPage(QWidget *parent) :
                     if (ok && !pix.isNull()) {
                         guard->refreshHeadPreview(pix);
                     } else {
-                        qDebug() << "UserInfoPage load self avatar failed:" << err;
+                        qCDebug(lcAvatar) << "UserInfoPage load self avatar failed:" << err;
                     }
                 });
         }
@@ -122,7 +123,7 @@ void UserInfoPage::on_up_btn_clicked()
     //   删掉，改为存内存里的 _pending_icon，点「提交」时才真正传给服务端。
     _pending_icon = cropped.toImage();
     refreshHeadPreview(cropped);
-    qDebug() << "avatar cropped, size =" << _pending_icon.size();
+    qCDebug(lcAvatar) << "avatar cropped, size =" << _pending_icon.size();
 }
 
 void UserInfoPage::on_submit_btn_clicked()

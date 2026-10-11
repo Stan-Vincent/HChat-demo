@@ -6,6 +6,7 @@
 #include "ConfigMgr.h"
 #include "const.h"
 #include "RedisMgr.h"
+#include "logger.h"
 
 void TestRedisMgr() {
     
@@ -30,6 +31,8 @@ void TestRedisMgr() {
 
 int main()
 {
+    hchat::log::init("gate");
+
     //TestRedisMgr();
 
     //ConfigMgr:从config,ini文件里读取GateServer的端口号
@@ -48,7 +51,7 @@ int main()
         //SIGTERM	系统终止进程的信号
         boost::asio::signal_set signals(ioc, SIGINT, SIGTERM);
         signals.async_wait([&ioc](const boost::system::error_code& error, int signal_number) {
-            std::cout << "收到 "<<signal_number<<" 退出信号，正在关闭服务器..." << std::endl;
+            LOG_INFO("收到信号 {}，正在关闭...", signal_number);
             if (error) {
                 return;
             }
@@ -57,12 +60,14 @@ int main()
 
         //上下文和端口号构造CServer，并调用Start();
         std::make_shared<CServer>(ioc, port)->Start();
-        std::cout << "Gate Server listen on port:"<< port <<"\n";
+        LOG_INFO("网关服务已启动，监听端口 {}", port);
         ioc.run();
+        LOG_INFO("网关服务正常退出");
+        hchat::log::shutdown();
     }
     catch (std::exception const& e)
     {
-        std::cerr << "Gate Server Error: " << e.what() << std::endl;
+        LOG_ERROR("网关服务致命错误: {}", e.what());
         return EXIT_FAILURE;
     }
 }

@@ -2,6 +2,7 @@
 #include "ui_applyfrienditem.h"
 #include "imagemanager.h"
 #include <QPointer>
+#include "logcategory.h"
 
 ApplyFriendItem::ApplyFriendItem(QWidget *parent) :
     ListItemBase(parent), _added(false),
@@ -34,7 +35,7 @@ void ApplyFriendItem::SetInfo(std::shared_ptr<ApplyInfo> apply_info)
                     ui->icon_lb->setPixmap(pix.scaled(ui->icon_lb->size(),
                         Qt::KeepAspectRatio, Qt::SmoothTransformation));
                 } else {
-                    qDebug() << "ApplyFriendItem load avatar failed:" << err;
+                    qCDebug(lcAvatar) << "ApplyFriendItem load avatar failed:" << err;
                 }
             });
         ui->icon_lb->setScaledContents(true);

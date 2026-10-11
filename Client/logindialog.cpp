@@ -24,6 +24,7 @@
 #endif
 #include <windows.h>
 #include <wincrypt.h>
+#include "logcategory.h"
 #endif
 
 
@@ -47,7 +48,7 @@ static QString dpapiProtect(const QString& plain)
     DATA_BLOB out = { 0 };
     if (!CryptProtectData(&in, L"HChat", nullptr, nullptr, nullptr,
                           CRYPTPROTECT_UI_FORBIDDEN, &out)) {
-        qWarning() << "CryptProtectData failed, error =" << GetLastError();
+        qCWarning(lcUser) << "CryptProtectData failed, error =" << GetLastError();
         return QString();
     }
     QByteArray cipher((char*)out.pbData, (int)out.cbData);
@@ -73,7 +74,7 @@ static QString dpapiUnprotect(const QString& b64)
     if (!CryptUnprotectData(&in, nullptr, nullptr, nullptr, nullptr,
                             CRYPTPROTECT_UI_FORBIDDEN, &out)) {
         // 最常见原因：login.ini 被复制到了别的机器 / 别的 Windows 用户下
-        qWarning() << "CryptUnprotectData failed, error =" << GetLastError();
+        qCWarning(lcUser) << "CryptUnprotectData failed, error =" << GetLastError();
         return QString();
     }
     QByteArray plain((char*)out.pbData, (int)out.cbData);
@@ -107,7 +108,7 @@ LoginDialog::LoginDialog(QWidget *parent) :
     connect(ui->pass_visible, &ClickedLabel::clicked, this, [this]() {
         bool b_visible = (ui->pass_edit->echoMode() == QLineEdit::Normal);
         ui->pass_edit->setEchoMode(b_visible ? QLineEdit::Password : QLineEdit::Normal);
-        qDebug() << "pass_visible clicked, echoMode =" << ui->pass_edit->echoMode();
+        qCDebug(lcUser) << "pass_visible clicked, echoMode =" << ui->pass_edit->echoMode();
     });
 
     // 取消「记住密码」时连带取消「自动登录」，否则下次会带着空密码自动登录
@@ -137,7 +138,7 @@ LoginDialog::LoginDialog(QWidget *parent) :
         && !ui->email_edit->text().isEmpty()
         && !ui->pass_edit->text().isEmpty()) {
         QTimer::singleShot(300, this, [this]() {
-            qDebug() << "auto login triggered";
+            qCDebug(lcUser) << "auto login triggered";
             on_login_btn_clicked();
         });
     }
@@ -145,7 +146,7 @@ LoginDialog::LoginDialog(QWidget *parent) :
 
 LoginDialog::~LoginDialog()
 {
-    qDebug()<<"destruct LoginDlg";
+    qCDebug(lcUser) <<"destruct LoginDlg";
     saveSettings();
     delete ui;
 }
@@ -175,7 +176,7 @@ void LoginDialog::loadSettings()
     const QString pwd = dpapiUnprotect(cipher);
     if (pwd.isEmpty()) {
         // DPAPI 解不开（换机器 / 换 Windows 用户），把这份失效密文清掉
-        qWarning() << "saved password can not be decrypted, drop it";
+        qCWarning(lcUser) << "saved password can not be decrypted, drop it";
         st.remove("login/pwd_cipher");
         return;
     }
@@ -230,7 +231,7 @@ void LoginDialog::initHead()
     // 加载图片
     QPixmap originalPixmap(":/res/head_1.jpg");
       // 设置图片自动缩放
-    qDebug()<< originalPixmap.size() << ui->head_label->size();
+    qCDebug(lcUser) << originalPixmap.size() << ui->head_label->size();
     originalPixmap = originalPixmap.scaled(ui->head_label->size(),
             Qt::KeepAspectRatio, Qt::SmoothTransformation);
 
@@ -276,7 +277,7 @@ void LoginDialog::initHttpHandlers()
 
         _uid = si.Uid;
         _token = si.Token;
-        qDebug()<< "email is " << email << " uid is " << si.Uid <<" host is "
+        qCDebug(lcUser) << "email is " << email << " uid is " << si.Uid <<" host is "
                 << si.Host << " Port is " << si.Port << " Token is " << si.Token;
         emit sig_connect_tcp(si);
     });
@@ -297,7 +298,7 @@ void LoginDialog::showTip(QString str, bool b_ok)
 
 void LoginDialog::slot_forget_pwd()
 {
-    qDebug()<<"LonginDialog [slot_forget_pwd]";
+    qCDebug(lcUser) <<"LonginDialog [slot_forget_pwd]";
     emit sig_switch_reset();
 }
 
@@ -305,7 +306,7 @@ bool LoginDialog::checkUserValid(){
 
     auto email = ui->email_edit->text();
     if(email.isEmpty()){
-        qDebug() << "email empty " ;
+        qCDebug(lcUser) << "email empty " ;
         AddTipErr(TipErr::TIP_EMAIL_ERR, tr("邮箱不能为空"));
         return false;
     }
@@ -316,7 +317,7 @@ bool LoginDialog::checkUserValid(){
 bool LoginDialog::checkPwdValid(){
     auto pwd = ui->pass_edit->text();
     if(pwd.length() < 6 || pwd.length() > 15){
-        qDebug() << "Pass length invalid";
+        qCDebug(lcUser) << "Pass length invalid";
         //提示长度不准确
         AddTipErr(TipErr::TIP_PWD_ERR, tr("密码长度应为6~15"));
         return false;
@@ -347,7 +348,7 @@ bool LoginDialog::enableBtn(bool enabled)
 
 void LoginDialog::on_login_btn_clicked()
 {
-    qDebug()<<"login btn clicked";
+    qCDebug(lcUser) <<"login btn clicked";
     if(checkUserValid() == false){
         return;
     }
@@ -393,7 +394,7 @@ void LoginDialog::slot_login_mod_finish(ReqId id, QString res, ErrorCodes err)
     //   std::function，调用它直接抛 std::bad_function_call 崩掉。
     //   registerdialog / resetdialog 都有这个判断，只有这里漏了。
     if (!_handlers.contains(id)) {
-        qDebug() << "no handler registered for req id " << id;
+        qCDebug(lcUser) << "no handler registered for req id " << id;
         return;
     }
 

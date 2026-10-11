@@ -92,7 +92,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;SPDLOG_HEADER_ONLY;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
@@ -106,7 +106,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;SPDLOG_HEADER_ONLY;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
@@ -122,14 +122,14 @@
            代价是失去调试 CRT（断言/调试堆），换来的是能连上 MySQL；无优化所以断点调试不受影响。
            第二个路径是为了让 DistLock.h / RedisMgr.h 里的 <hiredis.h> 能找到
            （vcpkg 装的是 include\hiredis\hiredis.h，没有根目录副本）。 -->
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;_ITERATOR_DEBUG_LEVEL=0;_WIN32_WINNT=0x0A00;WINVER=0x0A00;NTDDI_VERSION=0x0A000000;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;_ITERATOR_DEBUG_LEVEL=0;_WIN32_WINNT=0x0A00;WINVER=0x0A00;NTDDI_VERSION=0x0A000000;SPDLOG_HEADER_ONLY;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <Optimization>Disabled</Optimization>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
-      <AdditionalIncludeDirectories>D:\Program Files\mysql-connector-c++-26.7.0-winx64\include;D:\software\vcpkg\vcpkg\installed\x64-windows\include\hiredis;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\common;$(ProjectDir)..\common\third_party\spdlog\include;D:\Program Files\mysql-connector-c++-26.7.0-winx64\include;D:\software\vcpkg\vcpkg\installed\x64-windows\include\hiredis;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -151,12 +151,12 @@ xcopy /Y /I /E "D:\Program Files\mysql-connector-c++-26.7.0-winx64\lib64\plugin"
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;_WIN32_WINNT=0x0A00;WINVER=0x0A00;NTDDI_VERSION=0x0A000000;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;_WIN32_WINNT=0x0A00;WINVER=0x0A00;NTDDI_VERSION=0x0A000000;SPDLOG_HEADER_ONLY;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <Optimization>Disabled</Optimization>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <AdditionalIncludeDirectories>D:\Program Files\mysql-connector-c++-26.7.0-winx64\include;D:\software\vcpkg\vcpkg\installed\x64-windows\include\hiredis;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\common;$(ProjectDir)..\common\third_party\spdlog\include;D:\Program Files\mysql-connector-c++-26.7.0-winx64\include;D:\software\vcpkg\vcpkg\installed\x64-windows\include\hiredis;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

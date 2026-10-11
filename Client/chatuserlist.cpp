@@ -3,6 +3,7 @@
 #include "usermgr.h"
 #include <QTimer>
 #include <QCoreApplication>
+#include "logcategory.h"
 
 ChatUserList::ChatUserList(QWidget *parent):QListWidget(parent), _load_pending(false)
 {
@@ -56,7 +57,7 @@ bool ChatUserList::eventFilter(QObject *watched, QEvent *event)
                  return true;
              }
             // 滚动到底部，加载新的联系人
-            qDebug()<<"load more chat user";
+            qCDebug(lcChat) <<"load more chat user";
             _load_pending = true;
 
             // 只解锁 pending 标志，不要在这里退出程序。

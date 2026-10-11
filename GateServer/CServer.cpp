@@ -1,6 +1,7 @@
 #include "CServer.h"
 #include "HttpConnection.h"
 #include "AsioIOServicePool.h"
+#include "logger.h"
 
 CServer::CServer(boost::asio::io_context& ioc, unsigned short& port)
 	:_ioc(ioc), 
@@ -19,11 +20,11 @@ void CServer::Start() {
 
 	_acceptor.async_accept(new_con->GetSocket(), [self,new_con](beast::error_code ec) {
 		try {
-			std::cout << "CServer Async_accept...\n";
+			LOG_INFO("开始异步接受连接...");
 
 			//出错就放弃这个连接，接续监听其他连接
 			if (ec) {
-				std::cout << "Async_wait error.\n\n";
+				LOG_ERROR("异步等待出错");
 				self->Start();
 				return;
 			}

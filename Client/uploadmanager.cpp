@@ -7,6 +7,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QDebug>
+#include "logcategory.h"
 
 std::shared_ptr<UploadManager> UploadManager::instance()
 {
@@ -111,12 +112,12 @@ void UploadManager::doUpload(int uid, const QString& fileName, const QByteArray&
                 cb(false, "", "服务端没返回文件地址");
                 return;
             }
-            qDebug() << "upload ok:" << url << obj.value("size").toInt() << "bytes";
+            qCDebug(lcNetwork) << "upload ok:" << url << obj.value("size").toInt() << "bytes";
             cb(true, url, "");
         },
         // ctx 传 UploadManager 自己：manager 是 make_shared 创建的，
         // 只要它还在，连接就在；它没了连接自动断开，不会回调已销毁的对象。
         this);
 
-    qDebug() << "upload_image requested:" << fileName << rawBytes.size() << "bytes";
+    qCDebug(lcNetwork) << "upload_image requested:" << fileName << rawBytes.size() << "bytes";
 }
