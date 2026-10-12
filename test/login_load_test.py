@@ -228,7 +228,7 @@ def main():
     try:
         out = subprocess.run(
             [r"D://Program Files//MySQL//MySQL Server 8.0//bin//mysql.exe",
-             "-h127.0.0.1", "-P3308", "-uroot", "-p123456", "xxxl", "-N", "-B",
+             "-h127.0.0.1", "-P3308", "-uroot", "-p123456", "Hcat", "-N", "-B",
              "-e", "SELECT COUNT(*) FROM chat_message WHERE thread_id=1;"],
             capture_output=True, timeout=15)
         v = out.stdout.decode("utf-8", "replace").strip().splitlines()

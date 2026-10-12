@@ -1,6 +1,6 @@
 <div align="center">
 
-# 💬 HChat
+# 💬 Hcat
 
 **分布式即时通讯系统 · C++ 后端学习项目**
 采用 Qt 客户端 + 多 C++/Node 微服务的分布式架构的即时通讯系统。
@@ -37,7 +37,7 @@
 
 ## 🏗️ 系统架构
 
-![HChat 系统架构](docs/architecture.svg)
+![Hcat 系统架构](docs/architecture.svg)
 
 </div>
 
@@ -69,8 +69,8 @@
 ## 📁 目录结构
 
 ```
-HChat/
-├── Client/            # Qt 6.5.3 客户端（Hchat.pro）
+Hcat/
+├── Client/            # Qt 6.5.3 客户端（Hcat.pro）
 ├── GateServer/        # HTTP 网关（Boost.Beast，:8080）
 ├── StatusServer/      # 在线状态服务（gRPC，:50052）
 ├── ChatServer/        # 聊天节点 1（TCP :8990，RPC :50055）
@@ -92,7 +92,7 @@ HChat/
 | ChatServer 1 | TCP / RPC | `8990` / `50055` | 聊天主节点 |
 | ChatServer 2 | TCP / RPC | `8991` / `50056` | 聊天从节点 |
 | VarifyServer | gRPC | `50051` | Node.js 邮件验证码 |
-| MySQL | — | `3308` | 业务库 `xxxl` |
+| MySQL | — | `3308` | 业务库 `Hcat` |
 | Redis | — | `6380` | 验证码 / token / 在线状态 |
 
 > 端口集中在各服务的 `config.ini`；改动时需同步 `Start/*.bat`、`test/run_test.bat`。
@@ -129,9 +129,9 @@ vcpkg install grpc protobuf redis-plus-plus hiredis boost jsoncpp
 ### 客户端（Client）
 
 ```text
-1. Qt Creator 打开 Client/Hchat.pro（Kit: Qt 6.5.3 MinGW 64-bit）
+1. Qt Creator 打开 Client/Hcat.pro（Kit: Qt 6.5.3 MinGW 64-bit）
 2. 构建目录 Client/build/Desktop_Qt_6_5_3_MinGW_64_bit-Debug
-3. bin/Hchat.exe 同级会自动拷贝所需 DLL 与 config.ini
+3. bin/Hcat.exe 同级会自动拷贝所需 DLL 与 config.ini
 ```
 
 > **⚠️ 用 Qt Creator 构建，不要在 Git Bash 里跑 qmake/make**：`.pro` 的 post-link 是 cmd 语法，sh 会把 `/Y` 当 POSIX 路径转换导致失败。
@@ -141,7 +141,7 @@ vcpkg install grpc protobuf redis-plus-plus hiredis boost jsoncpp
 ## 🚀 快速开始
 
 ```bash
-# 0. 启动 MySQL(3308) 与 Redis(6380)，建好 xxxl 库，可执行 sql/seed_debug_data.sql 造测试数据
+# 0. 启动 MySQL(3308) 与 Redis(6380)，建好 Hcat 库，可执行 sql/seed_debug_data.sql 造测试数据
 
 # 1. 一键启动全部（后端 + 客户端）
 Start\start.bat
@@ -164,7 +164,7 @@ Start\stop.bat
 | StatusServer | `StatusServer/` | `x64\Release\StatusServer.exe` |
 | ChatServer 1 | `ChatServer/` | `x64\Release\ChatServer.exe` |
 | ChatServer 2 | `ChatServer2/` | `x64\Release\ChatServer.exe` |
-| 客户端 | `Client/.../bin` | `Hchat.exe` |
+| 客户端 | `Client/.../bin` | `Hcat.exe` |
 
 > GateServer 工作目录必须是 `GateServer/`（从 cwd 读 `config.ini`），且 exe 同级需有 `plugin/`（MySQL 认证插件）。
 
@@ -190,7 +190,7 @@ test\run_test.bat        # 一键协议测试（自动拉起 ChatServer，跑 pr
 
 ## 🗄️ 数据库
 
-库 `xxxl` 核心表：
+库 `Hcat` 核心表：
 
 | 表 | 用途 |
 |----|------|

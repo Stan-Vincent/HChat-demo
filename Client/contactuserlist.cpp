@@ -74,7 +74,7 @@ void ContactUserList::addContactUserList()
     auto con_list = UserMgr::GetInstance()->GetConListPerPage();
     for(auto & con_ele : con_list){
         auto *con_user_wid = new ConUserItem();
-        con_user_wid->SetInfo(con_ele->_uid,con_ele->_name, con_ele->_icon);
+        con_user_wid->SetInfo(con_ele->_uid,con_ele->_nick, con_ele->_icon);
         QListWidgetItem *item = new QListWidgetItem;
         //qCDebug(lcUser) <<"chat_user_wid sizeHint is " << chat_user_wid->sizeHint();
         item->setSizeHint(con_user_wid->sizeHint());
@@ -228,7 +228,7 @@ void ContactUserList::slot_auth_rsp(std::shared_ptr<AuthRsp> auth_rsp)
     int head_i = randomValue%heads.size();
 
     auto *con_user_wid = new ConUserItem();
-    con_user_wid->SetInfo(auth_rsp->_uid ,auth_rsp->_name, auth_rsp->_icon);
+    con_user_wid->SetInfo(auth_rsp->_uid ,auth_rsp->_nick, auth_rsp->_icon);
     QListWidgetItem *item = new QListWidgetItem;
     //qCDebug(lcUser) <<"chat_user_wid sizeHint is " << chat_user_wid->sizeHint();
     item->setSizeHint(con_user_wid->sizeHint());

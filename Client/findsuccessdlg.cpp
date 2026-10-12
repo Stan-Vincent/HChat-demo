@@ -34,7 +34,7 @@ FindSuccessDlg::~FindSuccessDlg()
 
 void FindSuccessDlg::SetSearchInfo(std::shared_ptr<SearchInfo> si)
 {
-    ui->name_lb->setText(si->_name);
+    ui->name_lb->setText(si->GetDisplayName());
     // _icon 是服务端 URL，QPixmap(url) 会当本地文件读 → 空白。异步拉取。
     if (!si->_icon.isEmpty()) {
         QPointer<FindSuccessDlg> guard(this);

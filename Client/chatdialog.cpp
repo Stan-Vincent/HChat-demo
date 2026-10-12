@@ -698,7 +698,7 @@ void ChatDialog::loadMoreConUser()
 	if (friend_list.empty() == false) {
 		for (auto& friend_ele : friend_list) {
 			auto* chat_user_wid = new ConUserItem();
-			chat_user_wid->SetInfo(friend_ele->_uid, friend_ele->_name,
+			chat_user_wid->SetInfo(friend_ele->_uid, friend_ele->_nick,
 				friend_ele->_icon);
 			QListWidgetItem* item = new QListWidgetItem;
 			//qCDebug(lcChat) <<"chat_user_wid sizeHint is " << chat_user_wid->sizeHint();

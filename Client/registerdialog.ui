@@ -6,20 +6,20 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>300</width>
-    <height>500</height>
+    <width>362</width>
+    <height>490</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
-    <width>300</width>
-    <height>500</height>
+    <width>340</width>
+    <height>490</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
     <width>362</width>
-    <height>500</height>
+    <height>490</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -598,14 +598,14 @@
  </widget>
  <customwidgets>
   <customwidget>
+   <class>ClickedLabel</class>
+   <extends>QLabel</extends>
+   <header>clickedlabel.h</header>
+  </customwidget>
+  <customwidget>
    <class>TimerBtn</class>
    <extends>QPushButton</extends>
    <header>timerbtn.h</header>
-  </customwidget>
-  <customwidget>
-   <class>ClickedLabel</class>
-   <extends>QLabel</extends>
-   <header location="global">clickedlabel.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

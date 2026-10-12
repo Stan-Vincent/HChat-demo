@@ -53,7 +53,7 @@ void RunServer() {
 }
 
 int main(int argc, char** argv) {
-	hchat::log::init("status");
+	hcat::log::init("status");
 
 	try {
 		RunServer();
@@ -62,12 +62,12 @@ int main(int argc, char** argv) {
 	catch (std::exception const& e) {
 		LOG_ERROR("状态服务致命错误: {}", e.what());
 		RedisMgr::GetInstance()->Close();
-		hchat::log::shutdown();
+		hcat::log::shutdown();
 		return EXIT_FAILURE;
 	}
 
 	LOG_INFO("状态服务正常退出");
-	hchat::log::shutdown();
+	hcat::log::shutdown();
 	return 0;
 }
 

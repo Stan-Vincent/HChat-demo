@@ -1,6 +1,6 @@
 @echo off
 chcp 936 >nul
-title HChat 一键停止
+title Hcat 一键停止
 setlocal
 
 rem ============================================================
@@ -17,15 +17,15 @@ rem  因为嵌套 for /f 里的管道在部分 Windows 上会静默失灵。
 rem ============================================================
 
 echo.
-echo  正在关闭 HChat 所有服务 ...
+echo  正在关闭 Hcat 所有服务 ...
 echo.
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "$ports = @(50051,8080,50052,8990,50055,8991,50056);" ^
   "$conns = Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $ports -contains $_.LocalPort };" ^
   "if ($conns) { $conns | Select-Object -Unique OwningProcess | ForEach-Object { $p = $ports -join ','; Write-Host ('    结束 PID ' + $_.OwningProcess); Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue } } else { Write-Host '    没有找到正在监听的服务进程' };" ^
-  "$cli = Get-Process Hchat -ErrorAction SilentlyContinue;" ^
-  "if ($cli) { Write-Host '    结束客户端 Hchat.exe'; $cli | Stop-Process -Force -ErrorAction SilentlyContinue }"
+  "$cli = Get-Process Hcat -ErrorAction SilentlyContinue;" ^
+  "if ($cli) { Write-Host '    结束客户端 Hcat.exe'; $cli | Stop-Process -Force -ErrorAction SilentlyContinue }"
 
 echo.
 echo  全部关闭完毕。

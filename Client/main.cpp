@@ -4,6 +4,7 @@
 #include "global.h"
 #include <QMessageBox>
 #include <QDebug>
+#include <QIcon>
 #include <QDir>
 #include <QCoreApplication>
 #include <QDateTime>
@@ -14,7 +15,7 @@
 #include "logcategory.h"
 
 #ifdef _WIN32
-// ★ 必须先定这两个宏再包含 windows.h：
+//   ★必须先定这两个宏再包含 windows.h：
 //   windows.h 会连带引入 rpcndr.h，里面 `typedef byte cs_byte;`
 //   与 QtCore 的 byte 撞名，报 "reference to 'byte' is ambiguous"。
 //   WIN32_LEAN_AND_MEAN 让它跳过 RPC/ Winsock 那一堆用不上的头。
@@ -37,6 +38,7 @@ static void writeCrashLog(const QString& text)
 {
     QDir dir(QCoreApplication::applicationDirPath());
     QFile f(dir.filePath("crash.log"));
+
     if (f.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text)) {
         f.write("\n===== crash @ ");
         f.write(QDateTime::currentDateTime().toString(Qt::ISODate).toLocal8Bit());
@@ -124,7 +126,9 @@ static LONG WINAPI MyUnhandledExceptionFilter(EXCEPTION_POINTERS* ep)
 
 int main(int argc, char *argv[])
 {
+//双保险
 #ifdef _WIN32
+    //SetUnhandledExceptionFilter 能捕获绝大多数 Windows 上的访问违例（空指针、越界）
     SetUnhandledExceptionFilter(MyUnhandledExceptionFilter);
     signal(SIGSEGV, signalHandler);
     signal(SIGABRT, signalHandler);
@@ -135,14 +139,19 @@ int main(int argc, char *argv[])
     std::set_terminate([]() {
         writeCrashLog(QString("std::terminate —— 未捕获的 C++ 异常"));
         abort();
-        });
+    });
 
     QApplication a(argc, argv);
 
-    // 初始化客户端日志分类（hchat.network / chat / ui / user / avatar）。
+    // 初始化客户端日志分类（hcat.network / chat / ui / user / avatar）。
     // 必须在 QApplication 之后，因为 QLoggingCategory 依赖 Qt 的日志系统。
-    // 运行时控制示例：$env:QT_LOGGING_RULES="hchat.network.debug=true"
+    // 运行时控制示例：$env:QT_LOGGING_RULES="hcat.network.debug=true"
     init_log_categories();
+
+    // 应用图标：所有窗口标题栏 + 任务栏统一显示这只猫。
+    // 用 512 的 PNG（qrc 里），比 exe 内嵌的 .ico（上限256）更清晰；
+    // Qt 会按窗口/任务栏实际需要自动缩放。
+    a.setWindowIcon(QIcon(":/res/Icon.png"));
 
     QFile qss(":/style/stylesheet.qss");
 

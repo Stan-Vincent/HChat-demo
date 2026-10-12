@@ -1,10 +1,10 @@
 @echo off
 chcp 936 >nul
-title HChat 一键启动
+title Hcat 一键启动
 setlocal
 
 rem ============================================================
-rem  HChat 一键启动脚本
+rem  Hcat 一键启动脚本
 rem
 rem  用法：
 rem    start.bat              启动全部（后端 4 个 + 客户端）
@@ -33,7 +33,7 @@ set "STATUS_EXE=%ROOT%\StatusServer\x64\Debug\StatusServer.exe"
 set "CHAT_EXE=%ROOT%\ChatServer\x64\Debug\ChatServer.exe"
 set "CHAT2_EXE=%ROOT%\ChatServer2\x64\Debug\ChatServer.exe"
 set "CLIENT_DIR=%ROOT%\Client\build\Desktop_Qt_6_5_3_MinGW_64_bit-Debug\bin"
-set "CLIENT_EXE=%CLIENT_DIR%\Hchat.exe"
+set "CLIENT_EXE=%CLIENT_DIR%\Hcat.exe"
 
 rem ping 代替 timeout：timeout 在输入被重定向时会报错，ping 不会
 goto :main
@@ -65,13 +65,13 @@ goto :done
 
 :s_client
 echo  [单独] Qt 客户端 ...
-start "HChat Client" /D "%CLIENT_DIR%" "%CLIENT_EXE%"
+start "Hcat Client" /D "%CLIENT_DIR%" "%CLIENT_EXE%"
 goto :done
 
 :main
 echo.
 echo  ============================================================
-echo    HChat 一键启动
+echo    Hcat 一键启动
 echo    工程根目录: %ROOT%
 echo  ============================================================
 echo.
@@ -117,7 +117,7 @@ if /i "%~1"=="backend" goto :done
 
 rem ---------- 5. Client ----------
 echo  [5/5] Qt 客户端 ...
-start "HChat Client" /D "%CLIENT_DIR%" "%CLIENT_EXE%"
+start "Hcat Client" /D "%CLIENT_DIR%" "%CLIENT_EXE%"
 goto :done
 
 :done

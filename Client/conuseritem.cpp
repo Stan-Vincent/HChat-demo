@@ -49,20 +49,20 @@ void ConUserItem::SetInfo(std::shared_ptr<AuthInfo> auth_info)
 {
     _info = std::make_shared<UserInfo>(auth_info);
     LoadIconAsync(_info->_icon);
-    ui->user_name_lb->setText(_info->_name);
+    ui->user_name_lb->setText(_info->GetDisplayName());
 }
 
 void ConUserItem::SetInfo(int uid, QString name, QString icon)
 {
      _info = std::make_shared<UserInfo>(uid,name, name, icon, 0);
      LoadIconAsync(_info->_icon);
-     ui->user_name_lb->setText(_info->_name);
+     ui->user_name_lb->setText(_info->GetDisplayName());
 }
 
 void ConUserItem::SetInfo(std::shared_ptr<AuthRsp> auth_rsp){
     _info = std::make_shared<UserInfo>(auth_rsp);
     LoadIconAsync(_info->_icon);
-    ui->user_name_lb->setText(_info->_name);
+    ui->user_name_lb->setText(_info->GetDisplayName());
 }
 
 void ConUserItem::ShowRedPoint(bool show)

@@ -51,7 +51,7 @@ void ChatUserWid::SetChatData(std::shared_ptr<ChatThreadData> chat_data) {
         ui->icon_lb->setScaledContents(true);
     }
 
-    ui->user_name_lb->setText(other_info->_name);
+    ui->user_name_lb->setText(other_info->GetDisplayName());
     
     ui->user_chat_lb->setText(chat_data->GetLastMsg());
 

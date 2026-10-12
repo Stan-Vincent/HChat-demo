@@ -52,7 +52,7 @@ def pick_uid():
     mysql = r"D:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe"
     try:
         out = subprocess.run(
-            [mysql, "-h127.0.0.1", "-P3308", "-uroot", "-p123456", "xxxl", "-N", "-B",
+            [mysql, "-h127.0.0.1", "-P3308", "-uroot", "-p123456", "Hcat", "-N", "-B",
              "-e", "SELECT uid FROM user ORDER BY id LIMIT 1;"],
             capture_output=True, timeout=15)
         v = out.stdout.decode("utf-8", "replace").strip().splitlines()
@@ -70,7 +70,7 @@ def mysql_query(sql):
     import subprocess
     mysql = r"D:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe"
     out = subprocess.run(
-        [mysql, "-h127.0.0.1", "-P3308", "-uroot", "-p123456", "xxxl", "-N", "-B", "-e", sql],
+        [mysql, "-h127.0.0.1", "-P3308", "-uroot", "-p123456", "Hcat", "-N", "-B", "-e", sql],
         capture_output=True, timeout=15)
     return out.stdout.decode("utf-8", "replace").strip()
 

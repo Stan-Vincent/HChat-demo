@@ -1,5 +1,5 @@
 //==============================================================
-// HChat unified logging facade (based on spdlog, header-only)
+// Hcat unified logging facade (based on spdlog, header-only)
 //
 // IMPORTANT: all comments here are ASCII on purpose.
 //   Backend sources (GateServer/, ChatServer/...) are GBK-encoded.
@@ -8,7 +8,7 @@
 //
 // Usage:
 //   1) once at startup (main):
-//          hchat::log::init("gate");
+//          hcat::log::init("gate");
 //   2) anywhere:
 //          LOG_INFO("user {} login ok, uid={}", name, uid);
 //          LOG_WARN("redis {} timeout, retry={}", host, n);
@@ -46,7 +46,7 @@
 #include <cstdlib>
 #include <cctype>
 
-namespace hchat {
+namespace hcat {
 namespace log {
 
 inline constexpr int kRotateHour   = 0;
@@ -111,7 +111,7 @@ inline std::shared_ptr<spdlog::logger> get() {
     if (!logger()) {
         auto sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
         sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%n] [%l] %v");
-        auto lb = std::make_shared<spdlog::logger>("hchat", sink);
+        auto lb = std::make_shared<spdlog::logger>("hcat", sink);
         lb->set_level(spdlog::level::warn);
         spdlog::set_default_logger(lb);
         logger() = lb;
@@ -127,14 +127,14 @@ inline void shutdown() {
 }
 
 }  // namespace log
-}  // namespace hchat
+}  // namespace hcat
 
 // Call the logger member functions directly instead of SPDLOG_LOGGER_XX.
 // The official macros expand SPDLOG_SOURCE_LOCATION / SPDLOG_FUNCTION, which
 // under MSVC degrade to "only logger + level passed" and fail with
 // "cannot convert source_loc to level_enum". Member calls behave the same.
-#define LOG_TRACE hchat::log::get()->trace
-#define LOG_DEBUG hchat::log::get()->debug
-#define LOG_INFO  hchat::log::get()->info
-#define LOG_WARN  hchat::log::get()->warn
-#define LOG_ERROR hchat::log::get()->error
+#define LOG_TRACE hcat::log::get()->trace
+#define LOG_DEBUG hcat::log::get()->debug
+#define LOG_INFO  hcat::log::get()->info
+#define LOG_WARN  hcat::log::get()->warn
+#define LOG_ERROR hcat::log::get()->error

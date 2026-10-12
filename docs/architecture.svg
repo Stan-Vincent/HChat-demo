@@ -1,5 +1,5 @@
 <svg width="880" height="648" viewBox="0 0 680 500" role="img" xmlns="http://www.w3.org/2000/svg" font-family="'Segoe UI','Microsoft YaHei',sans-serif">
-<title>HChat 分布式即时通讯系统架构</title>
+<title>Hcat 分布式即时通讯系统架构</title>
 <desc>Qt 客户端经 HTTP 访问 GateServer、经 TCP 访问双 ChatServer；GateServer 经 gRPC 调用 VarifyServer 与 StatusServer；各服务经汇聚总线访问 Redis 与 MySQL。</desc>
 <defs>
 <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">

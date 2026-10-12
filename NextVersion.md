@@ -1,4 +1,4 @@
-# HChat NextVersion — 待完善项清单
+# Hcat NextVersion — 待完善项清单
 
 > 基于对当前代码库（后端服务 + Qt 客户端 + 用户体验）的实际核查整理。
 > 每项都标注了**代码证据**，方便定位。
@@ -46,12 +46,12 @@
 **使用方式**：
 ```cpp
 // 后端
-hchat::log::init("gate");            // main 里调一次
+hcat::log::init("gate");            // main 里调一次
 LOG_INFO("user {} login ok, uid={}", name, uid);
 
 // 客户端
 qCDebug(lcNetwork) << "recv msg id =" << id;
-$env:QT_LOGGING_RULES="hchat.network.debug=true"   # 打开调试
+$env:QT_LOGGING_RULES="hcat.network.debug=true"   # 打开调试
 $env:HCHAT_LOG_LEVEL="debug"                        # 后端打开调试
 ```
 日志落盘：`logs/<module>_<日期>.log`，按天轮转保留 7 天。

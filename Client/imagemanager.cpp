@@ -103,7 +103,7 @@ void ImageManager::downloadImage(const QString &url,
     }
 
     QNetworkRequest request(qurl);
-    request.setHeader(QNetworkRequest::UserAgentHeader, "HChatClient");
+    request.setHeader(QNetworkRequest::UserAgentHeader, "HcatClient");
 
     // ★ 每个 reply 各自带一份回调，finished 时按对象自己分发 —— 天然支持并发，
     //   不需要 pending 表，也不会出现「第 1 个回包唤醒所有回调」。

@@ -35,6 +35,10 @@ private:
     //「记住密码 / 自动登录」的读写（login.ini，密码用 Windows DPAPI 加密）
     void loadSettings();
     void saveSettings();
+    // 按"密码是否来自自动填入"更新眼睛按钮的可用状态。
+    // 自动填入的密码没有"核对输错"的需求，点眼睛纯展示，只增加泄露面
+    // （共享屏幕 / 旁人窥视），故禁用；用户一旦手动编辑密码立即恢复。
+    void updateEyeButtonState();
     Ui::LoginDialog *ui;
 
     QMap<ReqId, std::function<void(const QJsonObject&)>> _handlers;

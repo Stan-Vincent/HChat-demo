@@ -10,11 +10,11 @@
 
 void TestRedisMgr() {
     
-    assert(RedisMgr::GetInstance()->Set("blogwebsite", "xxxl.club"));
+    assert(RedisMgr::GetInstance()->Set("blogwebsite", "hcat.club"));
     std::string value = "";
     assert(RedisMgr::GetInstance()->Get("blogwebsite", value));
     assert(RedisMgr::GetInstance()->Get("nonekey", value) == false);
-    assert(RedisMgr::GetInstance()->HSet("bloginfo", "blogwebsite", "xxxl.club"));
+    assert(RedisMgr::GetInstance()->HSet("bloginfo", "blogwebsite", "hcat.club"));
     assert(RedisMgr::GetInstance()->HGet("bloginfo", "blogwebsite") != "");
     assert(RedisMgr::GetInstance()->ExistsKey("bloginfo"));
     assert(RedisMgr::GetInstance()->Del("bloginfo"));
@@ -31,7 +31,7 @@ void TestRedisMgr() {
 
 int main()
 {
-    hchat::log::init("gate");
+    hcat::log::init("gate");
 
     //TestRedisMgr();
 
@@ -63,7 +63,7 @@ int main()
         LOG_INFO("网关服务已启动，监听端口 {}", port);
         ioc.run();
         LOG_INFO("网关服务正常退出");
-        hchat::log::shutdown();
+        hcat::log::shutdown();
     }
     catch (std::exception const& e)
     {

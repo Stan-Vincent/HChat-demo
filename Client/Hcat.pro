@@ -183,7 +183,7 @@ win32:CONFIG(debug, debug | release)
     # 1) 必须写成【一条】QMAKE_POST_LINK，命令之间用 && 连接。
     #    原来分成 10 次 QMAKE_POST_LINK += 追加，qmake 生成 Makefile 时会用【空格】
     #    把它们拼成一行，于是 cmd 把后面的命令全当成 copy 的参数，编译报
-    #    「error: [Makefile.Debug:350: bin/Hchat.exe] Error 1」。
+    #    「error: [Makefile.Debug:350: bin/Hcat.exe] Error 1」。
     #
     # 2) 本段按【cmd 语法】写（Qt Creator 用的就是 cmd 执行 recipe）：
     #    copy 是 cmd 内建命令，系统里没有 copy.exe。

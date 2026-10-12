@@ -28,7 +28,7 @@ QLineEdit {
 
 /* 输入框获得焦点时的边框（默认是系统蓝，丑） */
 QLineEdit:focus {
-    border: 1px solid #07c160;
+    border: 1px solid #ff7a45;
 }
 
 /* Tooltip（默认黄底，太土） */
@@ -55,7 +55,7 @@ QMenu::item {
 }
 QMenu::item:selected {
     background-color: #e8f8ec;
-    color: #07c160;
+    color: #ff7a45;
 }
 QMenu::separator {
     height: 1px;
@@ -81,10 +81,10 @@ QMessageBox QPushButton {
     font-size: 14px;
 }
 QMessageBox QPushButton:hover {
-    background: #e0e0e0;
+    background: #e8e1da;
 }
 QMessageBox QPushButton:pressed {
-    background: #d0d0d0;
+    background: #d9d0c7;
 }
 
 /* ============================================================================
@@ -95,7 +95,8 @@ QMessageBox QPushButton:pressed {
 QDialog#LoginDialog,
 QDialog#RegisterDialog,
 QDialog#ResetDialog {
-    background-color: #f6fbff;
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                                stop:0 #fff8f3, stop:1 #ffe9d8);
 }
 
 /* 用户名 / 密码标签 */
@@ -106,7 +107,7 @@ QDialog#ResetDialog {
 
 /* 错误提示：成功=绿，错误=红 */
 #err_tip[state='normal'] {
-    color: #07c160;
+    color: #ff7a45;
 }
 #err_tip[state='err'] {
     color: #f14e4e;
@@ -125,7 +126,7 @@ QDialog#ResetDialog {
 
 /* 注册成功 / 重置成功 的提示文字 */
 #tip_lb, #tip2_lb {
-    color: #07c160;
+    color: #ff7a45;
 }
 
 /* 忘记密码标签：普通黑，hover 蓝 */
@@ -135,22 +136,30 @@ QDialog#ResetDialog {
 }
 #forget_label[state='hover'],
 #forget_label[state='selected_hover'] {
-    color: #2a70f1;
+    color: #ff7a45;
 }
 
 /* 注册/重置界面的输入框（统一圆角） */
 #RegisterDialog QLineEdit,
 #ResetDialog QLineEdit,
 #LoginDialog QLineEdit {
-    border: 1px solid #e0e0e0;
-    border-radius: 4px;
-    padding: 4px 8px;
+    border: 1px solid #e5dfd9;
+    border-radius: 6px;
+    padding: 6px 10px;
     background: #ffffff;
+    selection-background-color: #ffd9c4;
+    selection-color: #6b3413;
+}
+#RegisterDialog QLineEdit:hover,
+#ResetDialog QLineEdit:hover,
+#LoginDialog QLineEdit:hover {
+    border: 1px solid #c9bcb1;
 }
 #RegisterDialog QLineEdit:focus,
 #ResetDialog QLineEdit:focus,
 #LoginDialog QLineEdit:focus {
-    border: 1px solid #07c160;
+    border: 1px solid #ff7a45;
+    background: #fffaf5;
 }
 
 /* ============================================================================
@@ -190,13 +199,19 @@ QDialog#ResetDialog {
     border-bottom: 1px solid #ececec;
 }
 #search_edit {
-    border: 1px solid #e8e8e8;
-    border-radius: 4px;
+    border: 1px solid #e5dfd9;
+    border-radius: 6px;
     background: #ffffff;
-    padding: 2px 6px;
+    padding: 3px 8px;
+    selection-background-color: #ffd9c4;
+    selection-color: #6b3413;
+}
+#search_edit:hover {
+    border: 1px solid #c9bcb1;
 }
 #search_edit:focus {
-    border: 1px solid #07c160;
+    border: 1px solid #ff7a45;
+    background: #fffaf5;
 }
 
 /* 添加群组按钮（原 QSS 中重复定义两次，这里只留一份） */
@@ -215,14 +230,18 @@ QDialog#ResetDialog {
 #chat_user_list::item:selected,
 #con_user_list::item:selected,
 #search_list::item:selected {
-    background-color: #d3d7d4;
+    /* 左侧主色竖条(~3px) + 浅橘底：比纯色块更有层次，
+       竖条用渐变模拟（QSS 的 ::item 不支持 border-left） */
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                                stop:0 #ff7a45, stop:0.012 #ff7a45,
+                                stop:0.012 #ffead9, stop:1 #ffead9);
     border: none;
     outline: none;
 }
 #chat_user_list::item:hover,
 #con_user_list::item:hover,
 #search_list::item:hover {
-    background-color: #cecfd0;
+    background-color: #fdf2ea;
     border: none;
     outline: none;
 }
@@ -260,10 +279,10 @@ QDialog#ResetDialog {
 
 /* ---------- 3.4 聊天页 ---------- */
 #chat_data_list {
-    background: #000000;
+    background: #f2ede8;
 }
 #chat_bg {
-    background: #f0f0f0;
+    background: #f2ede8;
 }
 #chat_area {
     border: none;
@@ -290,13 +309,13 @@ QDialog#ResetDialog {
 }
 
 /* 发送 / 接收按钮（三状态） */
-#receive_btn[state='normal'] { background: #f0f0f0; color: #07c160; font-size: 16px; border-radius: 20px; }
-#receive_btn[state='hover']  { background: #d2d2d2; color: #07c160; font-size: 16px; border-radius: 20px; }
-#receive_btn[state='press']  { background: #c6c6c6; color: #07c160; font-size: 16px; border-radius: 20px; }
+#receive_btn[state='normal'] { background: #f0f0f0; color: #ff7a45; font-size: 16px; border-radius: 20px; }
+#receive_btn[state='hover']  { background: #d2d2d2; color: #ff7a45; font-size: 16px; border-radius: 20px; }
+#receive_btn[state='press']  { background: #c6c6c6; color: #ff7a45; font-size: 16px; border-radius: 20px; }
 
-#send_btn[state='normal'] { background: #f0f0f0; color: #07c160; font-size: 16px; border-radius: 20px; }
-#send_btn[state='hover']  { background: #d2d2d2; color: #07c160; font-size: 16px; border-radius: 20px; }
-#send_btn[state='press']  { background: #c6c6c6; color: #07c160; font-size: 16px; border-radius: 20px; }
+#send_btn[state='normal'] { background: #f0f0f0; color: #ff7a45; font-size: 16px; border-radius: 20px; }
+#send_btn[state='hover']  { background: #d2d2d2; color: #ff7a45; font-size: 16px; border-radius: 20px; }
+#send_btn[state='press']  { background: #c6c6c6; color: #ff7a45; font-size: 16px; border-radius: 20px; }
 
 /* 表情 / 文件按钮（三状态） */
 #emo_lb[state='normal'] { border-image: url(:/res/smile.png); }
@@ -369,9 +388,9 @@ ApplyFriendItem #user_chat_lb {
     color: #a2a2a2;
     font-size: 14px;
 }
-ApplyFriendItem #addBtn[state='normal'] { background-color: #d3d7d4; color: #07c160; font-size: 16px; border-radius: 20px; }
-ApplyFriendItem #addBtn[state='hover']  { background-color: #d3d3d3; color: #07c160; font-size: 16px; border-radius: 20px; }
-ApplyFriendItem #addBtn[state='press']  { background-color: #bebebe; color: #07c160; font-size: 16px; border-radius: 20px; }
+ApplyFriendItem #addBtn[state='normal'] { background-color: #f0f0f0; color: #ff7a45; font-size: 16px; border-radius: 20px; }
+ApplyFriendItem #addBtn[state='hover']  { background-color: #d2d2d2; color: #ff7a45; font-size: 16px; border-radius: 20px; }
+ApplyFriendItem #addBtn[state='press']  { background-color: #c6c6c6; color: #ff7a45; font-size: 16px; border-radius: 20px; }
 
 /* 好友信息页 */
 #friend_info_page #name_lb {
@@ -441,20 +460,20 @@ ApplyFriendItem #addBtn[state='press']  { background-color: #bebebe; color: #07c
 /* 标签（六状态） */
 #apply_wid #tipslb[state='normal']           { padding: 2px; background: #e1e1e1; color: #1e1e1e; border-radius: 10px; }
 #apply_wid #tipslb[state='hover']            { padding: 2px; background: #e1e1e1; color: #1e1e1e; border-radius: 10px; }
-#apply_wid #tipslb[state='pressed']          { padding: 2px; background: #e1e1e1; color: #07c160; border-radius: 10px; }
-#apply_wid #tipslb[state='selected_normal']  { padding: 2px; background: #e1e1e1; color: #07c160; border-radius: 10px; }
-#apply_wid #tipslb[state='selected_hover']   { padding: 2px; background: #e1e1e1; color: #07c160; border-radius: 10px; }
+#apply_wid #tipslb[state='pressed']          { padding: 2px; background: #e1e1e1; color: #ff7a45; border-radius: 10px; }
+#apply_wid #tipslb[state='selected_normal']  { padding: 2px; background: #e1e1e1; color: #ff7a45; border-radius: 10px; }
+#apply_wid #tipslb[state='selected_hover']   { padding: 2px; background: #e1e1e1; color: #ff7a45; border-radius: 10px; }
 #apply_wid #tipslb[state='selected_pressed'] { padding: 2px; background: #e1e1e1; color: #1e1e1e; border-radius: 10px; }
 
 /* 输入框下方的提示 */
 #input_tip_wid {
-    background: #d3eaf8;
+    background: #fff1e8;
 }
 
 /* 已加入的标签（带关闭按钮） */
 #apply_wid #FriendLabel {
-    background: #daf6e7;
-    color: #07c160;
+    background: #ffe4d4;
+    color: #ff7a45;
     border-radius: 10px;
 }
 #apply_wid #tip_lb {
@@ -476,9 +495,9 @@ ApplyFriendItem #addBtn[state='press']  { background-color: #bebebe; color: #07c
 #close_lb[state='select_pressed'] { border-image: url(:/res/tipclose.png); }
 
 /* 确定 / 取消 按钮 */
-#apply_sure_wid #sure_btn[state='normal'] { background: #f0f0f0; color: #07c160; font-size: 16px; border-radius: 20px; }
-#apply_sure_wid #sure_btn[state='hover']  { background: #d2d2d2; color: #07c160; font-size: 16px; border-radius: 20px; }
-#apply_sure_wid #sure_btn[state='press']  { background: #c6c6c6; color: #07c160; font-size: 16px; border-radius: 20px; }
+#apply_sure_wid #sure_btn[state='normal'] { background: #f0f0f0; color: #ff7a45; font-size: 16px; border-radius: 20px; }
+#apply_sure_wid #sure_btn[state='hover']  { background: #d2d2d2; color: #ff7a45; font-size: 16px; border-radius: 20px; }
+#apply_sure_wid #sure_btn[state='press']  { background: #c6c6c6; color: #ff7a45; font-size: 16px; border-radius: 20px; }
 
 #apply_sure_wid #cancel_btn[state='normal'] { background: #f0f0f0; color: #2e2f30; font-size: 16px; border-radius: 20px; }
 #apply_sure_wid #cancel_btn[state='hover']  { background: #d2d2d2; color: #2e2f30; font-size: 16px; border-radius: 20px; }
@@ -509,9 +528,9 @@ LoadingDlg #status_lb {
 #name_lb {
     font-size: 14px;
 }
-#add_friend_btn[state='normal'] { background: #07c160; color: #ffffff; font-size: 14px; border-radius: 20px; }
-#add_friend_btn[state='hover']  { background: #3bbb4b; color: #ffffff; font-size: 14px; border-radius: 20px; }
-#add_friend_btn[state='press']  { background: #07c160; color: #ffffff; font-size: 14px; border-radius: 20px; }
+#add_friend_btn[state='normal'] { background: #ff7a45; color: #ffffff; font-size: 14px; border-radius: 20px; }
+#add_friend_btn[state='hover']  { background: #ff9264; color: #ffffff; font-size: 14px; border-radius: 20px; }
+#add_friend_btn[state='press']  { background: #e85d26; color: #ffffff; font-size: 14px; border-radius: 20px; }
 
 /* 查找失败弹窗 */
 #FindFailDlg {
@@ -520,9 +539,9 @@ LoadingDlg #status_lb {
 #fail_tip, #fail_tip2 {
     font-size: 14px;
 }
-#fail_sure_btn[state='normal'] { background: #07c160; color: #ffffff; font-size: 14px; border-radius: 20px; }
-#fail_sure_btn[state='hover']  { background: #3bbb4b; color: #ffffff; font-size: 14px; border-radius: 20px; }
-#fail_sure_btn[state='press']  { background: #07c160; color: #ffffff; font-size: 14px; border-radius: 20px; }
+#fail_sure_btn[state='normal'] { background: #ff7a45; color: #ffffff; font-size: 14px; border-radius: 20px; }
+#fail_sure_btn[state='hover']  { background: #ff9264; color: #ffffff; font-size: 14px; border-radius: 20px; }
+#fail_sure_btn[state='press']  { background: #e85d26; color: #ffffff; font-size: 14px; border-radius: 20px; }
 
 /* ============================================================================
  * 7. 自定义控件
@@ -540,12 +559,12 @@ QScrollBar:vertical {
     margin: 0;
 }
 QScrollBar::handle:vertical {
-    background: #adaaa9;
+    background: #c0b4ab;
     min-height: 20px;
     border-radius: 4px;
 }
 QScrollBar::handle:vertical:hover {
-    background: #8c8a89;
+    background: #a3938a;
 }
 QScrollBar::add-line:vertical,
 QScrollBar::sub-line:vertical {
@@ -564,12 +583,12 @@ QScrollBar:horizontal {
     margin: 0;
 }
 QScrollBar::handle:horizontal {
-    background: #adaaa9;
+    background: #c0b4ab;
     min-width: 20px;
     border-radius: 4px;
 }
 QScrollBar::handle:horizontal:hover {
-    background: #8c8a89;
+    background: #a3938a;
 }
 QScrollBar::add-line:horizontal,
 QScrollBar::sub-line:horizontal {
@@ -592,7 +611,7 @@ QProgressBar {
 }
 QProgressBar::chunk {
     background-color: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                                      stop:0 #07c160, stop:1 #05a050);
+                                      stop:0 #ff7a45, stop:1 #e85d26);
     border-radius: 2px;
 }
 
@@ -610,7 +629,7 @@ QProgressBar::chunk {
     border-radius: 4px;
     padding: 4px 8px;
     color: #1f1f1f;
-    selection-background-color: #41e464;
+    selection-background-color: #ffa06b;
     selection-color: #ffffff;
 }
 #email_edit:hover, #pass_edit:hover, #user_edit:hover, #pwd_edit:hover,
@@ -619,7 +638,7 @@ QProgressBar::chunk {
 }
 #email_edit:focus, #pass_edit:focus, #user_edit:focus, #pwd_edit:focus,
 #verify_edit:focus, #confirm_edit:focus, #varify_edit:focus {
-    border: 1px solid #41e464;
+    border: 1px solid #ffa06b;
 }
 #email_edit:disabled, #pass_edit:disabled, #user_edit:disabled, #pwd_edit:disabled {
     background-color: #f7f7f7;
@@ -634,7 +653,7 @@ QProgressBar::chunk {
 
 /* 主按钮：绿色实心 */
 #login_btn, #reg_btn, #submit_btn, #sure_btn, #up_btn {
-    background-color: #41e464;
+    background-color: #ff7a45;
     border: none;
     border-radius: 4px;
     color: #ffffff;
@@ -642,10 +661,10 @@ QProgressBar::chunk {
     font-weight: bold;
 }
 #login_btn:hover, #reg_btn:hover, #submit_btn:hover, #sure_btn:hover, #up_btn:hover {
-    background-color: #35c953;
+    background-color: #ff9264;
 }
 #login_btn:pressed, #reg_btn:pressed, #submit_btn:pressed, #sure_btn:pressed, #up_btn:pressed {
-    background-color: #2a70f1;
+    background-color: #e85d26;
 }
 #login_btn:disabled, #reg_btn:disabled {
     background-color: #cccccc;
@@ -662,8 +681,8 @@ QProgressBar::chunk {
 }
 #return_btn:hover, #cancel_btn:hover, #varify_btn:hover, #find_btn:hover,
 #logout_btn:hover {
-    border: 1px solid #41e464;
-    color: #41e464;
+    border: 1px solid #ff7a45;
+    color: #ff7a45;
 }
 #return_btn:pressed, #cancel_btn:pressed, #varify_btn:pressed, #logout_btn:pressed {
     background-color: #f0f0f0;
@@ -684,6 +703,6 @@ QProgressBar::chunk {
 }
 #remember_pwd_chk::indicator:checked, #auto_login_chk::indicator:checked {
     /*选中填绿，但边框保留深色 —— 绿底+绿边会糊成一团、看不出方框形状 */
-    background-color: #41e464;
+    background-color: #ffa06b;
     border: 1px solid #2e2e2e;
 }

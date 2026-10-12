@@ -17,6 +17,7 @@ public:
 	QString _desc;
 	int _sex;
     QString _icon;
+    const QString& GetDisplayName() const { return _nick.isEmpty() ? _name : _nick; }
 };
 
 class AddFriendApply {
@@ -29,6 +30,7 @@ public:
     QString _icon;
     QString _nick;
     int     _sex;
+    const QString& GetDisplayName() const { return _nick.isEmpty() ? _name : _nick; }
 };
 
 struct ApplyInfo {
@@ -53,6 +55,7 @@ struct ApplyInfo {
     QString _nick;
     int _sex;
     int _status;
+    const QString& GetDisplayName() const { return _nick.isEmpty() ? _name : _nick; }
 };
 
 class TextChatData;
@@ -70,6 +73,7 @@ struct AuthInfo {
     int _sex;
     int _thread_id;
     std::vector<std::shared_ptr<TextChatData>> _chat_datas;
+    const QString& GetDisplayName() const { return _nick.isEmpty() ? _name : _nick; }
 };
 
 struct AuthRsp {
@@ -90,6 +94,7 @@ struct AuthRsp {
     int _sex;
     int _thread_id;
     std::vector<std::shared_ptr<TextChatData>> _chat_datas;
+    const QString& GetDisplayName() const { return _nick.isEmpty() ? _name : _nick; }
 };
 
 struct UserInfo {
@@ -122,6 +127,7 @@ struct UserInfo {
     QString _icon;
     int _sex;
     QString _desc;
+    const QString& GetDisplayName() const { return _nick.isEmpty() ? _name : _nick; }
 };
 
 class ChatDataBase {

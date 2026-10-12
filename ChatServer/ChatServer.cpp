@@ -20,7 +20,7 @@ std::mutex mutex_quit;
 
 int main()
 {
-    hchat::log::init("chat1");
+    hcat::log::init("chat1");
 
 	auto& cfg = ConfigMgr::Inst();
 	auto server_name = cfg["SelfServer"]["Name"];
@@ -80,7 +80,7 @@ int main()
 		LogicSystem::GetInstance()->SetServer(pointer_server);
 		io_context.run();
 		LOG_INFO("聊天服务正常退出");
-		hchat::log::shutdown();
+		hcat::log::shutdown();
 
 		grpc_server_thread.join();
 		pointer_server->StopTimer();

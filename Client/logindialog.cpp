@@ -46,7 +46,7 @@ static QString dpapiProtect(const QString& plain)
     in.cbData = (DWORD)utf8.size();
 
     DATA_BLOB out = { 0 };
-    if (!CryptProtectData(&in, L"HChat", nullptr, nullptr, nullptr,
+    if (!CryptProtectData(&in, L"Hcat", nullptr, nullptr, nullptr,
                           CRYPTPROTECT_UI_FORBIDDEN, &out)) {
         qCWarning(lcUser) << "CryptProtectData failed, error =" << GetLastError();
         return QString();
@@ -106,9 +106,19 @@ LoginDialog::LoginDialog(QWidget *parent) :
     ui->pass_visible->SetState("unvisible", "unvisible_hover", "",
                                "visible", "visible_hover", "");
     connect(ui->pass_visible, &ClickedLabel::clicked, this, [this]() {
+        // 双保险：自动填入状态下即使信号到达也不切换明文
+        if (!ui->pass_visible->isEnabled()) {
+            return;
+        }
         bool b_visible = (ui->pass_edit->echoMode() == QLineEdit::Normal);
         ui->pass_edit->setEchoMode(b_visible ? QLineEdit::Password : QLineEdit::Normal);
         qCDebug(lcUser) << "pass_visible clicked, echoMode =" << ui->pass_edit->echoMode();
+    });
+
+    // 用户一旦手动编辑密码（textEdited 只在人工输入时触发，setText 不触发），
+    // 就恢复眼睛按钮：手动输入的场景有"核对是否输错"的正当需求。
+    connect(ui->pass_edit, &QLineEdit::textEdited, this, [this]() {
+        ui->pass_visible->setEnabled(true);
     });
 
     // 取消「记住密码」时连带取消「自动登录」，否则下次会带着空密码自动登录
@@ -182,6 +192,8 @@ void LoginDialog::loadSettings()
     }
     ui->pass_edit->setText(pwd);
     ui->auto_login_chk->setChecked(st.value("login/auto_login", false).toBool());
+    // 刚自动填入完，先按"自动填入"状态禁用眼睛（防止刚回登录页就点出明文）
+    updateEyeButtonState();
 }
 
 void LoginDialog::SetAutoLogin(bool on)
@@ -200,6 +212,30 @@ void LoginDialog::resetUIState()
     enableBtn(true);
     _tip_errs.clear();
     ui->err_tip->clear();
+    // 退出登录回到登录页时，密码框里往往是"记住密码"自动填入的内容，
+    // 这时要重新禁用眼睛按钮（登录过程中用户可能手动输入过，眼睛被放开）。
+    updateEyeButtonState();
+}
+
+void LoginDialog::updateEyeButtonState()
+{
+    // 判断当前密码框内容是否就是"记住密码"存的那份（即自动填入，而非用户输入）。
+    // 是则禁用眼睛：自动填入没有"核对输错"的场景，点眼睛纯展示，
+    // 只增加泄露面（共享屏幕 / 旁人窥视 / 截屏录屏）。
+    const QString cur = ui->pass_edit->text();
+    bool autofilled = false;
+    if (!cur.isEmpty()) {
+        QSettings st(loginSettingsPath(), QSettings::IniFormat);
+        const QString cipher = st.value("login/pwd_cipher").toString();
+        if (!cipher.isEmpty()) {
+            autofilled = (cur == dpapiUnprotect(cipher));
+        }
+    }
+    ui->pass_visible->setEnabled(!autofilled);
+    // 禁用状态下如果残留明文显示，一并收回（防御：切回登录页前用户开着眼睛）
+    if (autofilled && ui->pass_edit->echoMode() == QLineEdit::Normal) {
+        ui->pass_edit->setEchoMode(QLineEdit::Password);
+    }
 }
 
 void LoginDialog::saveSettings()
@@ -229,7 +265,7 @@ void LoginDialog::saveSettings()
 void LoginDialog::initHead()
 {
     // 加载图片
-    QPixmap originalPixmap(":/res/head_1.jpg");
+    QPixmap originalPixmap(":/res/Icon.png");
       // 设置图片自动缩放
     qCDebug(lcUser) << originalPixmap.size() << ui->head_label->size();
     originalPixmap = originalPixmap.scaled(ui->head_label->size(),

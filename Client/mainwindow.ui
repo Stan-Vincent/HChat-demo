@@ -6,24 +6,24 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>300</width>
-    <height>500</height>
+    <width>340</width>
+    <height>490</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
-    <width>300</width>
-    <height>500</height>
+    <width>340</width>
+    <height>490</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>300</width>
-    <height>500</height>
+    <width>340</width>
+    <height>490</height>
    </size>
   </property>
   <property name="windowTitle">
-   <string>Hchat</string>
+   <string>Hcat</string>
   </property>
   <widget class="QWidget" name="centralwidget"/>
  </widget>

@@ -156,9 +156,13 @@ void MainWindow::offlineLogin(){
 
     // 恢复登录页的窗口尺寸。注意必须同时改 minimum/maximum，
     // 只 resize 的话最小尺寸还停在聊天页的 1050x900，窗口会一直那么大。
-    this->setMinimumSize(QSize(300, 500));
-    this->setMaximumSize(QSize(300, 500));
-    this->resize(300, 500);
+    // ★ 尺寸必须匹配 LoginDialog 的真实约束（minimumSize 340x490、
+    //   maximumSize 340x532，见 logindialog.ui）。原来这里写死 300x500，
+    //   比登录框需要的 340 宽还小 40px，退出登录后登录框右侧被裁掉，
+    //   表现为"登录窗口显示不完全"。
+    this->setMinimumSize(QSize(340, 490));
+    this->setMaximumSize(QSize(340, 532));
+    this->resize(340, 500);
     _ui_status = LOGIN_UI;
 }
 

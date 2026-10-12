@@ -1,5 +1,5 @@
 ﻿//==============================================================
-// HChat 客户端日志分类（Qt 原生 QLoggingCategory）
+// Hcat 客户端日志分类（Qt 原生 QLoggingCategory）
 //
 //   客户端是 Qt 程序，Qt 自带一套日志分类体系，与 qDebug/qWarning 完全兼容，
 //   可以用 QT_LOGGING_RULES 环境变量在运行时控制级别，Qt Creator 里也能
@@ -13,13 +13,13 @@
 //   lcAvatar   —— 头像下载与缓存
 //
 // 运行时控制（PowerShell）：
-//   $env:QT_LOGGING_RULES="hchat.network.debug=true;hchat.ui.debug=false"
+//   $env:QT_LOGGING_RULES="hcat.network.debug=true;hcat.ui.debug=false"
 //==============================================================
 #pragma once
 
 #include <QLoggingCategory>
 
-// 分类名统一带 "hchat." 前缀，便于用 QT_LOGGING_RULES 通配控制
+// 分类名统一带 "hcat." 前缀，便于用 QT_LOGGING_RULES 通配控制
 Q_DECLARE_LOGGING_CATEGORY(lcNetwork)
 Q_DECLARE_LOGGING_CATEGORY(lcChat)
 Q_DECLARE_LOGGING_CATEGORY(lcUi)
