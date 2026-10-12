@@ -30,6 +30,7 @@ private:
 	void SearchInfo(std::shared_ptr<CSession> session, const short& msg_id, const string& msg_data);
 	void AddFriendApply(std::shared_ptr<CSession> session, const short& msg_id, const string& msg_data);
 	void AuthFriendApply(std::shared_ptr<CSession> session, const short& msg_id, const string& msg_data);
+	void UpdateFriendBack(std::shared_ptr<CSession> session, const short& msg_id, const string& msg_data);
 	void DealChatTextMsg(std::shared_ptr<CSession> session, const short& msg_id, const string& msg_data);
 	void HeartBeatHandler(std::shared_ptr<CSession> session, const short& msg_id, const string& msg_data);
 	bool isPureDigit(const std::string& str);

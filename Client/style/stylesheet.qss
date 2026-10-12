@@ -144,7 +144,7 @@ QDialog#ResetDialog {
 #ResetDialog QLineEdit,
 #LoginDialog QLineEdit {
     border: 1px solid #e5dfd9;
-    border-radius: 6px;
+    border-radius: 10px;
     padding: 6px 10px;
     background: #ffffff;
     selection-background-color: #ffd9c4;
@@ -626,7 +626,7 @@ QProgressBar::chunk {
 #verify_edit, #confirm_edit, #varify_edit {
     background-color: #ffffff;
     border: 1px solid #d0d0d0;
-    border-radius: 4px;
+    border-radius: 10px;
     padding: 4px 8px;
     color: #1f1f1f;
     selection-background-color: #ffa06b;
@@ -651,14 +651,17 @@ QProgressBar::chunk {
     font-size: 12pt;
 }
 
-/* 主按钮：绿色实心 */
+/* 主按钮：绿色实心（统一 10px 圆角；登录主按钮单独覆盖为 22px 胶囊） */
 #login_btn, #reg_btn, #submit_btn, #sure_btn, #up_btn {
     background-color: #ff7a45;
     border: none;
-    border-radius: 4px;
+    border-radius: 10px;
     color: #ffffff;
     font-size: 12pt;
     font-weight: bold;
+}
+#login_btn {
+    border-radius: 22px;
 }
 #login_btn:hover, #reg_btn:hover, #submit_btn:hover, #sure_btn:hover, #up_btn:hover {
     background-color: #ff9264;
@@ -671,11 +674,11 @@ QProgressBar::chunk {
     color: #888888;
 }
 
-/* 次要按钮：描边 */
+/* 次要按钮：描边（统一 10px 圆角，与输入框风格一致） */
 #return_btn, #cancel_btn, #varify_btn, #find_btn, #logout_btn {
     background-color: #ffffff;
     border: 1px solid #cccccc;
-    border-radius: 4px;
+    border-radius: 10px;
     color: #555555;
     font-size: 12pt;
 }
@@ -705,4 +708,85 @@ QProgressBar::chunk {
     /*选中填绿，但边框保留深色 —— 绿底+绿边会糊成一团、看不出方框形状 */
     background-color: #ffa06b;
     border: 1px solid #2e2e2e;
+}
+
+/* 个人信息页（UserInfoPage）输入框 / 下拉框 */
+#nick_ed, #name_ed, #desc_ed {
+    background-color: #ffffff;
+    border: 1px solid #d0d0d0;
+    border-radius: 10px;
+    padding: 4px 8px;
+    color: #1f1f1f;
+}
+#nick_ed:hover, #name_ed:hover, #desc_ed:hover {
+    border: 1px solid #bebebe;
+}
+#nick_ed:focus, #name_ed:focus, #desc_ed:focus {
+    border: 1px solid #ffa06b;
+    background-color: #fffaf5;
+}
+
+#sex_cbx {
+    background-color: #ffffff;
+    border: 1px solid #d0d0d0;
+    border-radius: 10px;
+    padding: 4px 8px;
+    color: #1f1f1f;
+}
+#sex_cbx:hover {
+    border: 1px solid #bebebe;
+}
+#sex_cbx:focus {
+    border: 1px solid #ffa06b;
+    background-color: #fffaf5;
+}
+#sex_cbx::drop-down {
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+    width: 24px;
+    border-left: 1px solid #d0d0d0;
+}
+#sex_cbx::down-arrow {
+    width: 12px;
+    height: 12px;
+}
+
+/* ============================================================================
+ * 8. 无边框窗口：标题栏与窗口按钮
+ * ========================================================================= */
+
+/* 标题栏：与 main_widget 同为白底，融为一体；顶部一条拖拽热区 */
+#title_bar {
+    background-color: #ffffff;
+}
+
+/* 窗口按钮（最小化 / 最大化 / 关闭 / 小窗右上角关闭）通用样式 */
+QPushButton#win_min,
+QPushButton#win_max,
+QPushButton#win_close,
+QPushButton#win_close_small {
+    background-color: transparent;
+    border: none;
+    color: #444441;
+    font-size: 14px;
+    border-radius: 6px;
+}
+QPushButton#win_min:hover,
+QPushButton#win_max:hover {
+    background-color: #f0f0f0;
+}
+QPushButton#win_min:pressed,
+QPushButton#win_max:pressed {
+    background-color: #e0e0e0;
+}
+/* 关闭按钮 hover 变红，提示"这是关闭" */
+QPushButton#win_close:hover,
+QPushButton#win_close_small:hover {
+    background-color: #e81123;
+    color: #ffffff;
+}
+QPushButton#win_close:pressed,
+QPushButton#win_close_small:pressed {
+    background-color: #c20d1d;
+    color: #ffffff;
 }

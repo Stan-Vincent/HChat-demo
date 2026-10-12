@@ -46,7 +46,9 @@ enum ReqId{
     ID_CREATE_PRIVATE_CHAT_REQ = 1027, //创建私聊请求
     ID_CREATE_PRIVATE_CHAT_RSP = 1028, //创建私聊回复
     ID_LOAD_CHAT_MSG_REQ = 1029,      //加载聊天消息
-    ID_LOAD_CHAT_MSG_RSP = 1030,      //加载聊天消息
+    ID_LOAD_CHAT_MSG_RSP = 1030,
+    ID_UPDATE_FRIEND_BACK_REQ = 1031, //modify friend remark request
+    ID_UPDATE_FRIEND_BACK_RSP = 1032, //modify friend remark response      //加载聊天消息
     // ---- 以下是 HTTP（GateServer）用的，不是 TCP 协议的消息号 ----
     ID_UPLOAD_IMAGE_REQ = 2001,   //上传图片（发HTTP）
     ID_UPLOAD_IMAGE_RSP = 2002,   //上传图片回包

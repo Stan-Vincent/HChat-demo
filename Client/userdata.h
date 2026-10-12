@@ -98,8 +98,8 @@ struct AuthRsp {
 };
 
 struct UserInfo {
-    UserInfo(int uid, QString name, QString nick, QString icon, int sex, QString last_msg = "", QString desc=""):
-        _uid(uid),_name(name),_nick(nick),_icon(icon),_sex(sex),_desc(desc){}
+    UserInfo(int uid, QString name, QString nick, QString icon, int sex, QString last_msg = "", QString desc="", QString back=""):
+        _uid(uid),_name(name),_nick(nick),_icon(icon),_sex(sex),_desc(desc),_back(back){}
 
     UserInfo(std::shared_ptr<AuthInfo> auth):
         _uid(auth->_uid),_name(auth->_name),_nick(auth->_nick),
@@ -127,7 +127,9 @@ struct UserInfo {
     QString _icon;
     int _sex;
     QString _desc;
+    QString _back;
     const QString& GetDisplayName() const { return _nick.isEmpty() ? _name : _nick; }
+    const QString& GetBackName() const { return _back.isEmpty() ? _nick : _back; }
 };
 
 class ChatDataBase {

@@ -39,6 +39,7 @@ private:
     // 自动填入的密码没有"核对输错"的需求，点眼睛纯展示，只增加泄露面
     // （共享屏幕 / 旁人窥视），故禁用；用户一旦手动编辑密码立即恢复。
     void updateEyeButtonState();
+    bool eventFilter(QObject *obj, QEvent *ev) override;
     Ui::LoginDialog *ui;
 
     QMap<ReqId, std::function<void(const QJsonObject&)>> _handlers;

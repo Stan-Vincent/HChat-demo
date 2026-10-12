@@ -16,7 +16,8 @@ enum ErrorCodes {
 	TokenInvalid = 1010,   //Token失效
 	UidInvalid = 1011,  //uid无效
 	CREATE_CHAT_FAILED = 1012, //创建聊天失败
-	LOAD_CHAT_FAILED = 1013, //加载聊天失败
+	LOAD_CHAT_FAILED = 1013,
+	Error_MySql = 1014, //database error //加载聊天失败
 };
 
 
@@ -75,7 +76,10 @@ enum MSG_IDS {
 	ID_CREATE_PRIVATE_CHAT_RSP = 1028, //创建私聊回复
 
 	ID_LOAD_CHAT_MSG_REQ = 1029,      //加载聊天消息
-	ID_LOAD_CHAT_MSG_RSP = 1030,      //加载聊天消息
+	ID_LOAD_CHAT_MSG_RSP = 1030,
+	ID_UPDATE_FRIEND_BACK_REQ = 1031, //modify friend remark request
+	ID_UPDATE_FRIEND_BACK_RSP = 1032, //modify friend remark response
+      //加载聊天消息
 };
 
 #define USERIPPREFIX  "uip_"

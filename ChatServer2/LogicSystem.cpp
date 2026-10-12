@@ -104,6 +104,9 @@ void LogicSystem::RegisterCallBacks() {
 	_fun_callbacks[ID_AUTH_FRIEND_REQ] = std::bind(&LogicSystem::AuthFriendApply, this,
 		placeholders::_1, placeholders::_2, placeholders::_3);
 
+	_fun_callbacks[ID_UPDATE_FRIEND_BACK_REQ] = std::bind(&LogicSystem::UpdateFriendBack, this,
+		placeholders::_1, placeholders::_2, placeholders::_3);
+
 	_fun_callbacks[ID_TEXT_CHAT_MSG_REQ] = std::bind(&LogicSystem::DealChatTextMsg, this,
 		placeholders::_1, placeholders::_2, placeholders::_3);
 
@@ -509,6 +512,32 @@ void LogicSystem::AuthFriendApply(std::shared_ptr<CSession> session, const short
 	}
 	//·¢ËÍÍ¨Öª
 	ChatGrpcClient::GetInstance()->NotifyAuthFriend(to_ip_value, auth_req);
+}
+
+
+void LogicSystem::UpdateFriendBack(std::shared_ptr<CSession> session, const short& msg_id, const string& msg_data) {
+	Json::Reader reader;
+	Json::Value root;
+	reader.parse(msg_data, root);
+	auto uid = root["uid"].asInt();
+	auto friend_uid = root["friend_uid"].asInt();
+	auto back = root["back"].asString();
+	LOG_INFO("modify friend remark: uid={}, friend_uid={}, back={}", uid, friend_uid, back);
+
+	Json::Value rtvalue;
+	rtvalue["error"] = ErrorCodes::Success;
+	rtvalue["uid"] = uid;
+	rtvalue["friend_uid"] = friend_uid;
+	rtvalue["back"] = back;
+	Defer defer([this, &rtvalue, session]() {
+		std::string return_str = rtvalue.toStyledString();
+		session->Send(return_str, ID_UPDATE_FRIEND_BACK_RSP);
+	});
+
+	if (!MysqlMgr::GetInstance()->UpdateFriendBack(uid, friend_uid, back)) {
+		rtvalue["error"] = ErrorCodes::Error_MySql;
+		return;
+	}
 }
 
 void LogicSystem::DealChatTextMsg(std::shared_ptr<CSession> session, const short& msg_id, const string& msg_data) {

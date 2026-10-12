@@ -167,6 +167,33 @@ bool MysqlDao::CheckPwd(const std::string& name, const std::string& pwd, UserInf
 	}
 }
 
+
+bool MysqlDao::UpdateFriendBack(int self_uid, int friend_uid, const std::string& back) {
+	auto con = pool_->getConnection();
+	try {
+		if (con == nullptr) {
+			return false;
+		}
+
+		std::unique_ptr<sql::PreparedStatement> pstmt(con->_con->prepareStatement(
+			"UPDATE friend SET back = ? WHERE self_id = ? AND friend_id = ?"));
+
+		pstmt->setString(1, back);
+		pstmt->setInt(2, self_uid);
+		pstmt->setInt(3, friend_uid);
+
+		int updateCount = pstmt->executeUpdate();
+		LOG_INFO("update friend remark rows: {}", updateCount);
+		pool_->returnConnection(std::move(con));
+		return updateCount > 0;
+	}
+	catch (sql::SQLException& e) {
+		pool_->returnConnection(std::move(con));
+		std::cerr << "SQLException: " << e.what() << std::endl;
+		return false;
+	}
+}
+
 bool MysqlDao::AddFriendApply(const int& from, const int& to,
 	const std::string& desc, const std::string& back_name)
 {

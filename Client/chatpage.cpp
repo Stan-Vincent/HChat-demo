@@ -50,7 +50,7 @@ void ChatPage::SetChatData(std::shared_ptr<ChatThreadData> chat_data) {
     if (friend_info == nullptr) {
         return;
     }
-    ui->title_lb->setText(friend_info->_name);
+    ui->title_lb->setText(friend_info->GetDisplayName());
     ui->chat_data_list->removeAllItem();
     _unrsp_item_map.clear();
     for(auto & msg : chat_data->GetMsgMapRef()){
@@ -126,7 +126,7 @@ void ChatPage::AppendChatMsg(std::shared_ptr<ChatDataBase> msg)
     QString userName;
     QString userIcon;
     if (role == ChatRole::Self) {
-        userName = self_info->_name;
+        userName = self_info->GetDisplayName();
         userIcon = self_info->_icon;
     }
     else {
@@ -137,7 +137,7 @@ void ChatPage::AppendChatMsg(std::shared_ptr<ChatDataBase> msg)
             qCDebug(lcChat) << "AppendChatMsg: friend not found, uid =" << msg->GetSendUid();
             return;
         }
-        userName = friend_info->_name;
+        userName = friend_info->GetDisplayName();
         userIcon = friend_info->_icon;
     }
 
@@ -213,7 +213,7 @@ void ChatPage::on_send_btn_clicked()
     }
     auto pTextEdit = ui->chatEdit;
     ChatRole role = ChatRole::Self;
-    QString userName = user_info->_name;
+    QString userName = user_info->GetDisplayName();
     QString userIcon = user_info->_icon;
 
     // ★ 原来是文件级全局变量：多个 ChatPage 实例共享一份，
@@ -395,7 +395,7 @@ void ChatPage::on_receive_btn_clicked()
     auto pTextEdit = ui->chatEdit;
     ChatRole role = ChatRole::Other;
     auto friend_info = UserMgr::GetInstance()->GetFriendById(_chat_data->GetOtherId());
-    QString userName = friend_info->_name;
+    QString userName = friend_info->GetDisplayName();
     QString userIcon = friend_info->_icon;
 
     const QVector<MsgInfo>& msgList = pTextEdit->getMsgList();

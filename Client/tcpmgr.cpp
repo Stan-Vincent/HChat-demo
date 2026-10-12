@@ -352,6 +352,29 @@ void TcpMgr::initHandlers()
          qCDebug(lcNetwork) << "Add Friend Success " ;
       });
 
+    _handlers.insert(ID_UPDATE_FRIEND_BACK_RSP, [this](ReqId id, int len, QByteArray data) {
+        Q_UNUSED(len);
+        QJsonDocument jsonDoc = QJsonDocument::fromJson(data);
+        if (jsonDoc.isNull()) {
+            qCDebug(lcNetwork) << "UpdateFriendBack: invalid json";
+            emit sig_update_friend_back(false, 0, QString());
+            return;
+        }
+
+        QJsonObject jsonObj = jsonDoc.object();
+        int err = jsonObj["error"].toInt();
+        if (err != ErrorCodes::SUCCESS) {
+            qCDebug(lcNetwork) << "UpdateFriendBack failed, err is " << err;
+            emit sig_update_friend_back(false, 0, QString());
+            return;
+        }
+
+        int friend_uid = jsonObj["friend_uid"].toInt();
+        QString back = jsonObj["back"].toString();
+        qCDebug(lcNetwork) << "UpdateFriendBack success, uid =" << friend_uid << "back =" << back;
+        emit sig_update_friend_back(true, friend_uid, back);
+    });
+
 
     _handlers.insert(ID_AUTH_FRIEND_RSP, [this](ReqId id, int len, QByteArray data) {
         Q_UNUSED(len);

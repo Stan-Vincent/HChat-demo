@@ -30,6 +30,11 @@ bool MysqlMgr::AddFriendApply(const int& from, const int& to, const std::string&
 	return _dao.AddFriendApply(from, to, desc, back_name);
 }
 
+bool MysqlMgr::UpdateFriendBack(int self_uid, int friend_uid, const std::string& back)
+{
+	return _dao.UpdateFriendBack(self_uid, friend_uid, back);
+}
+
 bool MysqlMgr::AuthFriendApply(const int& from, const int& to) {
 	return _dao.AuthFriendApply(from, to);
 }

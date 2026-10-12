@@ -60,6 +60,7 @@ signals:
     void sig_load_chat_thread(bool load_more, int last_thread_id, 
         std::vector<std::shared_ptr<ChatThreadInfo>> chat_list);
     void sig_create_private_chat(int uid, int other_id, int thread_id);
+    void sig_update_friend_back(bool ok, int friend_uid, QString back);
     void sig_load_chat_msg(int thread_id, int message_id, bool load_more,
         std::vector<std::shared_ptr<TextChatData>> msg_list);
 

@@ -97,7 +97,7 @@ void UserMgr::AppendFriendList(QJsonArray array) {
         auto back = value["back"].toString();
 
         auto info = std::make_shared<UserInfo>(uid, name,
-            nick, icon, sex, desc, back);
+            nick, icon, sex, "", desc, back);
         _friend_list.push_back(info);
         _friend_map.insert(uid, info);
     }

@@ -243,6 +243,7 @@ public:
 	bool UpdatePwd(const std::string& name, const std::string& newpwd);
 	bool CheckPwd(const std::string& name, const std::string& pwd, UserInfo& userInfo);
 	bool AddFriendApply(const int& from, const int& to, const std::string& desc, const std::string& back_name);
+	bool UpdateFriendBack(int self_uid, int friend_uid, const std::string& back);
 	bool AuthFriendApply(const int& from, const int& to);
 	bool AddFriend(const int& from, const int& to, std::string back_name, std::vector<std::shared_ptr<AddFriendMsg>> &chat_datas);
 	std::shared_ptr<UserInfo> GetUser(int uid);

@@ -96,6 +96,17 @@ LoginDialog::LoginDialog(QWidget *parent) :
     ui(new Ui::LoginDialog)
 {
     ui->setupUi(this);
+
+    // 把眼睛图标叠进密码框右侧，避免密码行因 eye 占宽而比邮箱行短一截（显歪）
+    ui->pass_visible->setParent(ui->pass_edit);
+    ui->pass_edit->setTextMargins(0, 0, 32, 0);
+    ui->pass_edit->installEventFilter(this);
+    QTimer::singleShot(0, this, [this]() {
+        ui->pass_visible->setGeometry(ui->pass_edit->width() - 28,
+                                      (ui->pass_edit->height() - 24) / 2,
+                                      24, 24);
+    });
+
     connect(ui->reg_btn, &QPushButton::clicked, this, &LoginDialog::sig_switch_register);
     ui->forget_label->SetState("normal","hover","","selected","selected_hover","");
     ui->forget_label->setCursor(Qt::PointingHandCursor);
@@ -482,4 +493,14 @@ void LoginDialog::DelTipErr(TipErr te){
     }
 
     showTip(_tip_errs.first(), false);
+}
+
+bool LoginDialog::eventFilter(QObject *obj, QEvent *ev)
+{
+    if (obj == ui->pass_edit && ev->type() == QEvent::Resize) {
+        ui->pass_visible->setGeometry(ui->pass_edit->width() - 28,
+                                      (ui->pass_edit->height() - 24) / 2,
+                                      24, 24);
+    }
+    return QDialog::eventFilter(obj, ev);
 }

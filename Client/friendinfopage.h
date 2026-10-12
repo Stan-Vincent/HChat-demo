@@ -18,6 +18,8 @@ public:
     void SetInfo(std::shared_ptr<UserInfo> ui);
 private slots:
     void on_msg_chat_clicked();
+    void on_back_edit_btn_clicked();
+    void slot_update_back_rsp(bool ok, int friend_uid, QString back);
 
 private:
     Ui::FriendInfoPage *ui;

@@ -37,8 +37,10 @@ for F in $FILES; do
   LOG="$OUT/${SVC}_${F%.cpp}.log"
   "$CL" -c -nologo -EHsc -std:c++17 -DWIN32 -D_CONSOLE -DNDEBUG \
     -D_SCL_SECURE_NO_WARNINGS -D_WIN32_WINNT=0x0601 -DWIN32_LEAN_AND_MEAN \
+    -DSPDLOG_HEADER_ONLY -DFMT_UNICODE=0 \
     "-I$MSVC_INC" "-I$SDK/ucrt" "-I$SDK/um" "-I$SDK/shared" "-I$SDK/winrt" \
-    "-I$VCPKG" "-I$VCPKG/hiredis" "-I$MYSQL" "-I$BOOST" \
+    "-I$VCPKG" "-I$VCPKG/hiredis" "-I$VCPKG/jsoncpp" "-I$MYSQL" "-I$BOOST" \
+    "-ID:/QTcode/HChat/common" "-ID:/QTcode/HChat/common/third_party/spdlog/include" \
     -Fo:"$OUT"/ \
     "$F" > "$LOG" 2>&1
   ERRS=$(iconv -f GBK -t UTF-8 "$LOG" 2>/dev/null | grep -cE "error C[0-9]+|fatal error")

@@ -4,12 +4,19 @@
 #include <QPointer>
 #include <QDebug>
 #include "logcategory.h"
+#include "tcpmgr.h"
+#include "usermgr.h"
+#include <QInputDialog>
+#include <QMessageBox>
 
 FriendInfoPage::FriendInfoPage(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::FriendInfoPage),_user_info(nullptr)
 {
     ui->setupUi(this);
+    // update remark rsp
+    connect(TcpMgr::GetInstance().get(), &TcpMgr::sig_update_friend_back,
+            this, &FriendInfoPage::slot_update_back_rsp);
     ui->msg_chat->SetState("normal","hover","press");
     ui->video_chat->SetState("normal","hover","press");
     ui->voice_chat->SetState("normal","hover","press");
@@ -18,6 +25,58 @@ FriendInfoPage::FriendInfoPage(QWidget *parent) :
 FriendInfoPage::~FriendInfoPage()
 {
     delete ui;
+}
+
+
+void FriendInfoPage::on_back_edit_btn_clicked()
+{
+    if (_user_info == nullptr) {
+        return;
+    }
+    // input dialog, default = current remark
+    bool ok = false;
+    QString back = QInputDialog::getText(this, tr("修改备注"),
+        tr("请输入备注名："),
+        QLineEdit::Normal, _user_info->GetBackName(), &ok);
+    if (!ok) {
+        return;  // cancelled
+    }
+    back = back.trimmed().left(50);
+    if (back.isEmpty()) {
+        back = _user_info->_nick;  // empty -> nick
+    }
+    if (back == _user_info->_back) {
+        return;  // unchanged
+    }
+
+    QJsonObject json;
+    json["uid"] = UserMgr::GetInstance()->GetUid();
+    json["friend_uid"] = _user_info->_uid;
+    json["back"] = back;
+    QJsonDocument doc(json);
+    emit TcpMgr::GetInstance()->sig_send_data(ReqId::ID_UPDATE_FRIEND_BACK_REQ, doc.toJson());
+    ui->back_edit_btn->setEnabled(false);  // prevent double click
+}
+
+void FriendInfoPage::slot_update_back_rsp(bool ok, int friend_uid, QString back)
+{
+    ui->back_edit_btn->setEnabled(true);
+    if (!ok) {
+        QMessageBox::warning(this, tr("错误"), tr("修改备注失败，请检查网络。"));
+        return;
+    }
+    if (_user_info == nullptr || friend_uid != _user_info->_uid) {
+        return;  // not current friend
+    }
+    // sync local: page + UserMgr friend list
+    _user_info->_back = back;
+    auto fi = UserMgr::GetInstance()->GetFriendById(friend_uid);
+    if (fi) {
+        fi->_back = back;
+    }
+    ui->bak_lb->setText(_user_info->GetBackName());
+    ui->name_lb->setText(_user_info->GetBackName());
+    QMessageBox::information(this, tr("提示"), tr("备注已修改。"));
 }
 
 void FriendInfoPage::SetInfo(std::shared_ptr<UserInfo> user_info)
@@ -39,9 +98,10 @@ void FriendInfoPage::SetInfo(std::shared_ptr<UserInfo> user_info)
         ui->icon_lb->setScaledContents(true);
     }
 
-    ui->name_lb->setText(user_info->_name);
+    ui->name_lb->setText(user_info->GetBackName());
+    ui->user_name_lb->setText(user_info->_name);
     ui->nick_lb->setText(user_info->_nick);
-    ui->bak_lb->setText(user_info->_nick);
+    ui->bak_lb->setText(user_info->GetBackName());
 }
 
 void FriendInfoPage::on_msg_chat_clicked()
