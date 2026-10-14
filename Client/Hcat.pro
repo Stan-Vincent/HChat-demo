@@ -25,6 +25,7 @@ SOURCES += \
     chatdialog.cpp \
     chatpage.cpp \
     chatuserlist.cpp \
+    emojipanel.cpp \
     chatuserwid.cpp \
     clickedbtn.cpp \
     clickedlabel.cpp \
@@ -60,7 +61,9 @@ SOURCES += \
     usermgr.cpp \
     uploadmanager.cpp \
     imagemanager.cpp \
-    logcategory.cpp
+    logcategory.cpp \
+    animutil.cpp \
+    toast.cpp
 
 HEADERS += \
     logcategory.h \
@@ -79,6 +82,7 @@ HEADERS += \
     chatdialog.h \
     chatpage.h \
     chatuserlist.h \
+    emojipanel.h \
     chatuserwid.h \
     clickedbtn.h \
     clickedlabel.h \
@@ -114,7 +118,9 @@ HEADERS += \
     userinfopage.h \
     usermgr.h \
     uploadmanager.h \
-    imagemanager.h
+    imagemanager.h \
+    animutil.h \
+    toast.h
 
 FORMS += \
     adduseritem.ui \

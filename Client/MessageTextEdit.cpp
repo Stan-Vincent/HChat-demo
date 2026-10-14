@@ -1,6 +1,7 @@
 ﻿#include "MessageTextEdit.h"
 #include <QDebug>
 #include <QMessageBox>
+#include <QUrl>
 
 
 MessageTextEdit::MessageTextEdit(QWidget *parent)
@@ -165,18 +166,26 @@ bool MessageTextEdit::canInsertFromMimeData(const QMimeData *source) const
 
 void MessageTextEdit::insertFromMimeData(const QMimeData *source)
 {
-    QStringList urls = getUrl(source->text());
-
-    if(urls.isEmpty())
-        return;
-
-    foreach (QString url, urls)
-    {
-         if(isImage(url))
-             insertImages(url);
-         else
-             insertTextFile(url);
+    // ★ 之前这里只在"识别到文件 URL"时才做事，否则直接 return，
+    //   把基类 Paste 调用也吞掉了 —— 导致 CTRL+V 粘贴纯文字完全没反应（输入框"粘贴不了"）。
+    //   正确做法：文件/图片走项目自己的插入逻辑；其余（纯文本/HTML/图片剪贴板）
+    //   一律交给 QTextEdit 基类，保证普通粘贴正常。
+    //   用 source->hasUrls() 判断"带文件"，比旧代码在 source->text() 里找 "///" 的 hack
+    //   更可靠，且能正确覆盖"从资源管理器 Ctrl+V 粘贴文件"的场景。
+    if (source->hasUrls()) {
+        QStringList localUrls;
+        for (const QUrl &u : source->urls()) {
+            if (u.isLocalFile()) {
+                localUrls.append(u.toLocalFile());
+            }
+        }
+        if (!localUrls.isEmpty()) {
+            insertFileFromUrl(localUrls);   // 内部按图片/文件分别处理
+            return;
+        }
     }
+    // 纯文本 / HTML / 图片剪贴板等：交还基类标准粘贴
+    QTextEdit::insertFromMimeData(source);
 }
 
 bool MessageTextEdit::isImage(QString url)
@@ -198,22 +207,6 @@ void MessageTextEdit::insertMsgList(QVector<MsgInfo> &list, QString flag, QStrin
     msg.content = text;
     msg.pixmap = pix;
     list.append(msg);
-}
-
-QStringList MessageTextEdit::getUrl(QString text)
-{
-    QStringList urls;
-    if(text.isEmpty()) return urls;
-
-    QStringList list = text.split("\n");
-    foreach (QString url, list) {
-        if(!url.isEmpty()){
-            QStringList str = url.split("///");
-            if(str.size()>=2)
-                urls.append(str.at(1));
-        }
-    }
-    return urls;
 }
 
 QPixmap MessageTextEdit::getFileIconPixmap(const QString &url)

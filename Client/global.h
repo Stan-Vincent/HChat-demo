@@ -58,8 +58,17 @@ enum ReqId{
 
 enum ErrorCodes{
     SUCCESS = 0,
-    ERR_JSON = 1, //Json解析失败
+    ERR_JSON = 1, //Json解析失败（客户端侧）
     ERR_NETWORK = 2,
+
+    // 以下错误码与服务端 GateServer/const.h 对齐（HTTP 登录/注册等接口返回的具体失败原因）
+    PasswdErr = 1006,       // 密码错误
+    EmailNotMatch = 1007,   // 邮箱不匹配
+    PasswdUpFailed = 1008,  // 密码更新失败
+    PasswdInvalid = 1009,   // 密码无效（登录时：邮箱不存在或密码错，服务端统一返回此码避免被枚举）
+    TokenInvalid = 1010,    // Token 失效
+    UidInvalid = 1011,      // uid 无效
+    DbErr = 1012,           // 数据库操作失败
 };
 
 enum Modules{

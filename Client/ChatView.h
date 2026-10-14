@@ -21,6 +21,10 @@ private slots:
 
 private:
     void initStyleSheet();
+    // 落点是否落在消息列表（本 ChatView）范围内
+    bool isPosInsideChatView(const QPoint &globalPos) const;
+    // 清除消息列表内所有 TextBubble 的文字选区
+    void clearAllTextSelections();
 private:
     //QWidget *m_pCenterWidget;
     QVBoxLayout *m_pVl;

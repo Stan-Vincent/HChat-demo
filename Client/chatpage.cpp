@@ -1,4 +1,6 @@
 #include "chatpage.h"
+#include <QDateTime>
+#include <QTimer>
 #include "ui_chatpage.h"
 #include <QStyleOption>
 #include <QPainter>
@@ -14,6 +16,7 @@
 #include <QUuid>
 #include <QPointer>
 #include "logcategory.h"
+#include "clickedlabel.h"
 
 ChatPage::ChatPage(QWidget *parent) :
     QWidget(parent),
@@ -28,11 +31,48 @@ ChatPage::ChatPage(QWidget *parent) :
     ui->emo_lb->SetState("normal","hover","press","normal","hover","press");
     ui->file_lb->SetState("normal","hover","press","normal","hover","press");
 
+    // 表情功能：把已有的表情按钮接上 EmojiPanel 弹出层
+    _emo_panel = new EmojiPanel(this);
+    _emo_panel->hide();
+    connect(ui->emo_lb, &ClickedLabel::clicked, this, &ChatPage::slot_toggle_emoji_panel);
+    connect(_emo_panel, &EmojiPanel::sig_emoji_selected, this, &ChatPage::slot_insert_emoji);
+    connect(_emo_panel, &EmojiPanel::sig_panel_hidden, this, &ChatPage::slot_emo_panel_hidden);
+
 }
 
 ChatPage::~ChatPage()
 {
     delete ui;
+}
+
+void ChatPage::slot_toggle_emoji_panel(QString, ClickLbState)
+{
+    if (_emo_panel->isVisible()) {
+        _emo_panel->hide();
+        return;
+    }
+    // 锚定在表情按钮正上方居中对齐
+    QPoint globalPos = ui->emo_lb->mapToGlobal(QPoint(0, 0));
+    int x = globalPos.x() - (_emo_panel->width() - ui->emo_lb->width()) / 2;
+    if (x < 4) x = 4;
+    int y = globalPos.y() - _emo_panel->height() - 6;
+    if (y < 4) y = globalPos.y() + ui->emo_lb->height() + 6; // 上方不够则翻到下方
+    _emo_panel->move(x, y);
+    _emo_panel->show();
+}
+
+void ChatPage::slot_insert_emoji(const QString &emoji)
+{
+    // emoji 作为普通文本插入光标处，走现有 TEXT 消息链路（getMsgList 会把它并入文本段）
+    ui->chatEdit->insertPlainText(emoji);
+    ui->chatEdit->setFocus();
+    // 面板保持打开，方便连续插入多个表情；点击面板外会自动关闭。
+}
+
+void ChatPage::slot_emo_panel_hidden()
+{
+    // 面板因点击外部/Esc/再次点击按钮而关闭时，把表情按钮状态复位成 Normal
+    ui->emo_lb->ResetNormalState();
 }
 
 void ChatPage::SetChatData(std::shared_ptr<ChatThreadData> chat_data) {
@@ -53,6 +93,7 @@ void ChatPage::SetChatData(std::shared_ptr<ChatThreadData> chat_data) {
     ui->title_lb->setText(friend_info->GetDisplayName());
     ui->chat_data_list->removeAllItem();
     _unrsp_item_map.clear();
+    _resend_ctx.clear();   // 切换会话：作废上一段会话的可重发上下文（旧气泡已被销毁）
     for(auto & msg : chat_data->GetMsgMapRef()){
         AppendChatMsg(msg);
     }
@@ -165,6 +206,8 @@ void ChatPage::AppendChatMsg(std::shared_ptr<ChatDataBase> msg)
     pChatItem->setWidget(pBubble);
     auto status = msg->GetStatus();
     pChatItem->setStatus(status);
+    // hover 时浮出的时间（服务端下发的消息时间；为空则不显示）
+    pChatItem->setTime(msg->GetChatTime());
     ui->chat_data_list->appendChatItem(pChatItem);
     if (status == 0) {
         _unrsp_item_map[msg->GetUniqueId()] = pChatItem;
@@ -177,6 +220,107 @@ void ChatPage::UpdateChatStatus(QString unique_id, int status)
     if (iter != _unrsp_item_map.end()) {
         iter.value()->setStatus(status);
         _unrsp_item_map.erase(iter);
+        // 成功收到回执，这条消息不需要再重发了
+        _resend_ctx.remove(unique_id);
+    }
+}
+
+// 为某条已发出但未收到回执的消息启动超时计时：超过 8s 仍无回执则标记为发送失败
+void ChatPage::armResendTimer(const QString& uuid)
+{
+    QPointer<ChatPage> guard(this);
+    QTimer::singleShot(8000, this, [guard, uuid]() {
+        if (!guard) {
+            return;                                   // 页面已销毁
+        }
+        if (!guard->_resend_ctx.contains(uuid)) {
+            return;                                   // 已成功（被 UpdateChatStatus 清掉）或已被清理
+        }
+        auto it = guard->_unrsp_item_map.find(uuid);
+        if (it != guard->_unrsp_item_map.end()) {
+            it.value()->setStatus(MsgStatus::SEND_FAILED);
+        }
+    });
+}
+
+// 点击气泡上的"发送失败"图标触发：把消息按原样（文本直接发 / 图片重新上传）再发一次
+void ChatPage::slot_resend(const QString& unique_id)
+{
+    auto ctxIt = _resend_ctx.find(unique_id);
+    if (ctxIt == _resend_ctx.end()) {
+        return;
+    }
+    const ResendContext ctx = ctxIt.value();
+
+    ChatItemBase* item = _unrsp_item_map.value(unique_id, nullptr);
+    if (item == nullptr) {
+        return;
+    }
+    auto user_info = UserMgr::GetInstance()->GetUserInfo();
+    if (user_info == nullptr) {
+        return;
+    }
+
+    // 先把气泡状态改回"发送中"，并确保在未回复表里（防止被意外清掉）
+    item->setStatus(0);
+    _unrsp_item_map[unique_id] = item;
+
+    // 实际发包：content 对文本是文本内容，对图片是服务端 URL
+    auto sendReq = [this, unique_id, ctx, uid = user_info->_uid](const QString& content) {
+        QJsonObject obj;
+        obj["content"] = content;
+        obj["unique_id"] = unique_id;
+        if (ctx.type == ChatMsgType::PIC) {
+            obj["msg_type"] = 1;
+        }
+        QJsonArray arr;
+        arr.append(obj);
+        QJsonObject req;
+        req["fromuid"] = uid;
+        req["touid"] = ctx.other_id;
+        req["thread_id"] = ctx.thread_id;
+        req["text_array"] = arr;
+        QByteArray data = QJsonDocument(req).toJson(QJsonDocument::Compact);
+        emit TcpMgr::GetInstance()->sig_send_data(ReqId::ID_TEXT_CHAT_MSG_REQ, data);
+        armResendTimer(unique_id);
+    };
+
+    if (ctx.type == ChatMsgType::PIC) {
+        // 图片重发：先重新上传本地文件，拿到服务端地址再发包
+        QPointer<ChatPage> self(this);
+        UploadManager::instance()->uploadImage(
+            UserMgr::GetInstance()->GetUid(), ctx.content,
+            [self, unique_id, ctx, sendReq](bool ok, const QString& urlPath, const QString& errMsg) {
+                if (!self) {
+                    return;
+                }
+                if (!ok) {
+                    qCDebug(lcChat) << "resend upload image failed:" << errMsg;
+                    // 上传失败：维持失败态，等用户再次点击
+                    auto it = self->_unrsp_item_map.find(unique_id);
+                    if (it != self->_unrsp_item_map.end()) {
+                        it.value()->setStatus(MsgStatus::SEND_FAILED);
+                    }
+                    return;
+                }
+                if (!ctx.preview.isNull()) {
+                    PictureBubble::_pixmap_cache.insert(urlPath, ctx.preview);
+                }
+                sendReq(urlPath);
+            });
+    } else {
+        sendReq(ctx.content);
+    }
+}
+
+// 服务端整体回包失败时（err != SUCCESS），把本次会话仍在等待回执的消息全部标记成发送失败
+void ChatPage::FailAllPending()
+{
+    for (auto it = _resend_ctx.begin(); it != _resend_ctx.end(); ++it) {
+        auto mapIt = _unrsp_item_map.find(it.key());
+        if (mapIt != _unrsp_item_map.end()) {
+            mapIt.value()->setStatus(MsgStatus::SEND_FAILED);
+        }
     }
 }
 
@@ -303,6 +447,15 @@ void ChatPage::on_send_btn_clicked()
             //   上传成功后是以 msg_type=1 发给服务端的，
             //   服务端会正常回 ID_TEXT_CHAT_MSG_RSP（带 unique_id），
             //   所以图片是有回执的，能把气泡从"发送中"改成"已送达"。
+            // ★ 记录图片重发上下文（local_path + preview）。图片真正发包在上传成功后，
+            //   超时计时也在那时启动（见 on_send_btn_clicked 末尾的上传回调）。
+            ResendContext img_ctx;
+            img_ctx.type = ChatMsgType::PIC;
+            img_ctx.content = img.local_path;
+            img_ctx.preview = img.preview;
+            img_ctx.other_id = img.other_id;
+            img_ctx.thread_id = img.thread_id;
+            _resend_ctx[uuidString] = img_ctx;
         }
         else if(type == "file")
         {
@@ -313,11 +466,28 @@ void ChatPage::on_send_btn_clicked()
         {
             pChatItem->setWidget(pBubble);
             pChatItem->setStatus(0);
+            // 自己刚发出的消息：服务端还没回时间，先用本地时间
+            pChatItem->setTime(QDateTime::currentDateTime().toString("MM-dd hh:mm"));
             ui->chat_data_list->appendChatItem(pChatItem);
             // ★ 文本和图片都有回执，都要登记，才能把状态从"发送中"更新为"已送达"。
             //   FILE 目前没实现，不登记（否则永远等一个不来的回执）。
             if (type == "text" || type == "image") {
                 _unrsp_item_map[uuidString] = pChatItem;
+                // —— 发送失败重发相关：绑定 unique_id + 失败重发信号 ——
+                //   （_resend_ctx 在各自分支里填好：文本在此处、图片在上面的 image 分支）
+                pChatItem->setUniqueId(uuidString);
+                connect(pChatItem, &ChatItemBase::sig_resend, this, &ChatPage::slot_resend);
+                if (type == "text") {
+                    // 文本发包是同步的，直接记录上下文并启动超时计时
+                    ResendContext ctx;
+                    ctx.type = ChatMsgType::TEXT;
+                    ctx.content = msgList[i].content;
+                    ctx.other_id = _chat_data->GetOtherId();
+                    ctx.thread_id = thread_id;
+                    _resend_ctx[uuidString] = ctx;
+                    armResendTimer(uuidString);
+                }
+                // 图片的 _resend_ctx 已在 image 分支填好，超时计时在上传成功发包时启动
             }
         }
 
@@ -386,6 +556,9 @@ void ChatPage::on_send_btn_clicked()
                 QByteArray imgData = QJsonDocument(req).toJson(QJsonDocument::Compact);
                 emit TcpMgr::GetInstance()->sig_send_data(ReqId::ID_TEXT_CHAT_MSG_REQ, imgData);
                 qCDebug(lcChat) << "image msg sent, url =" << urlPath;
+                // ★ 图片是"上传成功后才真正发包"，超时计时必须在发包这一刻启动，
+                //   否则上传耗时会被算进超时，导致还没发出去就被误判失败。
+                self->armResendTimer(img.uuid);
             });
     }
 }
@@ -431,6 +604,7 @@ void ChatPage::on_receive_btn_clicked()
         {
             pChatItem->setWidget(pBubble);
             pChatItem->setStatus(2);
+            pChatItem->setTime(QDateTime::currentDateTime().toString("MM-dd hh:mm"));
             ui->chat_data_list->appendChatItem(pChatItem);
         }
     }

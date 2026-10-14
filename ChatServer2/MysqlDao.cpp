@@ -689,7 +689,7 @@ bool MysqlDao::GetFriendList(int self_id, std::vector<std::shared_ptr<UserInfo> 
 				continue;
 			}
 
-			user_info->back = user_info->name;
+			user_info->back = back;
 			user_info_list.push_back(user_info);
 		}
 		return true;

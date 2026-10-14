@@ -65,9 +65,10 @@ private:
     // ★ 无边框相关成员
     QWidget *_main_widget = nullptr;        // 承载圆角+阴影+内容的容器（白底圆角）
     QWidget *_title_bar = nullptr;          // 顶部标题栏（放窗口按钮，空白区可作拖拽热区）
-    QPushButton *_btn_min = nullptr;        // 最小化
-    QPushButton *_btn_max = nullptr;        // 最大化/还原
+    QPushButton *_btn_min = nullptr;        // 最小化（标题栏，聊天窗使用）
+    QPushButton *_btn_max = nullptr;        // 最大化/还原（标题栏，聊天窗使用）
     QPushButton *_btn_close = nullptr;      // 关闭（标题栏，聊天窗使用）
+    QPushButton *_btn_min_small = nullptr;  // 最小化（小窗右上角浮动）
     QPushButton *_btn_close_small = nullptr;// 关闭（小窗右上角浮动，避免标题栏）
     QGraphicsDropShadowEffect *_shadow = nullptr;
 
@@ -88,8 +89,10 @@ private:
     void setupFrameless();                  // 去系统边框 + 透明 + 圆角容器 + 阴影 + 标题栏
     void applyRoundedMask();                 // 给 _main_widget 做圆角遮罩（裁掉方角锯齿）
     void refreshChrome(bool maximized);      // 最大化/还原时切换圆角/阴影/留白
+    void applyMainWidgetBackground();        // 按 UI 状态切换 main_widget 背景（登录态渐变 / 聊天态白）
     void toggleMaximize();                   // 最大化 <-> 还原
     void updateWindowControls();             // 按当前页决定显示哪些窗口按钮
+    void repositionSmallControls();            // 小窗右上角最小化/关闭按钮定位
     QSize windowSizeForContent(const QSize &content, bool withTitleBar) const; // 内容尺寸 -> 窗口尺寸
     bool isResizable() const;                // 当前窗口是否可自由缩放（仅聊天大窗）
     static bool isInteractive(QWidget *w);   // 命中交互控件则不启动拖动

@@ -5,12 +5,20 @@
 #include "global.h"
 #include "httpmgr.h"
 #include "logcategory.h"
+#include "animutil.h"
 
 ResetDialog::ResetDialog(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::ResetDialog)
 {
     ui->setupUi(this);
+
+    // 按钮体系：role 属性 + reload_qss 统一三类按钮样式（见 stylesheet.qss §9）
+    ui->sure_btn->setProperty("role", "primary");   reload_qss(ui->sure_btn);
+    ui->return_btn->setProperty("role", "link");     reload_qss(ui->return_btn);
+    ui->varify_btn->setProperty("role", "link");     reload_qss(ui->varify_btn);
+    // 主按钮 hover：150ms 背景色过渡
+    AnimUtil::installHoverColorForRole(ui->sure_btn, "primary");
 
     connect(ui->user_edit,&QLineEdit::editingFinished,this,[this](){
         checkUserValid();

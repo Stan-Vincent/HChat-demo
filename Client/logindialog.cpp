@@ -7,6 +7,7 @@
 #include <QPainter>
 #include <QPainterPath>
 #include "clickedlabel.h"
+#include "animutil.h"
 #include <QLineEdit>
 #include <QCheckBox>
 #include <QSettings>
@@ -96,6 +97,14 @@ LoginDialog::LoginDialog(QWidget *parent) :
     ui(new Ui::LoginDialog)
 {
     ui->setupUi(this);
+
+    // 按钮体系：用 role 属性 + reload_qss 统一三类按钮样式（见 stylesheet.qss §9）
+    ui->login_btn->setProperty("role", "primary");
+    reload_qss(ui->login_btn);
+    ui->reg_btn->setProperty("role", "link");
+    reload_qss(ui->reg_btn);
+    // 登录主按钮：悬浮上浮（轻微上移 + 过渡回弹），见 AnimUtil::installHoverLift
+    AnimUtil::installHoverLift(ui->login_btn, 2);
 
     // 把眼睛图标叠进密码框右侧，避免密码行因 eye 占宽而比邮箱行短一截（显歪）
     ui->pass_visible->setParent(ui->pass_edit);
@@ -290,16 +299,28 @@ void LoginDialog::initHead()
     painter.setRenderHint(QPainter::Antialiasing); // 设置抗锯齿，使圆角更平滑
     painter.setRenderHint(QPainter::SmoothPixmapTransform);
 
-    // 使用QPainterPath设置圆角
+    // 使用QPainterPath设置正圆（圆角半径取宽高一半 -> 完整圆形，替代原 10px 圆角方形）
     QPainterPath path;
-    path.addRoundedRect(0, 0, originalPixmap.width(), originalPixmap.height(), 10, 10); // 最后两个参数分别是x和y方向的圆角半径
+    int rc = qMin(originalPixmap.width(), originalPixmap.height()) / 2;
+    path.addRoundedRect(0, 0, originalPixmap.width(), originalPixmap.height(), rc, rc);
     painter.setClipPath(path);
 
     // 将原始图片绘制到roundedPixmap上
     painter.drawPixmap(0, 0, originalPixmap);
 
-    // 设置绘制好的圆角图片到QLabel上
+    // 设置绘制好的圆形图片到QLabel上
     ui->head_label->setPixmap(roundedPixmap);
+
+    // 圆形 logo 下方加一个居中的品牌标题（与无边框风格统一）
+    if (QLabel *old = this->findChild<QLabel *>("app_title")) {
+        delete old;
+    }
+    QLabel *title = new QLabel("HCat", this);
+    title->setObjectName("app_title");
+    title->setAlignment(Qt::AlignCenter);
+    title->setStyleSheet("QLabel#app_title{color:#ff7a45;font-size:20px;"
+                         "font-weight:bold;background:transparent;border:none;}");
+    ui->verticalLayout_2->insertWidget(2, title);
 
 }
 
@@ -309,7 +330,12 @@ void LoginDialog::initHttpHandlers()
     _handlers.insert(ReqId::ID_LOGIN_USER, [this](QJsonObject jsonObj){
         int error = jsonObj["error"].toInt();
         if(error != ErrorCodes::SUCCESS){
-            showTip(tr("参数错误"),false);
+            // 服务端对"邮箱不存在 / 密码错误"统一返回 PasswdInvalid(1009)，提示通用的"邮箱或密码不正确"
+            if(error == ErrorCodes::PasswdInvalid){
+                showTip(tr("邮箱或密码不正确"), false);
+            } else {
+                showTip(tr("参数错误"), false);
+            }
             enableBtn(true);
             return;
         }
@@ -355,6 +381,7 @@ bool LoginDialog::checkUserValid(){
     if(email.isEmpty()){
         qCDebug(lcUser) << "email empty " ;
         AddTipErr(TipErr::TIP_EMAIL_ERR, tr("邮箱不能为空"));
+        AnimUtil::shakeWidget(ui->email_edit);
         return false;
     }
     DelTipErr(TipErr::TIP_EMAIL_ERR);
@@ -367,6 +394,7 @@ bool LoginDialog::checkPwdValid(){
         qCDebug(lcUser) << "Pass length invalid";
         //提示长度不准确
         AddTipErr(TipErr::TIP_PWD_ERR, tr("密码长度应为6~15"));
+        AnimUtil::shakeWidget(ui->pass_edit);
         return false;
     }
 
@@ -378,6 +406,7 @@ bool LoginDialog::checkPwdValid(){
     if(!match){
         //提示字符非法
         AddTipErr(TipErr::TIP_PWD_ERR, tr("不能包含非法字符且长度为(6~15)"));
+        AnimUtil::shakeWidget(ui->pass_edit);
         return false;;
     }
 
@@ -390,6 +419,8 @@ bool LoginDialog::enableBtn(bool enabled)
 {
     ui->login_btn->setEnabled(enabled);
     ui->reg_btn->setEnabled(enabled);
+    // 登录按钮禁用期间显示"登录中..."，恢复时回到"登录"（enableBtn 只在登录流程里切换状态）
+    ui->login_btn->setText(enabled ? tr("登录") : tr("登录中..."));
     return true;
 }
 

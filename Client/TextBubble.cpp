@@ -2,6 +2,7 @@
 #include <QFontMetricsF>
 #include <QDebug>
 #include <QFont>
+#include <QPalette>
 #include "global.h"
 #include <QTimer>
 #include <QTextDocument>
@@ -22,7 +23,10 @@ TextBubble::TextBubble(ChatRole role, const QString &text, QWidget *parent)
     m_pTextEdit->setFont(font);
     setPlainText(text);
     setWidget(m_pTextEdit);
-    initStyleSheet();
+    initStyleSheet(role);
+    // ★ 必须在 setStyleSheet 之后调：QSS polish 会合并调色板，
+    //   顺序反了可能把选中色冲掉。
+    initSelectionPalette();
 }
 
 bool TextBubble::eventFilter(QObject *o, QEvent *e)
@@ -72,7 +76,48 @@ void TextBubble::adjustTextHeight()
     setFixedHeight(text_height + doc_margin *2 + vMargin*2 );
 }
 
-void TextBubble::initStyleSheet()
+void TextBubble::initStyleSheet(ChatRole role)
 {
-    m_pTextEdit->setStyleSheet("QTextEdit{background:transparent;border:none}");
+    // ★ 必须给 QTextEdit 不透明底色（与 BubbleFrame 画的气泡同色）：
+    //   原来用 background:transparent，文字直接画在透明背景上再与气泡底色
+    //   合成——局部重绘（如 hover 时间胶囊显示/隐藏触发条目重绘）时，
+    //   抗锯齿边缘会与"透明"混合，文字整体发灰发虚，且不会自愈。
+    //   底色与气泡同色 + 同圆角(9px)，视觉上完全无缝。
+    //   Self=珊瑚 #ffd0b8（与 BubbleFrame 一致），Other=白。
+    const QString bg = (role == ChatRole::Self) ? "#ffd0b8" : "#ffffff";
+    m_pTextEdit->setStyleSheet(
+        QString("QTextEdit{background:%1;border:none;border-radius:9px;}").arg(bg));
+}
+
+void TextBubble::clearSelection()
+{
+    // ★ 折叠光标即可抹掉选区高亮（无论当前是 Active 还是 Inactive 配色，
+    //   没有选中文字就不会再渲染橙色/浅橙底色）。不动 focus、不动交互标志，
+    //   用户随后照样能重新拖选。空选区时 setTextCursor 是无害的 no-op。
+    QTextCursor cur = m_pTextEdit->textCursor();
+    if (cur.hasSelection()) {
+        cur.clearSelection();
+        m_pTextEdit->setTextCursor(cur);
+    }
+}
+
+void TextBubble::initSelectionPalette()
+{
+    // ★ 选中态配色必须三组（Active/Inactive/Disabled）都显式指定。
+    //   只靠默认调色板时：QTextEdit 失焦后（典型操作：右键菜单"全选"→
+    //   点一下别处关闭菜单），Qt 用 Inactive 组的默认灰色 Highlight 渲染
+    //   残留选区——表现为"选中的文字变灰"。
+    //   三组统一主色系：主动态 #ff7a45，失焦/禁用态 #ff9a6b（只变浅不变灰），
+    //   选中文字一律白色。选中功能保留（复制消息文字是基本操作）。
+    QPalette pal = m_pTextEdit->palette();
+    const QColor kSelActive(255, 122, 69);    // #ff7a45 主色
+    const QColor kSelInactive(255, 154, 107); // #ff9a6b 主色浅调
+    const QColor kSelText(255, 255, 255);     // 选中文字：白
+    pal.setColor(QPalette::Active,   QPalette::Highlight,       kSelActive);
+    pal.setColor(QPalette::Active,   QPalette::HighlightedText, kSelText);
+    pal.setColor(QPalette::Inactive, QPalette::Highlight,       kSelInactive);
+    pal.setColor(QPalette::Inactive, QPalette::HighlightedText, kSelText);
+    pal.setColor(QPalette::Disabled, QPalette::Highlight,       kSelInactive);
+    pal.setColor(QPalette::Disabled, QPalette::HighlightedText, kSelText);
+    m_pTextEdit->setPalette(pal);
 }

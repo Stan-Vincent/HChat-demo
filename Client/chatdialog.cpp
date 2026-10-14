@@ -206,6 +206,13 @@ ChatDialog::ChatDialog(QWidget* parent) :
 		this, &ChatDialog::slot_load_chat_msg);
 
 	connect(TcpMgr::GetInstance().get(), &TcpMgr::sig_chat_msg_rsp, this, &ChatDialog::slot_add_chat_msg);
+
+	// 聊天消息回包整体失败：把本次会话仍在等待回执的消息统一标记为"发送失败"
+	connect(TcpMgr::GetInstance().get(), &TcpMgr::sig_chat_msg_rsp_error,
+		this, [this](int err) {
+			Q_UNUSED(err);
+			ui->chat_page->FailAllPending();
+		});
 }
 
 ChatDialog::~ChatDialog()
@@ -216,6 +223,9 @@ ChatDialog::~ChatDialog()
 
 void ChatDialog::loadChatList()
 {
+	// 先清掉可能残留的加载状态（断线/上次未完成的加载），保证每次登录从干净计数开始，
+	// 避免 _loading_req_count 叠到 >0 后永远减不到 0 而无限阻塞。
+	resetLoadingState();
 	// 计数 +1 并显示加载框；收到回包时由 LoadingSession 配平
 	beginLoadingRequest();
 	//发送请求逻辑
@@ -239,10 +249,9 @@ void ChatDialog::loadChatMsg() {
 	//发送聊天记录请求
 	_cur_load_chat = UserMgr::GetInstance()->GetCurLoadData();
 	if (_cur_load_chat == nullptr) {
-		// ★ 没有可加载的会话了 -> 配平掉这次计数。
-		//   原来这里直接 return，beginLoadingRequest 加的计数没人减，
-		//   加载框就永远留下了（这就是「无法退出」）。
-		endLoadingRequest();
+		// ★ 没有可加载的会话了 -> 直接 return。
+		//   本函数总在 slot_load_chat_thread 的 LoadingSession 作用域内被调用，
+		//   计数由其析构统一减，这里不要再 endLoadingRequest（否则会多减一次）。
 		return;
 	}
 
@@ -435,17 +444,17 @@ void ChatDialog::slot_load_chat_thread(bool load_more, int last_thread_id,
 		QJsonDocument doc(jsonObj);
 		QByteArray jsonData = doc.toJson(QJsonDocument::Compact);
 
-		// ★ 关键：先减计数（等价于本次回包已消费完），
-		//   再发下一个请求重新 +1。顺序不能反 ——
-		//   反了会先减到 0 把框关掉，界面闪一下。
-		endLoadingRequest();
+		// ★ 本次回包由本函数 LoadingSession 析构统一减计数，
+		//   这里只把"下一个请求"计入在途（begin 与底层 send 配对）。
+		//   整条链 count 恒为 1，加载框既不会被提前关掉、也不会叠加多个。
+		beginLoadingRequest();
 		//发送tcp请求给chat server
 		emit TcpMgr::GetInstance()->sig_send_data(ReqId::ID_LOAD_CHAT_THREAD_REQ, jsonData);
 		return;
 	}
 
-	// 本层结束，计数交给 loadChatMsg 接棒（它会 beginLoadingRequest）
-	endLoadingRequest();
+	// 本层结束，计数交给 loadChatMsg 接棒（它会 beginLoadingRequest）；
+	// 当前请求的"减计数"由本函数 LoadingSession 析构自动完成。
 	//继续加载聊天数据
 	loadChatMsg();
 }
@@ -481,11 +490,12 @@ void ChatDialog::slot_load_chat_msg(int thread_id, int msg_id, bool load_more, s
 	//   如果那次调用因为 _chat_map 里查不到而提前 return 了
 	//   （GetCurLoadData 返回 nullptr），这里就会解引用空指针崩掉。
 	//   而且即使崩了，加载框也没人关 —— 变成「崩溃 + 窗口残留」。
+	//   LoadingSession 提到最前面：任何提前 return 路径都靠析构减计数，
+	//   不会出现「提前退出 + 加载框残留」。
+	LoadingSession session(this);
 	if (_cur_load_chat == nullptr) {
-		endLoadingRequest();
 		return;
 	}
-	LoadingSession session(this);
 
 	_cur_load_chat->SetLastMsgId(msg_id);
 	//加载聊天信息
@@ -504,8 +514,9 @@ void ChatDialog::slot_load_chat_msg(int thread_id, int msg_id, bool load_more, s
 		QJsonDocument doc(jsonObj);
 		QByteArray jsonData = doc.toJson(QJsonDocument::Compact);
 
-		// 本层结束 -> 计数-1；下一个请求发出时会再 +1
-		endLoadingRequest();
+		// 本层结束：当前回包由 LoadingSession 析构减计数，
+		// 这里把下一个请求计入在途（begin 与 send 配对），count 恒为 1。
+		beginLoadingRequest();
 		//发送tcp请求给chat server
 		emit TcpMgr::GetInstance()->sig_send_data(ReqId::ID_LOAD_CHAT_MSG_REQ, jsonData);
 		return;
@@ -532,10 +543,11 @@ void ChatDialog::slot_load_chat_msg(int thread_id, int msg_id, bool load_more, s
 	QJsonDocument doc(jsonObj);
 	QByteArray jsonData = doc.toJson(QJsonDocument::Compact);
 
-	// 本层结束 -> 计数-1
-	endLoadingRequest();
-	//发送tcp请求给chat server
-	emit TcpMgr::GetInstance()->sig_send_data(ReqId::ID_LOAD_CHAT_MSG_REQ, jsonData);
+		// 本层结束：当前回包由 LoadingSession 析构减计数，
+		// 这里把下一个请求计入在途（begin 与 send 配对），count 恒为 1。
+		beginLoadingRequest();
+		//发送tcp请求给chat server
+		emit TcpMgr::GetInstance()->sig_send_data(ReqId::ID_LOAD_CHAT_MSG_REQ, jsonData);
 }
 
 
@@ -600,6 +612,15 @@ void ChatDialog::endLoadingRequest()
 		_loading_req_count = 0;
 		showLoadingDlg(false);
 	}
+}
+
+void ChatDialog::resetLoadingState()
+{
+	// ★ 退出登录 / 连接断开时清掉残留的加载计数与模态 LoadingDlg。
+	//   之前这里没复位：被中断的加载把 _loading_req_count 留在 >0、把 dlg 挂在屏幕上，
+	//   下次登录 loadChatList 再 +1 就永远减不到 0 -> 无限阻塞（"退出再登录卡在加载"）。
+	_loading_req_count = 0;
+	showLoadingDlg(false);
 }
 
 void ChatDialog::AddLBGroup(StateWidget* lb)

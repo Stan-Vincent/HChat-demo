@@ -6,7 +6,9 @@
 #include "logcategory.h"
 #include "tcpmgr.h"
 #include "usermgr.h"
+#include "global.h"
 #include <QInputDialog>
+#include "toast.h"
 #include <QMessageBox>
 
 FriendInfoPage::FriendInfoPage(QWidget *parent) :
@@ -14,6 +16,8 @@ FriendInfoPage::FriendInfoPage(QWidget *parent) :
     ui(new Ui::FriendInfoPage),_user_info(nullptr)
 {
     ui->setupUi(this);
+    // 按钮体系：role 属性 + reload_qss 统一三类按钮样式（见 stylesheet.qss §9）
+    ui->back_edit_btn->setProperty("role", "link");  reload_qss(ui->back_edit_btn);
     // update remark rsp
     connect(TcpMgr::GetInstance().get(), &TcpMgr::sig_update_friend_back,
             this, &FriendInfoPage::slot_update_back_rsp);
@@ -62,7 +66,7 @@ void FriendInfoPage::slot_update_back_rsp(bool ok, int friend_uid, QString back)
 {
     ui->back_edit_btn->setEnabled(true);
     if (!ok) {
-        QMessageBox::warning(this, tr("错误"), tr("修改备注失败，请检查网络。"));
+        Toast::showToast(this, tr("修改备注失败，请检查网络。"), Toast::Error);
         return;
     }
     if (_user_info == nullptr || friend_uid != _user_info->_uid) {
@@ -76,7 +80,7 @@ void FriendInfoPage::slot_update_back_rsp(bool ok, int friend_uid, QString back)
     }
     ui->bak_lb->setText(_user_info->GetBackName());
     ui->name_lb->setText(_user_info->GetBackName());
-    QMessageBox::information(this, tr("提示"), tr("备注已修改。"));
+    Toast::showToast(this, tr("备注已修改。"), Toast::Success);
 }
 
 void FriendInfoPage::SetInfo(std::shared_ptr<UserInfo> user_info)

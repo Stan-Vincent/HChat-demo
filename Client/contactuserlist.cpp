@@ -74,7 +74,7 @@ void ContactUserList::addContactUserList()
     auto con_list = UserMgr::GetInstance()->GetConListPerPage();
     for(auto & con_ele : con_list){
         auto *con_user_wid = new ConUserItem();
-        con_user_wid->SetInfo(con_ele->_uid,con_ele->_nick, con_ele->_icon);
+        con_user_wid->SetInfo(con_ele->_uid,con_ele->_nick, con_ele->_icon, con_ele->_back);
         QListWidgetItem *item = new QListWidgetItem;
         //qCDebug(lcUser) <<"chat_user_wid sizeHint is " << chat_user_wid->sizeHint();
         item->setSizeHint(con_user_wid->sizeHint());
@@ -182,6 +182,12 @@ void ContactUserList::slot_item_clicked(QListWidgetItem *item)
 
        auto con_item = qobject_cast<ConUserItem*>(customItem);
        auto user_info = con_item->GetInfo();
+       // 备注可能已被修改：优先取 UserMgr 里最新的好友数据（含最新 _back），
+       // 取不到才退回 item 自带的拷贝，保证改完备注再点开显示的是新值。
+       auto latest = UserMgr::GetInstance()->GetFriendById(user_info->_uid);
+       if (latest) {
+           user_info = latest;
+       }
        //跳转到好友申请界面
        emit sig_switch_friend_info_page(user_info);
        return;

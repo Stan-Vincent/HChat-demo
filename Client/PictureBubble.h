@@ -38,8 +38,10 @@ public:
 private:
     void initEmpty(ChatRole role);
     void applyPixmap(const QPixmap &pix);
+    bool eventFilter(QObject *o, QEvent *e) override;
 
     QLabel *_lb = nullptr;
+    QPixmap _full_pix;   // 原始图（用于灯箱预览）
 };
 
 #endif // PICTUREBUBBLE_H

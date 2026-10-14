@@ -26,7 +26,8 @@
 
 - 🔐 **账号体系** — 注册 / 登录 / 重置密码，邮箱验证码校验
 - 👥 **好友社交** — 搜索用户、好友申请、好友列表、资料卡
-- 💬 **实时聊天** — 单聊文本 / 图片，历史消息分页拉取，未读状态
+- 💬 **实时聊天** — 单聊文本 / 图片 / Unicode emoji，历史消息分页拉取，未读状态
+- 😊 **表情面板** — Unicode emoji 一键插入输入框，复用文本消息链路，跨端收发零后端改动
 - 🖼️ **头像管理** — 上传头像、异步加载、磁盘 + 内存双层缓存
 - 🟢 **在线状态** — StatusServer 统一维护，心跳保活
 - 🌐 **分布式聊天** — 双 ChatServer 共享 Redis，跨节点消息 gRPC 转发
@@ -121,10 +122,10 @@ Hcat/
 # 1. 确认 vcpkg 已安装依赖（triplet x64-windows）
 vcpkg install grpc protobuf redis-plus-plus hiredis boost jsoncpp
 
-# 2. 用 VS2022 打开对应 .sln，选择 Release | x64 生成
+# 2. 用 VS2022 打开对应 .sln，选择 Debug | x64 生成
 ```
 
-> **⚠️ 后端务必用 Release 运行**：MySQL Connector/C++ 只提供 Release DLL（/MD），默认 Debug(/MDd) 会因 STL 布局不一致导致跨 DLL 传 `sql::SQLString` 时内存错乱崩溃。本项目已把 Debug 改造成「Release 运行时 + 无优化」，两个配置都可断点调试。
+> **⚠️ 用 Debug | x64 配置生成并运行**：MySQL Connector/C++ 只提供 Release DLL（/MD），原生 Debug(/MDd) 会因 STL 布局不一致导致跨 DLL 传 `sql::SQLString` 时内存错乱崩溃。本项目已把 **Debug | x64** 改造成「Release 运行时（`/MD` + `NDEBUG` + `_ITERATOR_DEBUG_LEVEL=0`）+ 无优化」，因此它既能正常连 MySQL 又能断点调试，而且 `Start/start.bat` 加载的正是 `x64\Debug\*.exe`。Release|x64 也能跑，但 start.bat 用不到它。
 
 ### 客户端（Client）
 
@@ -160,10 +161,10 @@ Start\stop.bat
 | 服务 | 工作目录 | 命令 |
 |------|----------|------|
 | VarifyServer | `VarifyServer/` | `node server.js` |
-| GateServer | `GateServer/` | `x64\Release\GateServer.exe` |
-| StatusServer | `StatusServer/` | `x64\Release\StatusServer.exe` |
-| ChatServer 1 | `ChatServer/` | `x64\Release\ChatServer.exe` |
-| ChatServer 2 | `ChatServer2/` | `x64\Release\ChatServer.exe` |
+| GateServer | `GateServer/` | `x64\Debug\GateServer.exe` |
+| StatusServer | `StatusServer/` | `x64\Debug\StatusServer.exe` |
+| ChatServer 1 | `ChatServer/` | `x64\Debug\ChatServer.exe` |
+| ChatServer 2 | `ChatServer2/` | `x64\Debug\ChatServer.exe` |
 | 客户端 | `Client/.../bin` | `Hcat.exe` |
 
 > GateServer 工作目录必须是 `GateServer/`（从 cwd 读 `config.ini`），且 exe 同级需有 `plugin/`（MySQL 认证插件）。
@@ -209,7 +210,7 @@ test\run_test.bat        # 一键协议测试（自动拉起 ChatServer，跑 pr
 <details>
 <summary><b>后端启动即崩溃 / 连不上 MySQL</b></summary>
 
-确认两点：① 用 **Release** 配置运行；② 工作目录在服务目录下且 exe 同级有 `plugin/`。报 `Authentication plugin 'mysql_native_password' cannot be loaded` 即为缺 `plugin/`。
+确认两点：① 用 **Debug | x64** 配置生成并运行（本项目已把它改造成 Release 运行时，可正常连 MySQL 并断点调试）；② 工作目录在服务目录下且 exe 同级有 `plugin/`。报 `Authentication plugin 'mysql_native_password' cannot be loaded` 即为缺 `plugin/`。
 </details>
 
 <details>

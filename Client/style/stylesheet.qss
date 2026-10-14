@@ -91,12 +91,12 @@ QMessageBox QPushButton:pressed {
  * 2. 登录 / 注册 / 重置 对话框
  * ========================================================================= */
 
-/* 三个对话框共用背景（原来是 #e7fbfff6，改成不透明浅绿白） */
+/* 三个对话框背景透明：渐变背景已上移到 main_widget 登录态（淡橙渐变），
+   与无边框圆角容器融为一体；聊天态 main_widget 自动转白。 */
 QDialog#LoginDialog,
 QDialog#RegisterDialog,
 QDialog#ResetDialog {
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-                                stop:0 #fff8f3, stop:1 #ffe9d8);
+    background: transparent;
 }
 
 /* 用户名 / 密码标签 */
@@ -275,6 +275,19 @@ QDialog#ResetDialog {
 #time_wid #time_lb {
     color: #8c8c8c;
     font-size: 12px;
+}
+
+/* 聊天气泡条目 hover 浮出的时间（ChatItemBase::m_pTimeLabel）：
+   必须用不透明白底 + 细边框——半透明(rgba)背景会被 Qt 合成进父控件
+   backing store，隐藏后残留鬼影，把旁边消息文字染灰。位置在 C++ 里
+   手工定位（贴气泡右侧/左侧，垂直居中，不占布局）。 */
+#chat_item_time {
+    color: #8c8c8c;
+    font-size: 12px;
+    background-color: #ffffff;
+    border: 1px solid #e8e8e8;
+    border-radius: 4px;
+    padding: 1px 6px;
 }
 
 /* ---------- 3.4 聊天页 ---------- */
@@ -652,7 +665,7 @@ QProgressBar::chunk {
 }
 
 /* 主按钮：绿色实心（统一 10px 圆角；登录主按钮单独覆盖为 22px 胶囊） */
-#login_btn, #reg_btn, #submit_btn, #sure_btn, #up_btn {
+#login_btn, #submit_btn, #sure_btn, #up_btn {
     background-color: #ff7a45;
     border: none;
     border-radius: 10px;
@@ -662,14 +675,26 @@ QProgressBar::chunk {
 }
 #login_btn {
     border-radius: 22px;
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                               stop:0 #ffa766, stop:1 #ff7a45);
 }
-#login_btn:hover, #reg_btn:hover, #submit_btn:hover, #sure_btn:hover, #up_btn:hover {
+#submit_btn:hover, #sure_btn:hover, #up_btn:hover {
     background-color: #ff9264;
 }
-#login_btn:pressed, #reg_btn:pressed, #submit_btn:pressed, #sure_btn:pressed, #up_btn:pressed {
+/* 登录主按钮 hover：渐变提亮（与 #login_btn 基准渐变同方向） */
+#login_btn:hover {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                               stop:0 #ffb886, stop:1 #ff8a5c);
+}
+#submit_btn:pressed, #sure_btn:pressed, #up_btn:pressed {
     background-color: #e85d26;
 }
-#login_btn:disabled, #reg_btn:disabled {
+/* 登录主按钮按下：渐变压暗 */
+#login_btn:pressed {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                               stop:0 #f0884f, stop:1 #e96a30);
+}
+#login_btn:disabled {
     background-color: #cccccc;
     color: #888888;
 }
@@ -760,23 +785,28 @@ QProgressBar::chunk {
     background-color: #ffffff;
 }
 
-/* 窗口按钮（最小化 / 最大化 / 关闭 / 小窗右上角关闭）通用样式 */
+/* 窗口按钮（最小化 / 最大化 / 关闭 / 小窗右上角按钮）通用样式 */
 QPushButton#win_min,
 QPushButton#win_max,
 QPushButton#win_close,
+QPushButton#win_min_small,
 QPushButton#win_close_small {
     background-color: transparent;
     border: none;
     color: #444441;
-    font-size: 14px;
+    font-size: 13px;
     border-radius: 6px;
+    padding: 0;
+    text-align: center;
 }
 QPushButton#win_min:hover,
-QPushButton#win_max:hover {
+QPushButton#win_max:hover,
+QPushButton#win_min_small:hover {
     background-color: #f0f0f0;
 }
 QPushButton#win_min:pressed,
-QPushButton#win_max:pressed {
+QPushButton#win_max:pressed,
+QPushButton#win_min_small:pressed {
     background-color: #e0e0e0;
 }
 /* 关闭按钮 hover 变红，提示"这是关闭" */
@@ -790,3 +820,85 @@ QPushButton#win_close_small:pressed {
     background-color: #c20d1d;
     color: #ffffff;
 }
+
+/* ============================================================================
+ * 9. Design Tokens & 按钮体系
+ * ----------------------------------------------------------------------------
+ * 调色板（全局统一引用，避免散落硬编码）：
+ *   primary          #ff7a45   主色（登录焦点边 / 主按钮）
+ *   primary-hover    #ff9a6b
+ *   primary-press    #e96a30
+ *   primary-disabled #ffd2bf
+ *   link             #ff7a45   文字按钮
+ *   link-hover       #ff9a6b
+ *   link-press       #e96a30
+ *   ghost-bg         #ffffff
+ *   ghost-border     #e3e3e3
+ *   ghost-hover-bg   #fff3ec
+ *   text             #1f1f1f
+ * 用法：在代码里对按钮 setProperty("role","primary|link|ghost") 后调用 reload_qss(btn)
+ * ========================================================================= */
+
+/* primary：实心主色按钮（登录 / 注册 / 确认 / 提交 / 发送等主操作） */
+QPushButton[role="primary"] {
+    background-color: #ff7a45;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 0 16px;
+    font-size: 14px;
+    font-weight: 500;
+}
+QPushButton[role="primary"]:hover { background-color: #ff9a6b; }
+QPushButton[role="primary"]:pressed { background-color: #e96a30; }
+QPushButton[role="primary"]:disabled { background-color: #ffd2bf; color: #ffffff; }
+
+/* link：文字型按钮 / 嵌入背景链接（去注册 / 返回 / 退出 / 获取验证码等次级操作） */
+QPushButton[role="link"],
+QPushButton[role="link"]:hover,
+QPushButton[role="link"]:pressed,
+QPushButton[role="link"]:disabled {
+    background-color: transparent;
+    border: none;
+    outline: none;
+    padding: 0;
+    min-height: 0;
+}
+QPushButton[role="link"] {
+    color: #ff7a45;
+    font-size: 11pt;
+}
+QPushButton[role="link"]:hover { color: #ff9a6b; text-decoration: underline; }
+QPushButton[role="link"]:pressed { color: #e96a30; }
+QPushButton[role="link"]:disabled { color: #bbbbbb; }
+
+/* 兜底：确保登录页注册按钮保持 QQ 式嵌入背景文字（role 选择器在某些 Qt 版本下不够稳） */
+QPushButton#reg_btn,
+QPushButton#reg_btn:hover,
+QPushButton#reg_btn:pressed,
+QPushButton#reg_btn:disabled {
+    background-color: transparent;
+    border: none;
+    outline: none;
+    padding: 0;
+    min-height: 0;
+}
+QPushButton#reg_btn {
+    color: #ff7a45;
+    font-size: 11pt;
+}
+QPushButton#reg_btn:hover { color: #ff9a6b; text-decoration: underline; }
+QPushButton#reg_btn:pressed { color: #e96a30; }
+QPushButton#reg_btn:disabled { color: #bbbbbb; }
+
+/* ghost：描边浅底按钮（取消 / 上传等次次要操作） */
+QPushButton[role="ghost"] {
+    background-color: #ffffff;
+    color: #1f1f1f;
+    border: 1px solid #e3e3e3;
+    border-radius: 6px;
+    padding: 0 16px;
+    font-size: 14px;
+}
+QPushButton[role="ghost"]:hover { border-color: #ff7a45; color: #ff7a45; }
+QPushButton[role="ghost"]:pressed { background-color: #fff3ec; }

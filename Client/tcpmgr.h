@@ -65,6 +65,8 @@ signals:
         std::vector<std::shared_ptr<TextChatData>> msg_list);
 
     void sig_chat_msg_rsp(int thread_id, std::vector<std::shared_ptr<TextChatData>> msg_list);
+    // 聊天消息回包整体失败（err != SUCCESS）时发出，供界面把待回执消息标记成发送失败
+    void sig_chat_msg_rsp_error(int err);
 };
 
 #endif // TCPMGR_H

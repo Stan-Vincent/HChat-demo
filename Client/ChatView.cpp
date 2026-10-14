@@ -2,7 +2,10 @@
 #include <QScrollBar>
 #include <QVBoxLayout>
 #include <QEvent>
+#include <QMouseEvent>
+#include <QApplication>
 #include <QDebug>
+#include "TextBubble.h"
 
 #include <QTimer>
 #include <QStyleOption>
@@ -41,6 +44,12 @@ ChatView::ChatView(QWidget *parent)
     m_pScrollArea->setWidgetResizable(true);
     m_pScrollArea->installEventFilter(this);
     initStyleSheet();
+    // ★ 安装应用级事件过滤器：捕获"消息列表内任意位置的左键按下"。
+    //   只用滚动区/视口的过滤器不够——子 QTextEdit 会吞掉鼠标按下事件
+    //   （它要用来定位光标/起选），事件不会冒泡到父级过滤器，导致"点在别的
+    //   气泡/背景上"清不掉旧选区。qApp 级过滤器在所有事件最前面触发，任何
+    //   按下（包括落在子 QTextEdit 上的）都看得到，从而统一清除所有气泡选区。
+    qApp->installEventFilter(this);
 }
 
 void ChatView::appendChatItem(QWidget *item)
@@ -84,6 +93,16 @@ void ChatView::removeAllItem()
 
 bool ChatView::eventFilter(QObject *o, QEvent *e)
 {
+    // ★ 任意位置左键按下 → 取消所有消息气泡的文字选中。
+    //   先判断落点是否在本消息列表范围内（点会话列表/输入框等其它区域不动），
+    //   只对落在消息区（气泡、背景、昵称、头像、滚动条都算）的按下做清除。
+    //   注意：必须在 qApp 级拦截且不能 return true，否则会吞掉正常点击（起选/拖选）。
+    if (e->type() == QEvent::MouseButtonPress) {
+        QMouseEvent *me = static_cast<QMouseEvent *>(e);
+        if (me->button() == Qt::LeftButton && isPosInsideChatView(me->globalPos())) {
+            clearAllTextSelections();
+        }
+    }
     /*if(e->type() == QEvent::Resize && o == )
     {
 
@@ -97,6 +116,48 @@ bool ChatView::eventFilter(QObject *o, QEvent *e)
          m_pScrollArea->verticalScrollBar()->setHidden(true);
     }
     return QWidget::eventFilter(o, e);
+}
+
+bool ChatView::isPosInsideChatView(const QPoint &globalPos) const
+{
+    // 取落点处的真实控件，沿父链回找是否归属本 ChatView（消息列表）。
+    // 命中容器/视口/某条 ChatItemBase/其任意子控件（含 QTextEdit）都算"在消息区内"。
+    QWidget *w = QApplication::widgetAt(globalPos);
+    while (w != nullptr) {
+        if (w == this) {
+            return true;
+        }
+        w = w->parentWidget();
+    }
+    return false;
+}
+
+void ChatView::clearAllTextSelections()
+{
+    // 遍历消息列表里的每条 ChatItemBase，清掉其下所有 TextBubble 的文字选区。
+    // 用 findChildren 而非缓存指针：条目会随切会话增删，查找更稳，条数也少。
+    QWidget *container = m_pScrollArea->widget();
+    if (container == nullptr) {
+        return;
+    }
+    QLayout *lay = container->layout();
+    if (lay == nullptr) {
+        return;
+    }
+    for (int i = 0; i < lay->count(); ++i) {
+        QLayoutItem *li = lay->itemAt(i);
+        if (li == nullptr) {
+            continue;
+        }
+        QWidget *itemWidget = li->widget();
+        if (itemWidget == nullptr) {
+            continue;
+        }
+        QList<TextBubble *> bubbles = itemWidget->findChildren<TextBubble *>();
+        for (TextBubble *tb : bubbles) {
+            tb->clearSelection();
+        }
+    }
 }
 
 void ChatView::paintEvent(QPaintEvent *event)

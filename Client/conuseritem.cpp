@@ -1,6 +1,7 @@
 #include "conuseritem.h"
 #include "ui_conuseritem.h"
 #include "imagemanager.h"
+#include "animutil.h"
 #include <QPointer>
 #include "logcategory.h"
 
@@ -52,9 +53,11 @@ void ConUserItem::SetInfo(std::shared_ptr<AuthInfo> auth_info)
     ui->user_name_lb->setText(_info->GetDisplayName());
 }
 
-void ConUserItem::SetInfo(int uid, QString name, QString icon)
+void ConUserItem::SetInfo(int uid, QString name, QString icon, QString back)
 {
-     _info = std::make_shared<UserInfo>(uid,name, name, icon, 0);
+     // back 必须透传：好友信息页的"备注"读的是 UserInfo::_back，
+     // 丢了它 GetBackName() 会 fallback 到昵称，表现为"备注莫名其妙变回昵称"。
+     _info = std::make_shared<UserInfo>(uid, name, name, icon, 0, "", "", back);
      LoadIconAsync(_info->_icon);
      ui->user_name_lb->setText(_info->GetDisplayName());
 }
@@ -69,7 +72,9 @@ void ConUserItem::ShowRedPoint(bool show)
 {
     if(show){
         ui->red_point->show();
+        AnimUtil::startRedDotPulse(ui->red_point);  // 未读红点脉冲
     }else{
+        AnimUtil::stopRedDotPulse(ui->red_point);
         ui->red_point->hide();
     }
 

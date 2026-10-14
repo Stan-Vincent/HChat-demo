@@ -26,6 +26,10 @@ public:
     ~ChatDialog();
     void loadChatList();
     void loadChatMsg();
+    // ★ 退出登录 / 连接断开时由 MainWindow 调用：把加载计数归零并关掉可能残留的
+    //   模态 LoadingDlg。否则被中断的加载会把 count 留在 >0、把 dlg 挂在屏幕上，
+    //   下次登录 loadChatList 再 +1 就永远减不到 0 -> 无限阻塞。
+    void resetLoadingState();
 
     // LoadingSession 用：请求计数 +1 / -1，减到 0 时关掉加载框
     void beginLoadingRequest();

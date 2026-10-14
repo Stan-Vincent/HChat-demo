@@ -17,6 +17,8 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include "logcategory.h"
+#include "animutil.h"
+#include "toast.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -70,6 +72,9 @@ MainWindow::MainWindow(QWidget *parent) :
     this->setMaximumSize(windowSizeForContent(_login_dlg->maximumSize(), false));
     this->resize(windowSizeForContent(s, false));
     updateWindowControls();
+
+    // ★ 窗口构造时 150ms 透明度淡入 + 轻微缩放（从 0.95 放大到 1.0）
+    AnimUtil::fadeInWindow(this, 150, 0.95);
 }
 
 MainWindow::~MainWindow()
@@ -94,8 +99,7 @@ void MainWindow::setupFrameless()
     // 圆角白底容器：圆角遮罩 + 阴影都落在这层
     _main_widget = new QWidget(center);
     _main_widget->setObjectName("main_widget");
-    _main_widget->setStyleSheet(
-        QString("QWidget#main_widget{background:#ffffff;border-radius:%1px;}").arg(kCornerRadius));
+    applyMainWidgetBackground();   // 按初始 _ui_status(=LOGIN_UI) 套登录态渐变背景
 
     _shadow = new QGraphicsDropShadowEffect(_main_widget);
     _shadow->setBlurRadius(30);
@@ -112,18 +116,18 @@ void MainWindow::setupFrameless()
     _title_bar->setObjectName("title_bar");
     _title_bar->setFixedHeight(34);
     QHBoxLayout *tbl = new QHBoxLayout(_title_bar);
-    tbl->setContentsMargins(10, 0, 10, 0);
-    tbl->setSpacing(4);
+    tbl->setContentsMargins(10, 0, 4, 0);   // 右边留 4px，避免圆角遮罩裁到按钮
+    tbl->setSpacing(0);                      // 按钮紧挨着，像 QQ 一样
     tbl->addStretch();
 
     auto makeBtn = [&](const QString &name, const QString &txt) {
         QPushButton *b = new QPushButton(txt, _title_bar);
         b->setObjectName(name);
-        b->setFixedSize(34, 26);
+        b->setFixedSize(30, 30);             // 正方形按钮，与 QQ 一致
         tbl->addWidget(b);
         return b;
     };
-    _btn_min   = makeBtn("win_min",   "—");   // 最小化
+    _btn_min   = makeBtn("win_min",   "−");   // 最小化（用减号，居中显示）
     _btn_max   = makeBtn("win_max",   "□");   // 最大化/还原
     _btn_close = makeBtn("win_close", "×");   // 关闭
 
@@ -138,10 +142,16 @@ void MainWindow::setupFrameless()
     ml->addWidget(_title_bar);
     ml->addWidget(_stacked_widget, 1);        // 内容区占满剩余空间
 
-    // 小窗右上角浮动关闭按钮（不放进 layout，避免占用标题栏高度）
+    // 小窗右上角浮动按钮：最小化 + 关闭（不放进 layout，避免占用标题栏高度）
+    _btn_min_small = new QPushButton("−", _main_widget);
+    _btn_min_small->setObjectName("win_min_small");
+    _btn_min_small->setFixedSize(30, 30);
+    _btn_min_small->setVisible(false);
+    connect(_btn_min_small, &QPushButton::clicked, this, &QWidget::showMinimized);
+
     _btn_close_small = new QPushButton("×", _main_widget);
     _btn_close_small->setObjectName("win_close_small");
-    _btn_close_small->setFixedSize(34, 26);
+    _btn_close_small->setFixedSize(30, 30);
     _btn_close_small->setVisible(false);
     connect(_btn_close_small, &QPushButton::clicked, this, &QWidget::close);
 
@@ -172,10 +182,24 @@ void MainWindow::refreshChrome(bool maximized)
         cl->setContentsMargins(m, m, m, m);
     }
     _shadow->setEnabled(!maximized);
-    _main_widget->setStyleSheet(
-        QString("QWidget#main_widget{background:#ffffff;border-radius:%1px;}")
-            .arg(maximized ? 0 : kCornerRadius));
+    applyMainWidgetBackground();   // 重新套用当前 UI 态背景（最大化时圆角归零）
     applyRoundedMask();
+}
+
+void MainWindow::applyMainWidgetBackground()
+{
+    // 登录/注册/重置小窗：淡橙渐变背景；聊天大窗：纯白（承载聊天界面）。
+    // 最大化时圆角归零（铺满屏幕、方角），否则 16px 圆角。
+    int r = _maximized ? 0 : kCornerRadius;
+    QString bg;
+    if (_ui_status == CHAT_UI) {
+        bg = "#ffffff";
+    } else {
+        bg = "qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #fff8f3, stop:1 #ffe9d8)";
+    }
+    _main_widget->setStyleSheet(
+        QString("QWidget#main_widget{background:%1;border-radius:%2px;}")
+            .arg(bg).arg(r));
 }
 
 void MainWindow::toggleMaximize()
@@ -189,20 +213,36 @@ void MainWindow::toggleMaximize()
 void MainWindow::updateWindowControls()
 {
     bool chat = (_ui_status == CHAT_UI);
-    // 聊天大窗：显示标题栏（含最小/最大/关闭）；小窗：隐藏标题栏，右上角浮一个关闭按钮
+    // 聊天大窗：显示标题栏（含最小/最大/关闭）；小窗：隐藏标题栏，右上角浮最小化+关闭
     _title_bar->setVisible(chat);
     _btn_min->setVisible(chat);
     _btn_max->setVisible(chat);
     _btn_close->setVisible(chat);
+    _btn_min_small->setVisible(!chat);
     _btn_close_small->setVisible(!chat);
 
-    if (!chat && _btn_close_small && _main_widget) {
-        // 定位到小窗页面右上角内侧（避开圆角遮罩裁剪）
-        int x = qMax(0, _main_widget->width() - kShadowMargin - _btn_close_small->width());
-        int y = kShadowMargin + 4;
-        _btn_close_small->move(x, y);
-        _btn_close_small->raise();
-    }
+    // 延迟到首帧 layout 完成后再定位，避免 _main_widget 宽度还是 0 时算到左上角
+    if (!chat)
+        QTimer::singleShot(0, this, &MainWindow::repositionSmallControls);
+
+    // 切页时同步切换 main_widget 背景（登录态渐变 / 聊天态白）
+    applyMainWidgetBackground();
+}
+
+void MainWindow::repositionSmallControls()
+{
+    if (!_btn_min_small || !_btn_close_small || !_main_widget)
+        return;
+    if (!_btn_close_small->isVisible())
+        return;
+
+    // 按钮放在 _main_widget 右上角内侧，留出 kShadowMargin 避开圆角遮罩裁剪
+    int right = qMax(0, _main_widget->width() - kShadowMargin);
+    int y = kShadowMargin + 2;    // 30x30 按钮，y>16 可避开顶部圆角裁剪
+    _btn_close_small->move(right - _btn_close_small->width(), y);
+    _btn_close_small->raise();
+    _btn_min_small->move(right - _btn_close_small->width() - _btn_min_small->width(), y);
+    _btn_min_small->raise();
 }
 
 QSize MainWindow::windowSizeForContent(const QSize &content, bool withTitleBar) const
@@ -325,13 +365,7 @@ void MainWindow::resizeEvent(QResizeEvent *event)
     if (max != _maximized)
         refreshChrome(max);   // 进/出最大化时切换圆角/阴影/留白
     applyRoundedMask();       // 窗口尺寸变了，圆角遮罩要重算
-
-    // 小窗关闭按钮随窗口尺寸重定位
-    if (_btn_close_small && _btn_close_small->isVisible() && _main_widget) {
-        int x = qMax(0, _main_widget->width() - kShadowMargin - _btn_close_small->width());
-        int y = kShadowMargin + 4;
-        _btn_close_small->move(x, y);
-    }
+    repositionSmallControls(); // 小窗右上角按钮随窗口尺寸重定位
 }
 
 // ============================================================
@@ -339,39 +373,45 @@ void MainWindow::resizeEvent(QResizeEvent *event)
 // ============================================================
 void MainWindow::slot_switch_login()
 {
-    _stacked_widget->setCurrentWidget(_login_dlg);
-    // 窗口尺寸对齐 LoginDialog（min 360x500 / max 360x540），保证左右边距对称居中。
-    // 登录小窗隐藏标题栏，因此尺寸中不加 kTitleBarHeight。
-    QSize s = _login_dlg->minimumSize();
-    this->setMinimumSize(windowSizeForContent(s, false));
-    this->setMaximumSize(windowSizeForContent(_login_dlg->maximumSize(), false));
-    this->resize(windowSizeForContent(s, false));
-    updateWindowControls();
+    // ★ 先用 _stacked_widget 做 200ms 交叉淡入（淡出→切页+改尺寸→淡入）。
     _ui_status = LOGIN_UI;
+    QSize s = _login_dlg->minimumSize();
+    AnimUtil::crossFadeStacked(_stacked_widget, _login_dlg, [this, s]() {
+        // 窗口尺寸对齐 LoginDialog（min 360x500 / max 360x540），保证左右边距对称居中。
+        // 登录小窗隐藏标题栏，因此尺寸中不加 kTitleBarHeight。
+        this->setMinimumSize(windowSizeForContent(s, false));
+        this->setMaximumSize(windowSizeForContent(_login_dlg->maximumSize(), false));
+        this->resize(windowSizeForContent(s, false));
+        updateWindowControls();
+    }, 200);
 }
 
 void MainWindow::slot_switch_register()
 {
-    _stacked_widget->setCurrentWidget(_reg_dlg);
-    // 对齐 RegisterDialog（min/max 362x500），避免登录框 360 比注册框窄 2px 被裁
-    QSize s = _reg_dlg->minimumSize();
-    this->setMinimumSize(windowSizeForContent(s, false));
-    this->setMaximumSize(windowSizeForContent(_reg_dlg->maximumSize(), false));
-    this->resize(windowSizeForContent(s, false));
-    updateWindowControls();
+    // ★ 交叉淡入到注册页
     _ui_status = REGISTER_UI;
+    QSize s = _reg_dlg->minimumSize();
+    AnimUtil::crossFadeStacked(_stacked_widget, _reg_dlg, [this, s]() {
+        // 对齐 RegisterDialog（min/max 362x500），避免登录框 360 比注册框窄 2px 被裁
+        this->setMinimumSize(windowSizeForContent(s, false));
+        this->setMaximumSize(windowSizeForContent(_reg_dlg->maximumSize(), false));
+        this->resize(windowSizeForContent(s, false));
+        updateWindowControls();
+    }, 200);
 }
 
 void MainWindow::slot_switch_reset()
 {
-    _stacked_widget->setCurrentWidget(_reset_dlg);
-    // 对齐 ResetDialog（min/max 360x520）
-    QSize s = _reset_dlg->minimumSize();
-    this->setMinimumSize(windowSizeForContent(s, false));
-    this->setMaximumSize(windowSizeForContent(_reset_dlg->maximumSize(), false));
-    this->resize(windowSizeForContent(s, false));
-    updateWindowControls();
+    // ★ 交叉淡入到重置页
     _ui_status = RESET_UI;
+    QSize s = _reset_dlg->minimumSize();
+    AnimUtil::crossFadeStacked(_stacked_widget, _reset_dlg, [this, s]() {
+        // 对齐 ResetDialog（min/max 360x520）
+        this->setMinimumSize(windowSizeForContent(s, false));
+        this->setMaximumSize(windowSizeForContent(_reset_dlg->maximumSize(), false));
+        this->resize(windowSizeForContent(s, false));
+        updateWindowControls();
+    }, 200);
 }
 
 void MainWindow::slot_switch_chatdlg()
@@ -383,8 +423,8 @@ void MainWindow::slot_switch_chatdlg()
         _stacked_widget->addWidget(_chat_dlg); // 第一次创建时加入堆叠部件
     }
 
-    _stacked_widget->setCurrentWidget(_chat_dlg);
-
+    // ★ 交叉淡入到聊天页（聊天页首次创建时尺寸跳变大，恰好在淡出→淡入的瞬间完成，看不出突兀）
+    _ui_status = CHAT_UI;
     QSize avail = QApplication::primaryScreen()->availableGeometry().size();
     // ★ 窗口改为可自由调整大小 / 最大化：
     //   - 只保留一个"最小可用尺寸"
@@ -392,16 +432,17 @@ void MainWindow::slot_switch_chatdlg()
     //   - 初始尺寸比最小值略大一点，进去时不会顶满屏
     const int min_w = 900;
     const int min_h = 600;
-    // 聊天大窗显示标题栏，尺寸中额外加上 kTitleBarHeight
-    this->setMinimumSize(windowSizeForContent(QSize(min_w, qMin(min_h, avail.height() - 40)), true));
-    // ★ 解除登录/注册/重置页给 MainWindow 设的 maximumSize 上限，否则退出登录再登录
-    //   后聊天窗口会被锁在 360 宽（maximumSize 仍残留登录框的 360）。
-    this->setMaximumSize(QSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX));
-    this->resize(windowSizeForContent(QSize(qMin(1080, avail.width() - 80),
-                                            qMin(680, avail.height() - 120)), true));
-    updateWindowControls();
-    _ui_status = CHAT_UI;
-    _chat_dlg->loadChatList();
+    AnimUtil::crossFadeStacked(_stacked_widget, _chat_dlg, [this, avail, min_w, min_h]() {
+        // 聊天大窗显示标题栏，尺寸中额外加上 kTitleBarHeight
+        this->setMinimumSize(windowSizeForContent(QSize(min_w, qMin(min_h, avail.height() - 40)), true));
+        // ★ 解除登录/注册/重置页给 MainWindow 设的 maximumSize 上限，否则退出登录再登录
+        //   后聊天窗口会被锁在 360 宽（maximumSize 仍残留登录框的 360）。
+        this->setMaximumSize(QSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX));
+        this->resize(windowSizeForContent(QSize(qMin(1080, avail.width() - 80),
+                                                qMin(680, avail.height() - 120)), true));
+        updateWindowControls();
+        if (_chat_dlg) _chat_dlg->loadChatList();
+    }, 200);
 }
 
 void MainWindow::slot_logout()
@@ -413,40 +454,47 @@ void MainWindow::slot_logout()
 }
 
 void MainWindow::slot_offline(){
-    //使用静态方法直接弹出一个信息框
-    QMessageBox::information(this, "提示", "账号于其他设备登录");
+    // 同账号异地登录被踢：右上角 Toast 提示（自动消失、不阻塞），随后回到登录页
+    Toast::showToast(this, "账号于其他设备登录", Toast::Warning);
     TcpMgr::GetInstance()->CloseConnection();
     offlineLogin();
 }
 
 void MainWindow::slot_connection_closed()
 {
-    // 使用静态方法直接弹出一个信息框
-        QMessageBox::information(this, "下线提示", "心跳超时或临界异常，该终端下线！");
-        TcpMgr::GetInstance()->CloseConnection();
-        offlineLogin();
+    // 心跳超时 / 异常断开：右上角 Toast 提示（自动消失、不阻塞），随后回到登录页
+    Toast::showToast(this, "心跳超时或临界异常，该终端下线！", Toast::Error);
+    TcpMgr::GetInstance()->CloseConnection();
+    offlineLogin();
 }
 
 
 void MainWindow::offlineLogin(){
-    // ★ 每次回到登录页都先复位它的 UI 状态：清掉"正在登录..."提示、恢复按钮可用。
-    _login_dlg->resetUIState();
+	// ★ 每次回到登录页都先复位它的 UI 状态：清掉"正在登录..."提示、恢复按钮可用。
+	_login_dlg->resetUIState();
+
+	// ★ 关掉聊天页可能残留的模态 LoadingDlg 并把加载计数归零，
+	//   否则被中断的聊天列表/消息加载会把模态框挂在屏幕上、阻塞整个 ChatDialog
+	//   （连备注修改按钮都点不动），下次登录再 +1 又无限阻塞。
+	if (_chat_dlg) {
+		_chat_dlg->resetLoadingState();
+	}
 
     if(_ui_status == LOGIN_UI){
         return;
     }
 
-    // ★ 必须用 QStackedWidget 切页。
-    _stacked_widget->setCurrentWidget(_login_dlg);
-
-    // 恢复登录页的窗口尺寸。注意必须同时改 minimum/maximum，
-    // 只 resize 的话最小尺寸还停在聊天页的 900x600，窗口会一直那么大。
-    // ★ 尺寸必须匹配 LoginDialog 的真实约束（min 360x500 / max 360x540）。
-    //   登录小窗隐藏标题栏，不加 kTitleBarHeight。
-    QSize s = _login_dlg->minimumSize();
-    this->setMinimumSize(windowSizeForContent(s, false));
-    this->setMaximumSize(windowSizeForContent(_login_dlg->maximumSize(), false));
-    this->resize(windowSizeForContent(s, false));
-    updateWindowControls();
+    // ★ 必须用 QStackedWidget 切页，并做交叉淡入。
     _ui_status = LOGIN_UI;
+    QSize s = _login_dlg->minimumSize();
+    AnimUtil::crossFadeStacked(_stacked_widget, _login_dlg, [this, s]() {
+        // 恢复登录页的窗口尺寸。注意必须同时改 minimum/maximum，
+        // 只 resize 的话最小尺寸还停在聊天页的 900x600，窗口会一直那么大。
+        // ★ 尺寸必须匹配 LoginDialog 的真实约束（min 360x500 / max 360x540）。
+        //   登录小窗隐藏标题栏，不加 kTitleBarHeight。
+        this->setMinimumSize(windowSizeForContent(s, false));
+        this->setMaximumSize(windowSizeForContent(_login_dlg->maximumSize(), false));
+        this->resize(windowSizeForContent(s, false));
+        updateWindowControls();
+    }, 200);
 }

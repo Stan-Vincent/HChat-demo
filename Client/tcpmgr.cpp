@@ -454,6 +454,7 @@ void TcpMgr::initHandlers()
         int err = jsonObj["error"].toInt();
         if (err != ErrorCodes::SUCCESS) {
             qCDebug(lcNetwork) << "Chat Msg Rsp Failed, err is " << err;
+            emit sig_chat_msg_rsp_error(err);
             return;
         }
 

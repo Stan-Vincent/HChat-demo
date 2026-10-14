@@ -150,6 +150,7 @@ public:
     void SetUniqueId(QString unique_id);
     QString GetUniqueId();
     int GetStatus() { return _status; }
+    QString GetChatTime() { return _chat_time; }
     void SetMsgId(int msg_id) { _msg_id = msg_id; }
     void SetStatus(int status) { _status = status; }
 private:

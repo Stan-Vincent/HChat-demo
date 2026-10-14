@@ -6,12 +6,21 @@
 #include <QRandomGenerator>
 #include <QRegularExpression>
 #include "logcategory.h"
+#include "animutil.h"
 
 RegisterDialog::RegisterDialog(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::RegisterDialog),_countdown(5)
 {
     ui->setupUi(this);
+    // 按钮体系：role 属性 + reload_qss 统一三类按钮样式（见 stylesheet.qss §9）
+    ui->sure_btn->setProperty("role", "primary");   reload_qss(ui->sure_btn);
+    ui->cancel_btn->setProperty("role", "ghost");    reload_qss(ui->cancel_btn);
+    ui->return_btn->setProperty("role", "link");     reload_qss(ui->return_btn);
+    ui->get_code->setProperty("role", "link");       reload_qss(ui->get_code);
+    // 主按钮 / 次按钮 hover：150ms 背景色过渡
+    AnimUtil::installHoverColorForRole(ui->sure_btn, "primary");
+    AnimUtil::installHoverColorForRole(ui->cancel_btn, "ghost");
     //ui->user_edit->setValidator(new QRegExpValidator(QRegExp("[a-zA-Z0-9]+$")));
     //设置密码格式隐藏
     ui->pass_edit->setEchoMode(QLineEdit::Password);

@@ -16,12 +16,21 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include "logcategory.h"
+#include "animutil.h"
 
 UserInfoPage::UserInfoPage(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::UserInfoPage)
 {
     ui->setupUi(this);
+
+    // 按钮体系：role 属性 + reload_qss 统一三类按钮样式（见 stylesheet.qss §9）
+    ui->submit_btn->setProperty("role", "primary");  reload_qss(ui->submit_btn);
+    ui->up_btn->setProperty("role", "ghost");        reload_qss(ui->up_btn);
+    ui->logout_btn->setProperty("role", "link");     reload_qss(ui->logout_btn);
+    // 主按钮 / 次按钮 hover：150ms 背景色过渡
+    AnimUtil::installHoverColorForRole(ui->submit_btn, "primary");
+    AnimUtil::installHoverColorForRole(ui->up_btn, "ghost");
 
     // 性别下拉框：0=男 1=女 2=保密
     // ★ 原来 .ui 里根本没有性别控件，而服务端 UpdateUserInfo 是按 uid 更新 sex 的，

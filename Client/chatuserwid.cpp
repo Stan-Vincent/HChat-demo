@@ -2,6 +2,7 @@
 #include "ui_chatuserwid.h"
 #include "usermgr.h"
 #include "imagemanager.h"
+#include "animutil.h"
 #include <QPointer>
 #include "logcategory.h"
 
@@ -66,7 +67,9 @@ void ChatUserWid::ShowRedPoint(bool bshow)
 {
     if(bshow){
         ui->red_point->show();
+        AnimUtil::startRedDotPulse(ui->red_point);  // 未读红点脉冲
     }else{
+        AnimUtil::stopRedDotPulse(ui->red_point);
         ui->red_point->hide();
     }
 }
