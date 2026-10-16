@@ -171,27 +171,29 @@ QDialog#ResetDialog {
     background-color: #2e2e2e;
 }
 
-/* 侧边栏按钮：聊天 / 联系人 / 设置 各六状态（图片控制） */
+/* 侧边栏按钮：聊天 / 联系人 / 设置 各六状态（图片控制）
+   ★ 选中态（selected_*）用 hover 的浅灰圆图而不是 press 的橙圆图：
+     深色侧边栏上浅灰圆已经能区分选中/未选中，再套一圈主题色太跳。 */
 #side_chat_lb[state='normal']           { border-image: url(:/res/chat_icon.png); }
 #side_chat_lb[state='hover']            { border-image: url(:/res/chat_icon_hover.png); }
 #side_chat_lb[state='pressed']          { border-image: url(:/res/chat_icon_press.png); }
-#side_chat_lb[state='selected_normal']  { border-image: url(:/res/chat_icon_press.png); }
-#side_chat_lb[state='selected_hover']   { border-image: url(:/res/chat_icon_press.png); }
-#side_chat_lb[state='selected_pressed'] { border-image: url(:/res/chat_icon_press.png); }
+#side_chat_lb[state='selected_normal']  { border-image: url(:/res/chat_icon_hover.png); }
+#side_chat_lb[state='selected_hover']   { border-image: url(:/res/chat_icon_hover.png); }
+#side_chat_lb[state='selected_pressed'] { border-image: url(:/res/chat_icon_hover.png); }
 
 #side_contact_lb[state='normal']           { border-image: url(:/res/contact_list.png); }
 #side_contact_lb[state='hover']            { border-image: url(:/res/contact_list_hover.png); }
 #side_contact_lb[state='pressed']          { border-image: url(:/res/contact_list_press.png); }
-#side_contact_lb[state='selected_normal']  { border-image: url(:/res/contact_list_press.png); }
-#side_contact_lb[state='selected_hover']   { border-image: url(:/res/contact_list_press.png); }
-#side_contact_lb[state='selected_pressed'] { border-image: url(:/res/contact_list_press.png); }
+#side_contact_lb[state='selected_normal']  { border-image: url(:/res/contact_list_hover.png); }
+#side_contact_lb[state='selected_hover']   { border-image: url(:/res/contact_list_hover.png); }
+#side_contact_lb[state='selected_pressed'] { border-image: url(:/res/contact_list_hover.png); }
 
 #side_settings_lb[state='normal']           { border-image: url(:/res/settings.png); }
 #side_settings_lb[state='hover']            { border-image: url(:/res/settings_hover.png); }
 #side_settings_lb[state='pressed']          { border-image: url(:/res/settings_press.png); }
-#side_settings_lb[state='selected_normal']  { border-image: url(:/res/settings_press.png); }
-#side_settings_lb[state='selected_hover']   { border-image: url(:/res/settings_press.png); }
-#side_settings_lb[state='selected_pressed'] { border-image: url(:/res/settings_press.png); }
+#side_settings_lb[state='selected_normal']  { border-image: url(:/res/settings_hover.png); }
+#side_settings_lb[state='selected_hover']   { border-image: url(:/res/settings_hover.png); }
+#side_settings_lb[state='selected_pressed'] { border-image: url(:/res/settings_hover.png); }
 
 /* ---------- 3.2 搜索栏 ---------- */
 #search_wid {
@@ -778,28 +780,21 @@ QProgressBar::chunk {
 /* ============================================================================
  * 8. 无边框窗口：标题栏与窗口按钮
  *
- * ★ 主题色标题栏（仿 QQ）：MainWindow 的 #title_bar（窗口按钮）与 ChatPage 的
- *   #title_wid（会话标题）背景用同一个主色 #ff7a45，两条紧贴就 visually 连成
- *   一整条主题色标题栏 —— 左侧会话名、右侧窗口按钮，和 QQ 的蓝标题栏一个思路。
- *   注意：这里改的是【聊天大窗】；登录/注册/重置小窗不显示 title_bar，
- *   右上角浮动按钮仍是白底页面上的深色字符，不受影响。
+ * ★ 主题色只给 MainWindow 的 #title_bar（承载窗口按钮的那 34px 窄条）——
+ *   这就是"title 栏为特征色"的本意。聊天页的会话标题区 #title_wid 保持白底，
+ *   否则橙、白两条一样粗，视觉上橙色用得太重（仿 QQ 也应是"一条"而不是"一块"）。
  * ========================================================================= */
 
-/* 标题栏：主色底（与 ChatPage 的 title_wid 同色，中间不能有接缝） */
+/* 标题栏：主色底（窄条，只到窗口按钮那一行） */
 #title_bar {
     background-color: #ff7a45;
 }
 
-/* 聊天页顶部标题区：与 title_bar 同色同高，连成一整条 */
-#title_wid {
-    background-color: #ff7a45;
-}
-
-/* 会话标题：白字（橙色底上深色字对比度不够） */
+/* 会话标题区：保持白底（默认继承 main_widget），标题文字用深色 */
 #title_lb {
-    color: #ffffff;
-    font-size: 15px;
-    font-weight: bold;
+    color: #1f1f1f;
+    font-size: 18px;
+    font-weight: normal;
 }
 
 /* 窗口按钮（最小化 / 最大化 / 关闭 / 小窗右上角按钮）通用样式。
