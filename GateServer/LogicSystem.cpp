@@ -354,7 +354,7 @@ LogicSystem::LogicSystem() {
     //  gRPC ?? ChatServer?????????? GateServer ?е??????????????????
     //  ??unique_name / md5 / total_size???????????? MsgInfo??
     //  ???? ResourceServer ?????????? URL ????
-    RegPost("/upload_image", [](std::shared_ptr<HttpConnection> connection) {
+    auto upload_handler = [](std::shared_ptr<HttpConnection> connection) {
 
         auto body_str = boost::beast::buffers_to_string(connection->_request.body().data());
         connection->_response.set(http::field::content_type, "text/json");
@@ -393,26 +393,31 @@ LogicSystem::LogicSystem() {
         //   ??? POST ??????? ???? ????????????????д???????????
         //   ?????????ж??base64 ?? 4/3 ???????
         //   raw.size() ?????????????????????
-        const std::size_t MAX_UPLOAD_BYTES = 5 * 1024 * 1024;   // 5MB
+        const std::size_t MAX_UPLOAD_BYTES = 20 * 1024 * 1024;  // 20MB (images + generic files)
         if (raw.size() > MAX_UPLOAD_BYTES) {
             root["error"] = ErrorCodes::Error_Json;
-            root["msg"] = "file too large (max 5MB)";
+            root["msg"] = "file too large (max 20MB)";
             beast::ostream(connection->_response.body()) << root.toStyledString();
             return true;
         }
 
         // ????????????????????????????????????
-        std::string ext = ".jpg";
+        // keep the ORIGINAL extension: non-image files (pdf/zip/docx/...)
+        // must not be silently renamed to .jpg. Executable/script types are
+        // neutralized to .bin so they cannot be served back as runnable.
+        std::string ext;
         auto dot = file_name.rfind('.');
-        if (dot != std::string::npos) {
+        if (dot != std::string::npos && dot + 1 < file_name.size()) {
             auto e = file_name.substr(dot);
             std::transform(e.begin(), e.end(), e.begin(), [](unsigned char c) {
                 return static_cast<char>(::tolower(c));
             });
-            if (e == ".png" || e == ".gif" || e == ".bmp"
-                || e == ".webp" || e == ".jpg" || e == ".jpeg") {
-                ext = e;
-            }
+            bool blocked = (e == ".exe" || e == ".bat" || e == ".cmd" || e == ".com"
+                         || e == ".scr" || e == ".pif" || e == ".vbs" || e == ".vbe"
+                         || e == ".js" || e == ".jse" || e == ".wsf" || e == ".wsh"
+                         || e == ".ps1" || e == ".msi" || e == ".dll" || e == ".jar"
+                         || e == ".php" || e == ".sh");
+            ext = blocked ? std::string(".bin") : e;
         }
 
         // unique_name = ????_??????.???
@@ -464,7 +469,14 @@ LogicSystem::LogicSystem() {
         LOG_INFO("上传图片成功: 文件名={}, 大小={}", unique_name, raw.size());
         beast::ostream(connection->_response.body()) << root.toStyledString();
         return true;
-        });
+    };
+
+    // One generic handler, exposed under two route names:
+    //   /upload_image - kept for the existing image upload path
+    //   /upload_file  - new, for arbitrary files
+    //   (same payload: {uid, file_name, data(base64)})
+    RegPost("/upload_image", upload_handler);
+    RegPost("/upload_file", upload_handler);
 
     //?? ????????????body ?? {uid, nick, desc, sex, icon}
     //  name??????????????????????????????????? uid ?????

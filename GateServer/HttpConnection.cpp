@@ -16,7 +16,9 @@ void HttpConnection::Start()
     //   原图超过 ~750KB 就被拒，而且是直接断连接、
     //   客户端没有任何错误提示（只会收到 10053）。
     //   客户端上限 5MB -> base64 后约 6.7MB，这里给 8MB 留足量。
-    self->_parser.body_limit(8 * 1024 * 1024);
+    // NOTE: limit raised from 8MB to 32MB -- a 20MB file becomes ~27MB after
+    //       base64, so it must fit, otherwise the parser rejects the request.
+    self->_parser.body_limit(32 * 1024 * 1024);
 
     http::async_read(_socket, _buffer, self->_parser,
         [self](beast::error_code ec,std::size_t bytes_transferred) 
@@ -27,7 +29,7 @@ void HttpConnection::Start()
                     // ★ 超限时给一个干净的 413，
                     //   而不是默默断开连接
                     if (ec == http::error::body_limit) {
-                        LOG_ERROR("请求体过大（>=8MB），已拒绝");
+LOG_ERROR("request body >= 32MB, rejected");
                         // ★ 必须显式设置 version / keep_alive：HandleReq() 没被调用，
                         //   这两个还是默认值，不设就发不出去。
                         self->_response.version(11);
