@@ -259,6 +259,9 @@ public:
 		bool& loadMore,
 		int& nextLastId);
 	bool CreatePrivateChat(int user1_id, int user2_id, int& thread_id);
+	// Look up the two members of a private thread.
+	// Returns false when the thread_id does not exist (or is not a private chat).
+	bool GetPrivateChatUsers(int thread_id, int& user1_id, int& user2_id);
 	std::shared_ptr<PageResult> LoadChatMsg(int threadId, int lastId, int pageSize);
 	bool AddChatMsg(std::vector<std::shared_ptr<ChatMessage>>& chat_datas);
 private:

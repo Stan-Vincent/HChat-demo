@@ -84,6 +84,11 @@ bool MysqlMgr::CreatePrivateChat(int user1_id, int user2_id, int& thread_id)
 	return _dao.CreatePrivateChat(user1_id, user2_id, thread_id);
 }
 
+bool MysqlMgr::GetPrivateChatUsers(int thread_id, int& user1_id, int& user2_id)
+{
+	return _dao.GetPrivateChatUsers(thread_id, user1_id, user2_id);
+}
+
 std::shared_ptr<PageResult> MysqlMgr::LoadChatMsg(int threadId, int lastId, int pageSize)
 {
 	return _dao.LoadChatMsg(threadId, lastId, pageSize);

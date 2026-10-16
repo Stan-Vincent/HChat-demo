@@ -868,6 +868,35 @@ bool MysqlDao::CreatePrivateChat(int user1_id, int user2_id, int& thread_id)
 	return false;
 }
 
+bool MysqlDao::GetPrivateChatUsers(int thread_id, int& user1_id, int& user2_id)
+{
+	auto con = pool_->getConnection();
+	if (!con) {
+		return false;
+	}
+	Defer defer([this, &con]() {
+		pool_->returnConnection(std::move(con));
+		});
+	auto& conn = con->_con;
+	try {
+		std::string sql =
+			"SELECT user1_id, user2_id FROM private_chat WHERE thread_id = ? LIMIT 1;";
+		std::unique_ptr<sql::PreparedStatement> pstmt(conn->prepareStatement(sql));
+		pstmt->setInt64(1, thread_id);
+		std::unique_ptr<sql::ResultSet> res(pstmt->executeQuery());
+		if (!res->next()) {
+			return false;
+		}
+		user1_id = res->getInt("user1_id");
+		user2_id = res->getInt("user2_id");
+		return true;
+	}
+	catch (sql::SQLException& e) {
+		std::cerr << "SQLException (GetPrivateChatUsers): " << e.what() << std::endl;
+		return false;
+	}
+}
+
 std::shared_ptr<PageResult> MysqlDao::LoadChatMsg(int thread_id, int last_message_id, int page_size)
 {
 	auto con = pool_->getConnection();

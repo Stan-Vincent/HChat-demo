@@ -557,6 +557,40 @@ void LogicSystem::DealChatTextMsg(std::shared_ptr<CSession> session, const short
 	rtvalue["touid"] = touid;
 	auto thread_id = root["thread_id"].asInt();
 	rtvalue["thread_id"] = thread_id;
+
+	// ==== Never trust thread_id / touid coming from the client ====
+	// A forged or stale thread_id would write this message into somebody else's
+	// conversation -- exactly how cross-user rows once got into chat_message
+	// ("three people talking in one chat"). So: look the thread up, require the
+	// sender to be one of its two members, and derive the receiver from the
+	// thread instead of believing the client.
+	// NOTE: Defer is declared here (before any early return) so every exit path
+	// still answers the client.
+	Defer defer([this, &rtvalue, session]() {
+		std::string return_str = rtvalue.toStyledString();
+		session->Send(return_str, ID_TEXT_CHAT_MSG_RSP);
+		});
+
+	int thread_u1 = 0, thread_u2 = 0;
+	if (!MysqlMgr::GetInstance()->GetPrivateChatUsers(thread_id, thread_u1, thread_u2)) {
+		LOG_ERROR("DealChatTextMsg: thread {} not found (uid={}, touid={})", thread_id, uid, touid);
+		rtvalue["error"] = ErrorCodes::Error_MySql;
+		return;
+	}
+	if (uid != thread_u1 && uid != thread_u2) {
+		LOG_ERROR("DealChatTextMsg: uid {} is not a member of thread {}", uid, thread_id);
+		rtvalue["error"] = ErrorCodes::UidInvalid;
+		return;
+	}
+	{
+		const int peer_uid = (uid == thread_u1) ? thread_u2 : thread_u1;
+		if (touid != peer_uid) {
+			LOG_WARN("DealChatTextMsg: touid {} != peer {} of thread {}, fixed",
+				touid, peer_uid, thread_id);
+			touid = peer_uid;
+			rtvalue["touid"] = touid;
+		}
+	}
 	std::vector<std::shared_ptr<ChatMessage>> chat_datas;
 	auto timestamp = getCurrentTimestamp();
 	for (const auto& txt_obj : arrays) {
@@ -610,12 +644,6 @@ void LogicSystem::DealChatTextMsg(std::shared_ptr<CSession> session, const short
 		chat_msg["md5"] = chat_data->md5;
 		rtvalue["chat_datas"].append(chat_msg);
 	}
-
-	Defer defer([this, &rtvalue, session]() {
-		std::string return_str = rtvalue.toStyledString();
-		session->Send(return_str, ID_TEXT_CHAT_MSG_RSP);
-		});
-
 
 	//查询redis 查找touid对应的server ip
 	auto to_str = std::to_string(touid);
