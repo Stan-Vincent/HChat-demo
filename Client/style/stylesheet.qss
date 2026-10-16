@@ -785,9 +785,12 @@ QProgressBar::chunk {
  *   否则橙、白两条一样粗，视觉上橙色用得太重（仿 QQ 也应是"一条"而不是"一块"）。
  * ========================================================================= */
 
-/* 标题栏：主色底（窄条，只到窗口按钮那一行） */
+/* 标题栏：主色底（窄条，只到窗口按钮那一行）
+   ★ 用 #ff9a6b（token 里的 hover 档）而不是 #ff7a45：标题栏是大面积色块，
+     饱和度高会显得暗、刺眼；淡一档更接近 QQ 那种明亮柔和的主题色。
+     想再淡/再深只需改这一个值。 */
 #title_bar {
-    background-color: #ff7a45;
+    background-color: #ff9a6b;
 }
 
 /* 会话标题区：保持白底（默认继承 main_widget），标题文字用深色 */
@@ -819,11 +822,11 @@ QPushButton#win_close_small {
 }
 QPushButton#win_min:hover,
 QPushButton#win_max:hover {
-    background-color: rgba(255, 255, 255, 0.22);
+    background-color: rgba(255, 255, 255, 0.32);
 }
 QPushButton#win_min:pressed,
 QPushButton#win_max:pressed {
-    background-color: rgba(0, 0, 0, 0.16);
+    background-color: rgba(0, 0, 0, 0.18);
 }
 /* 小窗 hover 仍用灰底（白底页面上） */
 QPushButton#win_min_small:hover {
