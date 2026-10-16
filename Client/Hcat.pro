@@ -14,6 +14,7 @@ SOURCES += \
     ChatItemBase.cpp \
     ChatView.cpp \
     MessageTextEdit.cpp \
+    FileBubble.cpp \
     PictureBubble.cpp \
     TextBubble.cpp \
     adduseritem.cpp \
@@ -71,6 +72,7 @@ HEADERS += \
     ChatItemBase.h \
     ChatView.h \
     MessageTextEdit.h \
+    FileBubble.h \
     PictureBubble.h \
     TextBubble.h \
     adduseritem.h \

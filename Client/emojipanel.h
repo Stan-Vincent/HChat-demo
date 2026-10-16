@@ -24,6 +24,7 @@ signals:
     void sig_panel_hidden();
 protected:
     void paintEvent(QPaintEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
     void hideEvent(QHideEvent *event) override;
 private:
     void buildUi();

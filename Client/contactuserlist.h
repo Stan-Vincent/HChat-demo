@@ -15,6 +15,9 @@ class ContactUserList : public QListWidget
 public:
     ContactUserList(QWidget* parent = nullptr);
     void ShowRedPoint(bool bshow = true);
+
+    // ★ 登出清理：只删"联系人"分组之后的好友项，保留顶部提示/"新的朋友"/分组等固定结构
+    void removeFriendItems();
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override ;
 private:

@@ -38,15 +38,23 @@ public:
     void uploadImageData(int uid, const QImage& image, const QString& fileName,
                          std::function<void(bool ok, const QString& urlPath, const QString& errMsg)> cb);
 
+    // 把本地任意文件（文档/压缩包/图片等）上传，走 /upload_file。
+    // 内部读的是原始字节 + base64，与图片上传同一套逻辑，只是大小上限和路由不同。
+    void uploadFile(int uid, const QString& localPath,
+                    std::function<void(bool ok, const QString& urlPath, const QString& errMsg)> cb);
+
     // 限制大小：超过这个字节数直接失败，不浪费带宽
     static constexpr qint64 MAX_IMAGE_SIZE = 10 * 1024 * 1024;   // 10 MB
+    static constexpr qint64 MAX_FILE_SIZE  = 20 * 1024 * 1024;   // 20 MB（与服务端 20MB 上限对齐）
 
     // 构造开放：instance() 用 make_shared 创建它
 
 private:
     // 构造要开放：instance() 用 make_shared 创建它，私有构造会导致编译错误
+    // endpoint: "/upload_image"（图片，默认）或 "/upload_file"（任意文件）
     void doUpload(int uid, const QString& fileName, const QByteArray& rawBytes,
-                  std::function<void(bool, const QString&, const QString&)> cb);
+                  std::function<void(bool, const QString&, const QString&)> cb,
+                  const QString& endpoint = "/upload_image");
 };
 
 #endif // UPLOADMANAGER_H

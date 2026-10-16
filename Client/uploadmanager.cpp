@@ -74,8 +74,41 @@ void UploadManager::uploadImageData(int uid, const QImage& image, const QString&
     doUpload(uid, name, raw, std::move(cb));
 }
 
+// 通用文件上传：与 uploadImage 完全同构（读原始字节 + base64），
+// 区别只有两点：大小上限用 MAX_FILE_SIZE(20MB)、路由走 /upload_file。
+// 服务端已把上传接口泛化，会保留原始扩展名（危险类型改存 .bin）。
+void UploadManager::uploadFile(int uid, const QString& localPath,
+                               std::function<void(bool, const QString&, const QString&)> cb)
+{
+    QFileInfo fi(localPath);
+    if (!fi.exists() || !fi.isFile()) {
+        cb(false, "", QString("文件不存在: %1").arg(localPath));
+        return;
+    }
+    if (fi.size() > MAX_FILE_SIZE) {
+        cb(false, "", QString("文件太大(%1 KB)，上限 %2 MB")
+             .arg(fi.size() / 1024).arg(MAX_FILE_SIZE / 1024 / 1024));
+        return;
+    }
+
+    QFile f(localPath);
+    if (!f.open(QIODevice::ReadOnly)) {
+        cb(false, "", QString("无法读取文件: %1").arg(f.errorString()));
+        return;
+    }
+    QByteArray raw = f.readAll();
+    f.close();
+    if (raw.isEmpty()) {
+        cb(false, "", "文件是空的");
+        return;
+    }
+
+    doUpload(uid, fi.fileName(), raw, std::move(cb), "/upload_file");
+}
+
 void UploadManager::doUpload(int uid, const QString& fileName, const QByteArray& rawBytes,
-                             std::function<void(bool, const QString&, const QString&)> cb)
+                             std::function<void(bool, const QString&, const QString&)> cb,
+                             const QString& endpoint)
 {
     QJsonObject json;
     json["uid"] = uid;
@@ -91,7 +124,7 @@ void UploadManager::doUpload(int uid, const QString& fileName, const QByteArray&
     //
     //   用 PostHttpReqRaw：按 reply 对象分发，一请求一回调，天然一一对应。
     HttpMgr::GetInstance()->PostHttpReqRaw(
-        QUrl(gate_url_prefix + "/upload_image"), json,
+        QUrl(gate_url_prefix + endpoint), json,
         [cb](bool ok, const QString& res, const QString& errMsg) {
             if (!ok) {
                 cb(false, "", errMsg.isEmpty() ? QString("网络请求失败") : errMsg);

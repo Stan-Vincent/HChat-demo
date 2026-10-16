@@ -32,6 +32,10 @@ public:
     // 回填图片。会自动按 PIC_MAX_WIDTH/HEIGHT 等比缩放并重设气泡尺寸。
     void SetPixmap(const QPixmap &pix);
 
+    // ★ 原始图（未缩放），供"点击看大图 / 右键另存为"使用。
+    //   还是占位状态时返回 null，调用方应回退到 QWidget::grab()。
+    QPixmap fullPixmap() const { return _full_pix; }
+
     // 全局缓存：key 是完整 url，value 是已下载好的原图
     static QHash<QString, QPixmap> _pixmap_cache;
 

@@ -61,8 +61,20 @@ void ApplyFriendPage::paintEvent(QPaintEvent *event)
     style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 }
 
+void ApplyFriendPage::clearAll()
+{
+	// ★ 换账号/登出时清掉上一个账号的申请条目。
+	//   ApplyFriendPage 是常驻页面，不清就一直挂着旧账号的申请。
+	ui->apply_friend_list->clear();
+	_unauth_items.clear();   // item 已随列表销毁，这里只清映射防悬挂指针
+}
+
 void ApplyFriendPage::loadApplyList()
 {
+	// ★ 每次加载前先清一遍：本函数会在【每次登录成功】时被再调一次，
+	//   不清的话条目会重复堆两遍。
+	clearAll();
+
     //添加好友申请
     auto apply_list = UserMgr::GetInstance()->GetApplyList();
     for(auto &apply: apply_list){

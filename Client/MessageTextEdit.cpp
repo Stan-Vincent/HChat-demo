@@ -2,6 +2,10 @@
 #include <QDebug>
 #include <QMessageBox>
 #include <QUrl>
+#include <QStandardPaths>
+#include <QDir>
+#include <QDateTime>
+#include <QVariant>
 
 
 MessageTextEdit::MessageTextEdit(QWidget *parent)
@@ -147,9 +151,11 @@ void MessageTextEdit::insertTextFile(const QString &url)
         return;
     }
 
-    if(fileInfo.size()>100*1024*1024)
+    // ★ 20MB：与 UploadManager::MAX_FILE_SIZE 以及服务端 MAX_UPLOAD_BYTES 保持一致，
+    //   否则会出现"客户端放行了、服务端却拒收"的割裂体验。
+    if(fileInfo.size()>20*1024*1024)
     {
-        QMessageBox::information(this,"提示","发送的文件大小不能大于100M");
+        QMessageBox::information(this,"提示","发送的文件大小不能大于20M");
         return;
     }
 
@@ -182,6 +188,30 @@ void MessageTextEdit::insertFromMimeData(const QMimeData *source)
         if (!localUrls.isEmpty()) {
             insertFileFromUrl(localUrls);   // 内部按图片/文件分别处理
             return;
+        }
+    }
+    // ★ 剪贴板里的图片（截图工具 / 复制的图片）：基类 QTextEdit 会把它直接画进文档，
+    //   但不会登记进 mMsgList —— getMsgList() 只看到一个占位符、拿不到内容，
+    //   结果"粘贴的图片发不出去"。这里先落盘成临时 PNG，再走和拖入图片完全相同的链路。
+    //   注意要放在 hasUrls 分支【之后】：从资源管理器复制的图片文件同时带 url，
+    //   那种情况已经有真实路径了，没必要再落一份临时文件。
+    if (!source->hasUrls() && source->hasImage()) {
+        QVariant imgVar = source->imageData();
+        QImage img;
+        if (imgVar.canConvert<QImage>()) {
+            img = qvariant_cast<QImage>(imgVar);
+        } else if (imgVar.canConvert<QPixmap>()) {
+            img = qvariant_cast<QPixmap>(imgVar).toImage();
+        }
+        if (!img.isNull()) {
+            QString dir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+            QDir().mkpath(dir);
+            QString path = dir + QDir::separator()
+                         + QString("paste_%1.png").arg(QDateTime::currentMSecsSinceEpoch());
+            if (img.save(path, "PNG")) {
+                insertImages(path);
+                return;
+            }
         }
     }
     // 纯文本 / HTML / 图片剪贴板等：交还基类标准粘贴

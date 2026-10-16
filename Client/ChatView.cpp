@@ -34,6 +34,8 @@ ChatView::ChatView(QWidget *parent)
     m_pScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     QScrollBar *pVScrollBar = m_pScrollArea->verticalScrollBar();
     connect(pVScrollBar, &QScrollBar::rangeChanged,this, &ChatView::onVScrollBarMoved);
+    // ★ 用户自己滚动时判断是否已回到底部（回到底部就清掉"新消息"浮标）
+    connect(pVScrollBar, &QScrollBar::valueChanged, this, &ChatView::onScrollBarValueChanged);
     //把垂直ScrollBar放到上边 而不是原来的并排
     QHBoxLayout *pHLayout_2 = new QHBoxLayout();
     pHLayout_2->addWidget(pVScrollBar, 0, Qt::AlignRight);
@@ -55,10 +57,13 @@ ChatView::ChatView(QWidget *parent)
 void ChatView::appendChatItem(QWidget *item)
 {
    QVBoxLayout *vl = qobject_cast<QVBoxLayout *>(m_pScrollArea->widget()->layout());
-   //qDebug() << "vl->count() is " << vl->count();
-   // ★ 这一行之前被误注释掉了：appendChatItem 实际什么都不做，
-   //   聊天条目（历史消息 / 自己刚发的消息）构造出来却从没插进滚动区布局，
-   //   所以「聊天记录不显示 / 发了消息也不显示」。恢复插入即可。
+   // ★ 插入【之前】先判断用户是否"贴着底部"：
+   //   贴底   → 新消息自动跟到底部（自己发的 / 刚收到的，符合预期）
+   //   翻历史 → 保持当前位置不打断阅读，改用"N 条新消息"浮标提示。
+   //   原来是无条件滚到底，用户正往上翻历史时会被强行拽回底部。
+   QScrollBar *bar = m_pScrollArea->verticalScrollBar();
+   _auto_scroll = (bar->maximum() - bar->value()) <= kStickBottomPx;
+
    vl->insertWidget(vl->count()-1, item);
    isAppended = true;
 }
@@ -89,6 +94,10 @@ void ChatView::removeAllItem()
         }
     }
 
+    // 切会话：清掉"新消息"浮标与计数，否则会带着上一个会话的计数过来
+    _pending_new = 0;
+    _auto_scroll = true;
+    updateNewMsgButton();
 }
 
 bool ChatView::eventFilter(QObject *o, QEvent *e)
@@ -160,6 +169,12 @@ void ChatView::clearAllTextSelections()
     }
 }
 
+void ChatView::resizeEvent(QResizeEvent *event)
+{
+    QWidget::resizeEvent(event);
+    updateNewMsgButton();   // 浮标重新贴到右下角
+}
+
 void ChatView::paintEvent(QPaintEvent *event)
 {
     QStyleOption opt;
@@ -174,13 +189,73 @@ void ChatView::onVScrollBarMoved(int min, int max)
     if(isAppended) //添加item可能调用多次
     {
         QScrollBar *pVScrollBar = m_pScrollArea->verticalScrollBar();
-        pVScrollBar->setSliderPosition(pVScrollBar->maximum());
+        if (_auto_scroll) {
+            pVScrollBar->setSliderPosition(pVScrollBar->maximum());
+        } else {
+            // ★ 用户在翻历史：不动滚动条，只累计条数并弹浮标
+            ++_pending_new;
+            updateNewMsgButton();
+            emit sig_new_msg_while_scrolled_up(_pending_new);
+        }
         //500毫秒内可能调用多次
         QTimer::singleShot(500, [this]()
         {
             isAppended = false;
         });
     }
+}
+
+void ChatView::onScrollBarValueChanged(int value)
+{
+    Q_UNUSED(value);
+    QScrollBar *bar = m_pScrollArea->verticalScrollBar();
+    // 用户自己滚回底部 → 视为已读，清掉浮标
+    if (_pending_new > 0 && (bar->maximum() - bar->value()) <= kStickBottomPx) {
+        _pending_new = 0;
+        updateNewMsgButton();
+    }
+}
+
+void ChatView::scrollToBottom()
+{
+    QScrollBar *bar = m_pScrollArea->verticalScrollBar();
+    bar->setSliderPosition(bar->maximum());
+    _pending_new = 0;
+    updateNewMsgButton();
+}
+
+void ChatView::ensureNewMsgButton()
+{
+    if (_new_msg_btn != nullptr) {
+        return;
+    }
+    _new_msg_btn = new QPushButton(this);
+    _new_msg_btn->setObjectName("new_msg_btn");
+    _new_msg_btn->setCursor(Qt::PointingHandCursor);
+    _new_msg_btn->setStyleSheet(
+        QString("QPushButton{background:#ffffff;color:#ff7a45;border:1px solid #e3e3e3;"
+                "border-radius:14px;padding:6px 12px;font-size:12px;}"
+                "QPushButton:hover{background:#fff3ed;}"));
+    _new_msg_btn->hide();
+    connect(_new_msg_btn, &QPushButton::clicked, this, &ChatView::scrollToBottom);
+}
+
+void ChatView::updateNewMsgButton()
+{
+    if (_pending_new <= 0) {
+        if (_new_msg_btn) {
+            _new_msg_btn->hide();
+        }
+        return;
+    }
+    ensureNewMsgButton();
+    _new_msg_btn->setText(QString("%1 条新消息 ↓").arg(_pending_new));
+    _new_msg_btn->adjustSize();
+    // 贴在消息区右下角（留 12px 边距）
+    _new_msg_btn->move(this->width() - _new_msg_btn->width() - 12,
+                       this->height() - _new_msg_btn->height() - 12);
+    _new_msg_btn->raise();
+    _new_msg_btn->show();
 }
 
 void ChatView::initStyleSheet()

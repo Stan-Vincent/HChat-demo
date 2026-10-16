@@ -86,6 +86,30 @@ void ContactUserList::addContactUserList()
 
 }
 
+// ★ 登出清理：只删"联系人"分组之后的好友项。
+//   列表顶部有三样【固定结构】——顶部提示条、"新的朋友"入口、"联系人"分组条，
+//   都在构造函数里创建一次（_add_friend_item/_groupitem 是成员指针），
+//   不能无脑 clear()，否则入口和分组一起消失，下次登录界面就残了。
+//   删掉 QListWidgetItem 即可，setItemWidget 设置的 widget 由视图一并回收。
+void ContactUserList::removeFriendItems()
+{
+    int group_row = this->row(_groupitem);
+    if (group_row < 0) {
+        return;   // 固定结构尚未建立（异常情况），不动
+    }
+    while (this->count() > group_row + 1) {
+        QListWidgetItem *it = this->item(this->count() - 1);
+        delete it;   // 从列表移除该行，对应的 itemWidget 由视图自动删除
+    }
+    // 选中态回到"新的朋友"，避免停在已被删除的行上
+    for (int i = 0; i < this->count(); ++i) {
+        if (this->itemWidget(this->item(i)) == _add_friend_item) {
+            this->setCurrentRow(i);
+            break;
+        }
+    }
+}
+
 bool ContactUserList::eventFilter(QObject *watched, QEvent *event)
 {
     // 检查事件是否是鼠标悬浮进入或离开

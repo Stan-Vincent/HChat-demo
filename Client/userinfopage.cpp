@@ -17,6 +17,7 @@
 #include <QJsonObject>
 #include "logcategory.h"
 #include "animutil.h"
+#include <QPixmap>
 
 UserInfoPage::UserInfoPage(QWidget *parent) :
     QWidget(parent),
@@ -39,41 +40,10 @@ UserInfoPage::UserInfoPage(QWidget *parent) :
     ui->sex_cbx->addItem("女", 1);
     ui->sex_cbx->addItem("保密", 2);
 
-    auto info = UserMgr::GetInstance()->GetUserInfo();
-    // ★ GetIcon()/GetNick() 等内部直接解引用 _user_info，
-    //   登录回包没到时会崩。所以先判空。
-    if (info == nullptr) {
-        qCDebug(lcAvatar) << "UserInfoPage: user info is null";
-    } else {
-        // ★ _icon 是服务端返回的 URL（"upload/xxx.png"），不是本地文件路径，
-        //   不能用 QPixmap(_icon) 直接构造（那会当成文件去读，必然加载失败 → 头像空白）。
-        //   必须走 ImageManager::downloadImage 异步从 gate 服务器拉取，
-        //   否则重启程序后头像永远空白（之前只靠上传后的内存预览撑着，一重启就没了）。
-        if (!info->_icon.isEmpty()) {
-            QPointer<UserInfoPage> guard(this);
-            ImageManager::instance()->loadAvatar(
-                info->_icon, [guard](bool ok, const QPixmap& pix, const QString& err) {
-                    if (!guard) {
-                        return;     // 页面已被销毁（比如下载途中退出了登录）
-                    }
-                    if (ok && !pix.isNull()) {
-                        guard->refreshHeadPreview(pix);
-                    } else {
-                        qCDebug(lcAvatar) << "UserInfoPage load self avatar failed:" << err;
-                    }
-                });
-        }
-        ui->head_lb->setScaledContents(true);
-
-        ui->nick_ed->setText(info->_nick);
-        ui->name_ed->setText(info->_name);
-        ui->desc_ed->setText(info->_desc);
-
-        int idx = ui->sex_cbx->findData(info->_sex);
-        if (idx >= 0) {
-            ui->sex_cbx->setCurrentIndex(idx);
-        }
-    }
+    // ★ 资料字段的回填抽成 refreshUserInfo()：构造时填一次，换账号登录后由
+    //   ChatDialog::applyLoginSession() 再调一次，否则停在旧账号的资料上。
+    ui->head_lb->setScaledContents(true);
+    refreshUserInfo();
 
     // 用户名（name）是注册时定的，不允许在这里改 —— 置灰避免误操作
     ui->name_ed->setEnabled(false);
@@ -91,6 +61,57 @@ UserInfoPage::UserInfoPage(QWidget *parent) :
 UserInfoPage::~UserInfoPage()
 {
     delete ui;
+}
+
+// ★ 换账号登录后重新回填（构造只在首次登录跑一次）。
+//   必须先把旧账号的残留清掉：待上传头像 _pending_icon 不清的话，
+//   换号后点「提交」会把上一个账号裁好的头像传上去。
+void UserInfoPage::refreshUserInfo()
+{
+    _pending_icon = QImage();
+    ui->head_lb->setPixmap(QPixmap());
+
+    auto info = UserMgr::GetInstance()->GetUserInfo();
+    // ★ GetIcon()/GetNick() 等内部直接解引用 _user_info，登录回包没到时会崩。先判空。
+    if (info == nullptr) {
+        qCDebug(lcAvatar) << "UserInfoPage: user info is null";
+        ui->nick_ed->clear();
+        ui->name_ed->clear();
+        ui->desc_ed->clear();
+        return;
+    }
+
+    // ★ _icon 是服务端返回的 URL（"upload/xxx.png"），不是本地文件路径，
+    //   不能用 QPixmap(_icon) 直接构造（当成文件读必然失败 → 头像空白），
+    //   必须走 ImageManager 异步从 gate 服务器拉取。
+    if (!info->_icon.isEmpty()) {
+        loadSelfAvatar(info->_icon);
+    }
+
+    ui->nick_ed->setText(info->_nick);
+    ui->name_ed->setText(info->_name);
+    ui->desc_ed->setText(info->_desc);
+
+    int idx = ui->sex_cbx->findData(info->_sex);
+    if (idx >= 0) {
+        ui->sex_cbx->setCurrentIndex(idx);
+    }
+}
+
+void UserInfoPage::loadSelfAvatar(const QString& iconUrl)
+{
+    QPointer<UserInfoPage> guard(this);
+    ImageManager::instance()->loadAvatar(
+        iconUrl, [guard](bool ok, const QPixmap& pix, const QString& err) {
+            if (!guard) {
+                return;     // 页面已被销毁（比如下载途中退出了登录）
+            }
+            if (ok && !pix.isNull()) {
+                guard->refreshHeadPreview(pix);
+            } else {
+                qCDebug(lcAvatar) << "UserInfoPage load self avatar failed:" << err;
+            }
+        });
 }
 
 void UserInfoPage::refreshHeadPreview(const QPixmap& pix)

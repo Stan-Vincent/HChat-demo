@@ -20,10 +20,14 @@ public:
     explicit ApplyFriendPage(QWidget *parent = nullptr);
     ~ApplyFriendPage();
     void AddNewApply(std::shared_ptr<AddFriendApply> apply);
+    // Clear every rendered apply row + the uid->item map (called on logout,
+    // and internally by loadApplyList to avoid stacking duplicates).
+    void clearAll();
+    // Reload from UserMgr::GetApplyList() (called after each successful login).
+    void loadApplyList();
 protected:
     void paintEvent(QPaintEvent *event);
 private:
-    void loadApplyList();
     Ui::ApplyFriendPage *ui;
     std::unordered_map<int, ApplyFriendItem*> _unauth_items;
 public slots:

@@ -6,20 +6,24 @@
 #include <QPushButton>
 #include <QFont>
 #include <QPainter>
-#include <QGraphicsDropShadowEffect>
+#include <QPen>
+#include <QPalette>
+#include <QRegion>
+#include <QResizeEvent>
 #include <QHideEvent>
 #include <QPainterPath>
 
 EmojiPanel::EmojiPanel(QWidget *parent)
     : QWidget(parent, Qt::FramelessWindowHint | Qt::Popup)
 {
-    // 透明背景 + 自绘圆角白底 + 阴影，贴合聊天窗浅色风格
-    setAttribute(Qt::WA_TranslucentBackground);
-    auto *shadow = new QGraphicsDropShadowEffect(this);
-    shadow->setBlurRadius(16);
-    shadow->setOffset(0, 4);
-    shadow->setColor(QColor(0, 0, 0, 60));
-    setGraphicsEffect(shadow);
+    // 关键修复：不用 WA_TranslucentBackground + QGraphicsDropShadowEffect。
+    // Windows/MinGW 上，半透明 + 图形阴影特效的 Qt::Popup 会让分层窗口的脏区带
+    // 负偏移且超出窗口边界，触发 UpdateLayeredWindowIndirect failed（参数错误），
+    // 表现为面板渲染异常 / 残影 / 调试台刷屏。改为不透明窗口 + 圆角遮罩，稳定无报错。
+    setAutoFillBackground(true);
+    QPalette pal = palette();
+    pal.setColor(QPalette::Window, QColor("#ffffff"));
+    setPalette(pal);
     buildUi();
 }
 
@@ -148,8 +152,20 @@ void EmojiPanel::paintEvent(QPaintEvent *event)
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing);
     QPainterPath path;
-    path.addRoundedRect(QRectF(rect()).adjusted(2, 2, -2, -2), 10, 10);
+    path.addRoundedRect(rect().adjusted(1, 1, -1, -1), 10, 10);
     p.fillPath(path, QColor("#ffffff"));
+    // 1px 浅灰细边，替代原先的投影，弱化边缘
+    p.setPen(QPen(QColor("#e3e3e3"), 1));
+    p.drawPath(path);
+}
+
+void EmojiPanel::resizeEvent(QResizeEvent *event)
+{
+    QWidget::resizeEvent(event);
+    // 不透明窗口用圆角遮罩裁出圆角（不走分层窗口，规避 UpdateLayeredWindow 报错）
+    QPainterPath path;
+    path.addRoundedRect(rect(), 10, 10);
+    setMask(QRegion(path.toFillPolygon().toPolygon()));
 }
 
 void EmojiPanel::hideEvent(QHideEvent *event)
