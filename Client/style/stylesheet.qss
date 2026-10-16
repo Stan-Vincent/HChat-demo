@@ -529,11 +529,6 @@ LoadingDlg #status_lb {
     font-size: 18px;
 }
 
-#title_lb {
-    font-size: 18px;
-    font-weight: normal;
-}
-
 /* 查找成功弹窗 */
 #FindSuccessDlg {
     background-color: #ffffff;
@@ -780,12 +775,35 @@ QProgressBar::chunk {
  * 8. 无边框窗口：标题栏与窗口按钮
  * ========================================================================= */
 
-/* 标题栏：与 main_widget 同为白底，融为一体；顶部一条拖拽热区 */
+/* ============================================================================
+ * 8. 无边框窗口：标题栏与窗口按钮
+ *
+ * ★ 主题色标题栏（仿 QQ）：MainWindow 的 #title_bar（窗口按钮）与 ChatPage 的
+ *   #title_wid（会话标题）背景用同一个主色 #ff7a45，两条紧贴就 visually 连成
+ *   一整条主题色标题栏 —— 左侧会话名、右侧窗口按钮，和 QQ 的蓝标题栏一个思路。
+ *   注意：这里改的是【聊天大窗】；登录/注册/重置小窗不显示 title_bar，
+ *   右上角浮动按钮仍是白底页面上的深色字符，不受影响。
+ * ========================================================================= */
+
+/* 标题栏：主色底（与 ChatPage 的 title_wid 同色，中间不能有接缝） */
 #title_bar {
-    background-color: #ffffff;
+    background-color: #ff7a45;
 }
 
-/* 窗口按钮（最小化 / 最大化 / 关闭 / 小窗右上角按钮）通用样式 */
+/* 聊天页顶部标题区：与 title_bar 同色同高，连成一整条 */
+#title_wid {
+    background-color: #ff7a45;
+}
+
+/* 会话标题：白字（橙色底上深色字对比度不够） */
+#title_lb {
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: bold;
+}
+
+/* 窗口按钮（最小化 / 最大化 / 关闭 / 小窗右上角按钮）通用样式。
+   大窗按钮坐在橙色标题栏上：字符改白，hover 用半透明白而非灰底。 */
 QPushButton#win_min,
 QPushButton#win_max,
 QPushButton#win_close,
@@ -793,29 +811,46 @@ QPushButton#win_min_small,
 QPushButton#win_close_small {
     background-color: transparent;
     border: none;
-    color: #444441;
+    color: #ffffff;
     font-size: 13px;
     border-radius: 6px;
     padding: 0;
     text-align: center;
 }
+/* 小窗（登录页）是白底，浮动按钮必须是深色才看得见 —— 用更具体的选择器盖回去 */
+QPushButton#win_min_small,
+QPushButton#win_close_small {
+    color: #444441;
+}
 QPushButton#win_min:hover,
-QPushButton#win_max:hover,
+QPushButton#win_max:hover {
+    background-color: rgba(255, 255, 255, 0.22);
+}
+QPushButton#win_min:pressed,
+QPushButton#win_max:pressed {
+    background-color: rgba(0, 0, 0, 0.16);
+}
+/* 小窗 hover 仍用灰底（白底页面上） */
 QPushButton#win_min_small:hover {
     background-color: #f0f0f0;
 }
-QPushButton#win_min:pressed,
-QPushButton#win_max:pressed,
 QPushButton#win_min_small:pressed {
     background-color: #e0e0e0;
 }
-/* 关闭按钮 hover 变红，提示"这是关闭" */
-QPushButton#win_close:hover,
+/* 关闭按钮 hover 变红，提示"这是关闭"（与 QQ 一致） */
+QPushButton#win_close:hover {
+    background-color: #e81123;
+    color: #ffffff;
+}
+QPushButton#win_close:pressed {
+    background-color: #c20d1d;
+    color: #ffffff;
+}
+/* 小窗关闭按钮：白底上 hover 变红 */
 QPushButton#win_close_small:hover {
     background-color: #e81123;
     color: #ffffff;
 }
-QPushButton#win_close:pressed,
 QPushButton#win_close_small:pressed {
     background-color: #c20d1d;
     color: #ffffff;
