@@ -16,6 +16,14 @@ void UserMgr::SetToken(QString token)
     _token = token;
 }
 
+// Used by TcpMgr to decide whether an auto-reconnect is worth starting
+// (only when a previous login actually succeeded) and to replay the
+// chat login handshake on the new socket.
+QString UserMgr::GetToken()
+{
+    return _token;
+}
+
 int UserMgr::GetUid()
 {
     return _user_info->_uid;
@@ -168,6 +176,25 @@ std::vector<std::shared_ptr<UserInfo>> UserMgr::GetConListPerPage() {
 UserMgr::UserMgr():_user_info(nullptr), _chat_loaded(0),_contact_loaded(0), _last_chat_thread_id(0),_cur_load_chat_index(0)
 {
 
+}
+
+// ★ 退出登录时必须调用：UserMgr 是跨登录存活的单例（QObject 单例不随页面销毁），
+//   不清的话换号登录后，个人信息/好友/会话(含消息)/申请列表全是上一个账号的。
+//   字段与构造函数的初值一一对应，保证 Clear 后和"刚构造"等价。
+void UserMgr::Clear()
+{
+    _user_info.reset();
+    _token.clear();
+    _apply_list.clear();
+    _friend_list.clear();
+    _friend_map.clear();
+    _chat_loaded = 0;
+    _contact_loaded = 0;
+    _chat_map.clear();
+    _chat_thread_ids.clear();
+    _cur_load_chat_index = 0;
+    _last_chat_thread_id = 0;
+    _uid_to_thread_id.clear();
 }
 
 void UserMgr::SlotAddFriendRsp(std::shared_ptr<AuthRsp> rsp)

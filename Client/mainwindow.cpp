@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 #include "resetdialog.h"
 #include "tcpmgr.h"
+#include "usermgr.h"
 #include <QLayout>
 #include <QMessageBox>
 #include <QApplication>
@@ -16,9 +17,149 @@
 #include <QLineEdit>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QSettings>
+#include <QCloseEvent>
+#include <QGuiApplication>
 #include "logcategory.h"
 #include "animutil.h"
 #include "toast.h"
+#include <QLabel>
+#include <QFontMetrics>
+#include <QPropertyAnimation>
+#include <QEasingCurve>
+#include <QParallelAnimationGroup>
+
+// ============================================================
+//  NetStatusBanner：断线重连提示条
+//
+//  为什么不用 Toast：Toast 到点自动消失，而重连要持续几秒到几十秒，
+//  中间还得反复更新"正在重连 (2/5)"。所以做一个常驻的顶部细条：
+//    - showMessage()：滑入并显示（autoHideMs>0 则到时自动滑出）
+//    - setText()：原地更新文案（宽度重算 + 重新定位），不重新播动画
+//    - dismiss()：滑出并隐藏
+//  视觉上与 Toast 同一套配色（左侧 accent 竖条 + 白底圆角），
+//  挂在 main_widget 顶部内侧，跟着窗口 resize 重新定位。
+// ============================================================
+class NetStatusBanner : public QWidget
+{
+public:
+    enum Level { Info = 0, Success = 1, Warning = 2, Error = 3 };
+
+    explicit NetStatusBanner(QWidget *parent)
+        : QWidget(parent), _level(Info), _auto_hide_ms(0), _anim_out(false)
+    {
+        setObjectName("net_status_banner");
+        setAttribute(Qt::WA_TranslucentBackground, true);
+        // 不抢焦点、不挡交互：用户重连期间照样能点界面
+        setAttribute(Qt::WA_TransparentForMouseEvents, true);
+        hide();
+
+        _label = new QLabel(this);
+        _label->setObjectName("net_banner_label");
+        _label->setTextFormat(Qt::PlainText);
+        _label->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+        _label->setStyleSheet(
+            "QLabel#net_banner_label{color:#1f1f1f;font-size:12px;"
+            "background:transparent;border:none;}");
+
+        _anim = new QPropertyAnimation(this, "pos", this);
+        _anim->setDuration(200);
+        _anim->setEasingCurve(QEasingCurve::OutCubic);
+    }
+
+    // 显示/更新一条提示。sameLevel 且已显示时只换文案，不重播动画
+    // （重连过程中每次重试都调它，重播动画会闪）。
+    void showMessage(const QString &text, Level level, int autoHideMs = 0)
+    {
+        _level = level;
+        _auto_hide_ms = autoHideMs;
+        _anim->stop();
+        _anim_out = false;
+
+        QString accent;
+        switch (level) {
+        case Success: accent = "#34c759"; break;
+        case Warning: accent = "#ff9a3c"; break;
+        case Error:   accent = "#f14e4e"; break;
+        default:      accent = "#ff7a45"; break;
+        }
+        setStyleSheet(QString(
+            "QWidget#net_status_banner{background:rgba(255,255,255,0.97);"
+            "border-radius:8px;border-left:3px solid %1;}").arg(accent));
+
+        _label->setText(text);
+        _label->adjustSize();
+
+        const int w = qMin(_label->width() + 26, 460);
+        const int h = 30;
+        setFixedSize(w, h);
+        _label->setGeometry(13, 0, w - 18, h);
+
+        if (!isVisible()) {
+            // 从父控件顶部外侧滑入
+            QWidget *p = parentWidget();
+            if (p) {
+                int x = qMax(0, (p->width() - w) / 2);
+                move(x, -h - 4);
+                show();
+                raise();
+                _anim->setStartValue(QPoint(qMax(0, (p->width() - w) / 2), -h - 4));
+                _anim->setEndValue(QPoint(x, kTopMargin));
+                _anim->start();
+            }
+        } else {
+            reposition();
+            raise();
+        }
+
+        if (_auto_hide_ms > 0) {
+            QTimer::singleShot(_auto_hide_ms, this, [this]() {
+                // 期间文案可能又被更新过（新的常驻提示），别把新提示收掉
+                if (!_anim_out && _auto_hide_ms > 0) {
+                    dismiss();
+                }
+            });
+        }
+    }
+
+    void dismiss()
+    {
+        if (!isVisible() || _anim_out) {
+            return;
+        }
+        _anim_out = true;
+        _auto_hide_ms = 0;
+        _anim->stop();
+        QPoint from = pos();
+        _anim->setStartValue(from);
+        _anim->setEndValue(QPoint(from.x(), -height() - 4));
+        connect(_anim, &QPropertyAnimation::finished, this, [this]() {
+            hide();
+            _anim_out = false;
+        }, Qt::UniqueConnection);
+        _anim->start();
+    }
+
+    // 父控件尺寸变化时重新水平居中 + 贴顶
+    void reposition()
+    {
+        QWidget *p = parentWidget();
+        if (!p) {
+            return;
+        }
+        int x = qMax(0, (p->width() - width()) / 2);
+        move(x, _anim_out ? -height() - 4 : kTopMargin);
+    }
+
+private:
+    static constexpr int kTopMargin = 8;   // 距 main_widget 顶部的间距
+    QLabel *_label = nullptr;
+    Level _level;
+    int _auto_hide_ms;
+    bool _anim_out;
+    QPropertyAnimation *_anim = nullptr;
+};
+
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -57,6 +198,13 @@ MainWindow::MainWindow(QWidget *parent) :
     // 心跳超时 / 异常断开
     connect(TcpMgr::GetInstance().get(), &TcpMgr::sig_connection_closed,
         this, &MainWindow::slot_connection_closed);
+    // 断线自动重连：TcpMgr 负责退避重试，这里只更新提示条和善后
+    connect(TcpMgr::GetInstance().get(), &TcpMgr::sig_reconnect_retry,
+        this, &MainWindow::slot_reconnect_retry);
+    connect(TcpMgr::GetInstance().get(), &TcpMgr::sig_recon_success,
+        this, &MainWindow::slot_recon_success);
+    connect(TcpMgr::GetInstance().get(), &TcpMgr::sig_reconnect_failed,
+        this, &MainWindow::slot_reconnect_failed);
 
     // 3. 无边框初始化（去系统边框 + 透明背景 + 圆角容器 + 阴影 + 标题栏 + 窗口按钮）
     setupFrameless();
@@ -71,6 +219,9 @@ MainWindow::MainWindow(QWidget *parent) :
     this->setMinimumSize(windowSizeForContent(s, false));
     this->setMaximumSize(windowSizeForContent(_login_dlg->maximumSize(), false));
     this->resize(windowSizeForContent(s, false));
+    // ★ 恢复上次的位置：登录小窗尺寸是固定的（min=max 约束），这里主要恢复【位置】。
+    //   没存过（首次启动）就保持上面的默认尺寸。
+    restoreWindowState(LOGIN_UI);
     updateWindowControls();
 
     // ★ 窗口构造时 150ms 透明度淡入 + 轻微缩放（从 0.95 放大到 1.0）
@@ -154,6 +305,10 @@ void MainWindow::setupFrameless()
     _btn_close_small->setFixedSize(30, 30);
     _btn_close_small->setVisible(false);
     connect(_btn_close_small, &QPushButton::clicked, this, &QWidget::close);
+
+    // ★ 断线重连提示条：挂在 _main_widget 上（跟着它 resize 重新定位）。
+    //   必须在 _main_widget 建好之后创建。
+    _net_banner = new NetStatusBanner(_main_widget);
 
     cl->addWidget(_main_widget);
     setCentralWidget(center);
@@ -366,6 +521,9 @@ void MainWindow::resizeEvent(QResizeEvent *event)
         refreshChrome(max);   // 进/出最大化时切换圆角/阴影/留白
     applyRoundedMask();       // 窗口尺寸变了，圆角遮罩要重算
     repositionSmallControls(); // 小窗右上角按钮随窗口尺寸重定位
+    if (_net_banner) {
+        _net_banner->reposition();   // 重连提示条跟着重新居中贴顶
+    }
 }
 
 // ============================================================
@@ -423,6 +581,12 @@ void MainWindow::slot_switch_chatdlg()
         _stacked_widget->addWidget(_chat_dlg); // 第一次创建时加入堆叠部件
     }
 
+    // ★ 把【本次登录】账号的数据灌进常驻页面：ChatDialog 只在首次登录 new 一次，
+    //   侧边栏头像 / 个人信息页 / 好友申请页都在构造时填过值，
+    //   不重新灌的话换号登录后显示的还是上一个账号。
+    //   此时 TcpMgr 的登录回包已经把 UserMgr 填好了，可以安全取用。
+    _chat_dlg->applyLoginSession();
+
     // ★ 交叉淡入到聊天页（聊天页首次创建时尺寸跳变大，恰好在淡出→淡入的瞬间完成，看不出突兀）
     _ui_status = CHAT_UI;
     QSize avail = QApplication::primaryScreen()->availableGeometry().size();
@@ -438,8 +602,12 @@ void MainWindow::slot_switch_chatdlg()
         // ★ 解除登录/注册/重置页给 MainWindow 设的 maximumSize 上限，否则退出登录再登录
         //   后聊天窗口会被锁在 360 宽（maximumSize 仍残留登录框的 360）。
         this->setMaximumSize(QSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX));
-        this->resize(windowSizeForContent(QSize(qMin(1080, avail.width() - 80),
-                                                qMin(680, avail.height() - 120)), true));
+        // ★ 优先恢复上次聊天窗口的尺寸+位置（含"上次是最大化"），
+        //   没存过（首次登录）才用默认的 1080x680 居中尺寸。
+        if (!restoreWindowState(CHAT_UI)) {
+            this->resize(windowSizeForContent(QSize(qMin(1080, avail.width() - 80),
+                                                    qMin(680, avail.height() - 120)), true));
+        }
         updateWindowControls();
         if (_chat_dlg) _chat_dlg->loadChatList();
     }, 200);
@@ -462,22 +630,161 @@ void MainWindow::slot_offline(){
 
 void MainWindow::slot_connection_closed()
 {
-    // 心跳超时 / 异常断开：右上角 Toast 提示（自动消失、不阻塞），随后回到登录页
+    // 被动断开（服务端掐线 / 网络抖动 / 心跳超时）。
+    //
+    // ★ 行为变更（2026-10-16）：以前这里直接 Toast + 回登录页，
+    //   用户网络抖一下就被踢回登录页、要重新输密码，体验很差。
+    //   现在 TcpMgr 已经启动自动重连（见它的 disconnected 处理器），
+    //   这里只负责提示：能重连就挂着"正在重连"横幅等结果，
+    //   不能重连（还没登录成功、手里没有 token）才走原来的回登录页流程。
+    if (TcpMgr::GetInstance()->IsReconnecting()) {
+        qCDebug(lcChat) << "connection closed, waiting for auto reconnect";
+        _net_banner->showMessage(tr("网络连接已断开，正在重连…"),
+                                 NetStatusBanner::Warning);
+        return;
+    }
+
+    // 登录页阶段就断了（还没拿到 token）：保持原有行为
     Toast::showToast(this, "心跳超时或临界异常，该终端下线！", Toast::Error);
     TcpMgr::GetInstance()->CloseConnection();
     offlineLogin();
 }
 
+void MainWindow::slot_reconnect_retry(int attempt, int total)
+{
+    // attempt 从 1 开始；0 表示"即将开始第 1 次"
+    const int shown = (attempt <= 0) ? 1 : attempt;
+    _net_banner->showMessage(tr("网络连接已断开，正在重连（%1/%2）…")
+                                 .arg(shown).arg(total),
+                             NetStatusBanner::Warning);
+}
+
+void MainWindow::slot_recon_success()
+{
+    qCDebug(lcChat) << "reconnect success, refresh chat data";
+    _net_banner->showMessage(tr("连接已恢复"), NetStatusBanner::Success, 2500);
+    Toast::showToast(this, "网络已恢复", Toast::Success, 2000);
+
+    // 断线期间服务端往旧 session 推的消息全丢了，好友/申请也可能变了：
+    // 让 ChatDialog 把会话列表整体重拉一遍（它内部带去重，不会渲染两遍）。
+    if (_chat_dlg) {
+        _chat_dlg->refreshAfterReconnect();
+    }
+}
+
+void MainWindow::slot_reconnect_failed()
+{
+    qCDebug(lcChat) << "reconnect failed, back to login page";
+    _net_banner->showMessage(tr("重连失败，请重新登录"), NetStatusBanner::Error);
+    Toast::showToast(this, "网络恢复失败，请重新登录", Toast::Error);
+    offlineLogin();
+}
+
+
+// ============================================================
+//  窗口几何持久化（QSettings，存到用户目录 Hcat/Hcat.ini）
+// ============================================================
+static QSettings windowSettings()
+{
+    return QSettings(QSettings::IniFormat, QSettings::UserScope,
+                     QString("Hcat"), QString("Hcat"));
+}
+
+void MainWindow::saveWindowState()
+{
+    QSettings st = windowSettings();
+    st.beginGroup(QString("Window"));
+    if (_ui_status == CHAT_UI) {
+        // ★ saveGeometry() 本身已经编码了"是否最大化"，restoreGeometry() 会一并还原
+        st.setValue(QString("chatGeometry"), saveGeometry());
+        st.setValue(QString("chatMaximized"), isMaximized());
+    } else {
+        // 登录/注册/重置小窗：尺寸被 min=max 约束锁死，记位置即可
+        st.setValue(QString("loginGeometry"), saveGeometry());
+    }
+    st.endGroup();
+    st.sync();
+}
+
+bool MainWindow::restoreWindowState(UIStatus status)
+{
+    QSettings st = windowSettings();
+    st.beginGroup(QString("Window"));
+    QByteArray geo = st.value(status == CHAT_UI ? QString("chatGeometry")
+                                                : QString("loginGeometry")).toByteArray();
+    bool maximized = status == CHAT_UI ? st.value(QString("chatMaximized"), false).toBool() : false;
+    st.endGroup();
+
+    if (geo.isEmpty()) {
+        return false;                     // 首次启动，没存过
+    }
+    if (!restoreGeometry(geo)) {
+        return false;                     // 数据损坏/版本不兼容
+    }
+    // ★ 换过显示器 / 改过分辨率：窗口可能整个跑到屏幕外，拉回可见区域
+    if (!isOnAnyScreen(this->frameGeometry())) {
+        QRect avail = QApplication::primaryScreen()->availableGeometry();
+        this->move(avail.x() + (avail.width()  - this->width())  / 2,
+                   avail.y() + (avail.height() - this->height()) / 2);
+    }
+    // 聊天大窗：上次是最大化就恢复最大化（resizeEvent 里会自动 refreshChrome 去圆角）
+    if (status == CHAT_UI && maximized && !isMaximized()) {
+        showMaximized();
+    }
+    return true;
+}
+
+bool MainWindow::isOnAnyScreen(const QRect &r) const
+{
+    // 至少要和某块屏幕有可见重叠，否则认为"跑飞了"
+    for (const QScreen *s : QGuiApplication::screens()) {
+        if (s == nullptr) {
+            continue;
+        }
+        if (s->availableGeometry().intersects(r)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    // ★ 退出前存一次：下次启动窗口出现在上次的位置、上次的尺寸
+    saveWindowState();
+    QMainWindow::closeEvent(event);
+}
 
 void MainWindow::offlineLogin(){
+	// ★ 退出登录前先把【聊天大窗】的几何存下来：
+	//   接下来窗口会缩回登录小窗，等关闭时再存就只剩小窗的位置了。
+	if (_ui_status == CHAT_UI) {
+		saveWindowState();
+	}
+
+	// ★ 回登录页时收掉重连提示条：要么已经失败（该条已显示"重连失败"），
+	//   要么是用户主动登出，都不该再把"正在重连"挂在屏幕上。
+	if (_net_banner) {
+		_net_banner->dismiss();
+	}
+
 	// ★ 每次回到登录页都先复位它的 UI 状态：清掉"正在登录..."提示、恢复按钮可用。
 	_login_dlg->resetUIState();
 
 	// ★ 关掉聊天页可能残留的模态 LoadingDlg 并把加载计数归零，
 	//   否则被中断的聊天列表/消息加载会把模态框挂在屏幕上、阻塞整个 ChatDialog
 	//   （连备注修改按钮都点不动），下次登录再 +1 又无限阻塞。
+	// ★ 主动登出也要断开 TCP：连接绑定的是上一个账号的 token，不断开的话
+	//   下一个账号会复用旧连接，服务端仍认为上一账号在线。
+	//   CloseConnection 内部会标记"主动关闭"，断开后不会再弹心跳超时 Toast。
+	TcpMgr::GetInstance()->CloseConnection();
+
+	// ★ 清掉单例里上一个账号的全部数据（UserMgr 跨登录存活，不清则换号全是旧信息）。
+	UserMgr::GetInstance()->Clear();
+
+	// ★ 清掉 ChatDialog 的 UI 状态（内部会顺带调 resetLoadingState）。
 	if (_chat_dlg) {
-		_chat_dlg->resetLoadingState();
+		_chat_dlg->clearSessionState();
 	}
 
     if(_ui_status == LOGIN_UI){

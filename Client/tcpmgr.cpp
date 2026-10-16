@@ -1,12 +1,35 @@
 ﻿#include "tcpmgr.h"
 #include <QAbstractSocket>
+#include <QJsonObject>
+#include <QJsonDocument>
 #include "usermgr.h"
 #include "logcategory.h"
 
-TcpMgr::TcpMgr():_host(""),_port(0),_b_recv_pending(false),_b_intentional_close(false),_message_id(0),_message_len(0)
+TcpMgr::TcpMgr():_host(""),_port(0),_b_recv_pending(false),_b_intentional_close(false),
+    _b_reconnecting(false),_reconnect_attempt(0),_message_id(0),_message_len(0)
 {
+    _reconnect_timer = new QTimer(this);
+    _reconnect_timer->setSingleShot(true);
+    connect(_reconnect_timer, &QTimer::timeout, this, &TcpMgr::slot_reconnect_timeout);
+    _connect_watchdog = new QTimer(this);
+    _connect_watchdog->setSingleShot(true);
+    connect(_connect_watchdog, &QTimer::timeout, this, &TcpMgr::slot_connect_watchdog_timeout);
+
     QObject::connect(&_socket, &QTcpSocket::connected, [&]() {
+           _connect_watchdog->stop();
            qCDebug(lcNetwork) << "Connected to server!";
+           if (_b_reconnecting) {
+               // 重连场景：不发 sig_con_success（那是登录页流程用的），
+               // 直接重放一次聊天登录握手 —— token 还在 UserMgr 里，
+               // 服务端认它就能把 session 重新绑回这个 uid。
+               qCDebug(lcNetwork) << "socket reconnected, redo chat login handshake";
+               QJsonObject jsonObj;
+               jsonObj["uid"] = UserMgr::GetInstance()->GetUid();
+               jsonObj["token"] = UserMgr::GetInstance()->GetToken();
+               QJsonDocument doc(jsonObj);
+               emit sig_send_data(ID_CHAT_LOGIN, doc.toJson(QJsonDocument::Compact));
+               return;
+           }
            // 连接建立后发送消息
             emit sig_con_success(true);
        });
@@ -75,11 +98,20 @@ TcpMgr::TcpMgr():_host(""),_port(0),_b_recv_pending(false),_b_intentional_close(
 //           qCDebug(lcNetwork) << "Error:" << _socket.errorString();
 //       });
 
-       // 处理错误：Qt 6.5 用 errorOccurred（QAbstractSocket::error() 已被移除）
+        // 处理错误：Qt 6.5 用 errorOccurred（QAbstractSocket::error() 已被移除）
         QObject::connect(&_socket,
                          QOverload<QAbstractSocket::SocketError>::of(&QTcpSocket::errorOccurred),
                             [&](QAbstractSocket::SocketError socketError) {
                qCDebug(lcNetwork) << "Error:" << _socket.errorString() ;
+               // ★ 重连中：任何错误都只意味着"这次没连上"，走退避重试，
+               //   不再发 sig_con_success(false)（那是登录页弹错用的，
+               //   重连时弹一次错就把用户吓回登录页了）。
+               if (_b_reconnecting) {
+                   qCDebug(lcNetwork) << "reconnect attempt failed:" << _socket.errorString();
+                   _connect_watchdog->stop();
+                   scheduleNextAttempt();
+                   return;
+               }
                switch (socketError) {
                    case QTcpSocket::ConnectionRefusedError:
                        qCDebug(lcNetwork) << "Connection Refused!";
@@ -108,10 +140,30 @@ TcpMgr::TcpMgr():_host(""),_port(0),_b_recv_pending(false),_b_intentional_close(
         // 处理连接断开
         QObject::connect(&_socket, &QTcpSocket::disconnected, [&]() {
             qCDebug(lcNetwork) << "Disconnected from server.";
+            // 半开连接的残留数据必须丢掉：否则重连后 readyRead 会先读到
+            // 上一个 session 的残包，按错位的长度解下去整条流都乱了。
+            _buffer.clear();
+            _b_recv_pending = false;
+            if (_b_reconnecting) {
+                // 重连过程中又断了（放弃本次连接时 abort() 也会走到这里）：
+                // 重试节奏完全由 _reconnect_timer / 看门狗驱动，这里不排下一次，
+                // 否则会和 errorOccurred 分支重复排。
+                return;
+            }
             // 主动 CloseConnection() 触发的断开（退出登录 / 被踢）不该再弹
             // "心跳超时下线" 提示框——那个框只在【服务端真的把连接掐了】时出现。
             // 用 _b_intentional_close 区分：主动关为 true，这里就不转发。
             if (!_b_intentional_close) {
+                // ★ 顺序要紧：先启动重连，再通知界面。
+                //   emit 是【同步】调用，MainWindow::slot_connection_closed 里要用
+                //   IsReconnecting() 决定"显示正在重连横幅"还是"直接回登录页"；
+                //   要是像以前那样先 emit 再 StartReconnect，槽函数查到的还是
+                //   false，于是每次都走回登录页分支，自动重连等于没接上。
+                // 已经登录过（token 在手）才值得自动重连；
+                // 登录页阶段就断开的（比如选服务器时网络不通）保持老行为：回登录页。
+                if (!UserMgr::GetInstance()->GetToken().isEmpty()) {
+                    StartReconnect();
+                }
                 emit sig_connection_closed();
             }
             // 无论主动被动，处理完都复位成"非主动"，等待下一次连接
@@ -126,7 +178,106 @@ TcpMgr::TcpMgr():_host(""),_port(0),_b_recv_pending(false),_b_intentional_close(
 void TcpMgr::CloseConnection(){
     // 标记为主动关闭：断开后 disconnected 信号就不会再转发心跳超时提示
     _b_intentional_close = true;
+    // 主动断开（退出登录 / 被踢）必须取消正在进行的重连，
+    // 否则旧账号会被自动拉回来。
+    StopReconnect();
     _socket.close();
+}
+
+// ============================================================
+//  断线自动重连
+// ============================================================
+void TcpMgr::StartReconnect()
+{
+    if (_b_reconnecting) {
+        return;                     // 已在重连中，避免重复启动
+    }
+    if (_last_server_info.Host.isEmpty() || _last_server_info.Port.isEmpty()) {
+        qCDebug(lcNetwork) << "StartReconnect: no server info saved, skip";
+        return;
+    }
+    if (UserMgr::GetInstance()->GetToken().isEmpty()) {
+        qCDebug(lcNetwork) << "StartReconnect: not logged in (no token), skip";
+        return;
+    }
+
+    _b_reconnecting = true;
+    _reconnect_attempt = 0;
+    qCDebug(lcNetwork) << "StartReconnect to" << _last_server_info.Host
+                       << _last_server_info.Port;
+    // 先通知界面一次（attempt=0 表示"即将开始第 1 次"）
+    emit sig_reconnect_retry(0, kMaxReconnectAttempts);
+    scheduleNextAttempt();
+}
+
+void TcpMgr::StopReconnect()
+{
+    _b_reconnecting = false;
+    _reconnect_attempt = 0;
+    if (_reconnect_timer) {
+        _reconnect_timer->stop();
+    }
+    if (_connect_watchdog) {
+        _connect_watchdog->stop();
+    }
+}
+
+bool TcpMgr::IsReconnecting() const
+{
+    return _b_reconnecting;
+}
+
+bool TcpMgr::IsConnected() const
+{
+    return _socket.state() == QAbstractSocket::ConnectedState;
+}
+
+void TcpMgr::scheduleNextAttempt()
+{
+    if (!_b_reconnecting) {
+        return;
+    }
+    // 退避计时器还挂着就复用，避免 errorOccurred 连发几条把退避时间反复重置
+    if (_reconnect_timer->isActive()) {
+        return;
+    }
+    if (_reconnect_attempt >= kMaxReconnectAttempts) {
+        qCDebug(lcNetwork) << "reconnect attempts exhausted (" << _reconnect_attempt << ")";
+        StopReconnect();
+        emit sig_reconnect_failed();
+        return;
+    }
+    // 指数退避：1s / 2s / 4s / 8s / 8s（本地服务重启一般第一次就回来了）
+    static const int kDelays[] = {1000, 2000, 4000, 8000, 8000};
+    const int idx = qMin(_reconnect_attempt,
+                         static_cast<int>(sizeof(kDelays) / sizeof(kDelays[0])) - 1);
+    _reconnect_timer->start(kDelays[idx]);
+}
+
+void TcpMgr::slot_reconnect_timeout()
+{
+    if (!_b_reconnecting) {
+        return;
+    }
+    ++_reconnect_attempt;
+    qCDebug(lcNetwork) << "reconnect attempt" << _reconnect_attempt
+                       << "of" << kMaxReconnectAttempts;
+    emit sig_reconnect_retry(_reconnect_attempt, kMaxReconnectAttempts);
+
+    _socket.connectToHost(_last_server_info.Host,
+                          static_cast<uint16_t>(_last_server_info.Port.toUInt()));
+    // 看门狗：连上了会 stop，卡在 Connecting 里 4s 还没动静就放弃这次
+    _connect_watchdog->start(kConnectWatchdogMs);
+}
+
+void TcpMgr::slot_connect_watchdog_timeout()
+{
+    if (!_b_reconnecting) {
+        return;
+    }
+    qCDebug(lcNetwork) << "reconnect watchdog timeout, abort and retry";
+    _socket.abort();      // 会触发 disconnected，但重连分支里什么都不做
+    scheduleNextAttempt();
 }
 
 TcpMgr::~TcpMgr(){
@@ -160,10 +311,25 @@ void TcpMgr::initHandlers()
         int err = jsonObj["error"].toInt();
         if(err != ErrorCodes::SUCCESS){
             qCDebug(lcNetwork) << "Login Failed, err is " << err ;
+            if (_b_reconnecting) {
+                // 重连时登录被拒（token 失效 / 账号被踢）：重试没意义了，
+                // 直接告诉界面回登录页，不要让用户干等 5 次退避。
+                StopReconnect();
+                emit sig_reconnect_failed();
+                return;
+            }
             emit sig_login_failed(err);
             return;
         }
-        
+
+        // ★ 重连登录：AppendFriendList / AppendApplyList 是【追加】语义，
+        //   不清的话好友列表和申请列表会翻倍。token 要留着（刚用它登录成功）。
+        if (_b_reconnecting) {
+            QString token = UserMgr::GetInstance()->GetToken();
+            UserMgr::GetInstance()->Clear();
+            UserMgr::GetInstance()->SetToken(token);
+        }
+
         auto uid = jsonObj["uid"].toInt();
         auto name = jsonObj["name"].toString();
         auto nick = jsonObj["nick"].toString();
@@ -171,9 +337,18 @@ void TcpMgr::initHandlers()
         auto sex = jsonObj["sex"].toInt();
         auto desc = jsonObj["desc"].toString();
         auto user_info = std::make_shared<UserInfo>(uid, name, nick, icon, sex,"",desc);
- 
+
         UserMgr::GetInstance()->SetUserInfo(user_info);
-        UserMgr::GetInstance()->SetToken(jsonObj["token"].toString());
+        // ★ 服务端 CHAT_LOGIN_RSP 并不下发 token（token 是 GateServer 的 HTTP
+        //   登录回包给的，LoginDialog 已经 SetToken 过了）。所以这里不能无条件
+        //   SetToken(jsonObj["token"]) —— 那会把 UserMgr 里有效的 token 覆盖成
+        //   空串，断线重连的"是否登录过"判断和重发握手就全失效了。
+        {
+            const QString rsp_token = jsonObj["token"].toString();
+            if (!rsp_token.isEmpty()) {
+                UserMgr::GetInstance()->SetToken(rsp_token);
+            }
+        }
         if(jsonObj.contains("apply_list")){
             UserMgr::GetInstance()->AppendApplyList(jsonObj["apply_list"].toArray());
         }
@@ -181,6 +356,16 @@ void TcpMgr::initHandlers()
         //添加好友列表
         if (jsonObj.contains("friend_list")) {
             UserMgr::GetInstance()->AppendFriendList(jsonObj["friend_list"].toArray());
+        }
+
+        // ★ 重连登录成功：只发"已恢复"，绝不重放 sig_swich_chatdlg ——
+        //   那会让 MainWindow 再走一遍淡入淡出切页 + applyLoginSession +
+        //   loadChatList，表现为"登录动画又放了一遍、会话列表加载两遍"。
+        if (_b_reconnecting) {
+            qCDebug(lcNetwork) << "reconnect login ok, emit sig_recon_success";
+            StopReconnect();
+            emit sig_recon_success();
+            return;
         }
 
         emit sig_swich_chatdlg();
@@ -764,6 +949,9 @@ void TcpMgr::slot_tcp_connect(ServerInfo si)
     qCDebug(lcNetwork) << "receive tcp connect signal";
     // 开始一次新连接，复位"主动关闭"标记，保证这次连接若被服务端掐掉能正常弹提示
     _b_intentional_close = false;
+    // ★ 原样留着这次的目标地址：断线重连时直接复用它，
+    //   不用再走一遍"问 StatusServer 要地址"的流程（那时候服务端可能也正抖）。
+    _last_server_info = si;
     // 尝试连接到服务器
     qCDebug(lcNetwork) << "Connecting to server...";
     _host = si.Host;

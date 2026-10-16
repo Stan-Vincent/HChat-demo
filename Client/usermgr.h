@@ -14,13 +14,19 @@ public:
     ~ UserMgr();
     void SetUserInfo(std::shared_ptr<UserInfo> user_info);
     void SetToken(QString token);
+    QString GetToken();
+    // Reset every per-login state: user info, token, apply list,
+    // friends, chat threads (with messages) and paging counters.
+    // Must be called on logout, otherwise the next account inherits
+    // everything the previous one left behind (stale UI / wrong data).
+    void Clear();
     int GetUid();
     QString GetName();
     QString GetNick();
     QString GetIcon();
     QString GetDesc();
      std::shared_ptr<UserInfo> GetUserInfo();
-    // Ìá½»¸öÈË×ÊÁÏ³É¹¦ºó£¬°ÑĞÂÖµÍ¬²½½øÄÚ´æ£¨·ñÔòÒªÖØĞÂµÇÂ¼²ÅÉúĞ§£©
+    // ï¿½á½»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï³É¹ï¿½ï¿½ó£¬°ï¿½ï¿½ï¿½ÖµÍ¬ï¿½ï¿½ï¿½ï¿½ï¿½Ú´æ£¨ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½Âµï¿½Â¼ï¿½ï¿½ï¿½ï¿½Ğ§ï¿½ï¿½
     void UpdateLocalUserInfo(const QString& nick, const QString& desc,
                               int sex, const QString& icon);
     void AppendApplyList(QJsonArray array);
@@ -45,7 +51,7 @@ public:
     std::shared_ptr<ChatThreadData> GetChatThreadByThreadId(int thread_id);
     std::shared_ptr<ChatThreadData> GetChatThreadByUid(int uid);
 
-    //»ñÈ¡µ±Ç°ÕıÔÚ¼ÓÔØµÄÁÄÌìÊı¾İ¡£
+    //ï¿½ï¿½È¡ï¿½ï¿½Ç°ï¿½ï¿½ï¿½Ú¼ï¿½ï¿½Øµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½İ¡ï¿½
     std::shared_ptr<ChatThreadData> GetCurLoadData();
     std::shared_ptr<ChatThreadData> GetNextLoadData();
 private:
@@ -57,15 +63,15 @@ private:
     QString _token;
     int _chat_loaded;
     int _contact_loaded;
-    //½¨Á¢»á»°idµ½Êı¾İµÄÓ³Éä¹ØÏµ
+    //ï¿½ï¿½ï¿½ï¿½ï¿½á»°idï¿½ï¿½ï¿½ï¿½ï¿½İµï¿½Ó³ï¿½ï¿½ï¿½Ïµ
     QMap<int, std::shared_ptr<ChatThreadData>> _chat_map;
-    //ÁÄÌì»á»°idÁĞ±í
+    //ï¿½ï¿½ï¿½ï¿½á»°idï¿½Ğ±ï¿½
     std::vector<int> _chat_thread_ids;
-    //¼ÇÂ¼ÒÑ¾­¼ÓÔØÁÄÌìÁĞ±íµÄ»á»°Ë÷Òı
+    //ï¿½ï¿½Â¼ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ğ±ï¿½ï¿½Ä»á»°ï¿½ï¿½ï¿½ï¿½
     int _cur_load_chat_index;
-    //ÉÏ´Î»á»°µÄid
+    //ï¿½Ï´Î»á»°ï¿½ï¿½id
     int _last_chat_thread_id;
-    //»º´æÆäËûÓÃ»§uidºÍÁÄÌìµÄthread_idµÄÓ³Éä¹ØÏµ¡£
+    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã»ï¿½uidï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½thread_idï¿½ï¿½Ó³ï¿½ï¿½ï¿½Ïµï¿½ï¿½
     QMap<int, int> _uid_to_thread_id;
 
 public slots:

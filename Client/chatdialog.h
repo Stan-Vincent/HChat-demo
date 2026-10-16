@@ -30,6 +30,19 @@ public:
     //   模态 LoadingDlg。否则被中断的加载会把 count 留在 >0、把 dlg 挂在屏幕上，
     //   下次登录 loadChatList 再 +1 就永远减不到 0 -> 无限阻塞。
     void resetLoadingState();
+    // Clear every per-login UI state: chat list items, contact friend rows,
+    // rendered chat bubbles and the current thread binding.
+    // (UserMgr::Clear clears the data side; this clears the widget side.)
+    void clearSessionState();
+    // Apply the freshly-logged-in account's data to the resident widgets.
+    // (ChatDialog is created only on the FIRST login, so its sidebar avatar,
+    //  UserInfoPage and ApplyFriendPage must be re-filled on every login.)
+    void applyLoginSession();
+    // Called after a successful auto-reconnect: reload the chat thread list so
+    // messages pushed to the dead session during the outage come back.
+    // (slot_load_chat_thread only APPENDS items, so the old rows must be
+    //  cleared first or every thread shows up twice.)
+    void refreshAfterReconnect();
 
     // LoadingSession 用：请求计数 +1 / -1，减到 0 时关掉加载框
     void beginLoadingRequest();
@@ -43,6 +56,7 @@ protected:
     
 private:
     void showLoadingDlg(bool show = true);
+    void loadSelfAvatar();
     void AddLBGroup(StateWidget* lb); 
     void loadMoreChatUser();
     void ClearLabelState(StateWidget* lb);

@@ -84,23 +84,8 @@ ChatDialog::ChatDialog(QWidget* parent) :
 	//   不能用 QPixmap(_icon) 直接构造（当成文件读必然失败 → 头像空白）。
 	//   必须走 ImageManager::downloadImage 异步从 gate 服务器拉取，
 	//   这样冷启动（重启程序）后左侧头像也能正确显示，而不是空白。
-	QString head_icon = UserMgr::GetInstance()->GetIcon();
-	if (!head_icon.isEmpty()) {
-		QPointer<ChatDialog> guard(this);
-		ImageManager::instance()->loadAvatar(
-			head_icon, [guard](bool ok, const QPixmap& pix, const QString& err) {
-				if (!guard) {
-					return;     // 窗口已销毁（下载途中退出登录）
-				}
-				if (ok && !pix.isNull()) {
-					QPixmap scaledPixmap = pix.scaled(guard->ui->side_head_lb->size(),
-						Qt::KeepAspectRatio, Qt::SmoothTransformation);
-					guard->ui->side_head_lb->setPixmap(scaledPixmap);
-				} else {
-					qCDebug(lcChat) << "ChatDialog load self avatar failed:" << err;
-				}
-			});
-	}
+	// （头像加载已抽成 loadSelfAvatar()，登出重登时也要重新拉一次）
+	loadSelfAvatar();
 	ui->side_head_lb->setScaledContents(true); // 设置QLabel自动缩放图片内容以适应大小
 
 	ui->side_chat_lb->setProperty("state", "normal");
@@ -184,7 +169,15 @@ ChatDialog::ChatDialog(QWidget* parent) :
 
 	_timer = new QTimer(this);
 	connect(_timer, &QTimer::timeout, this, [this]() {
+		// ★ 必须判空：退出登录 / 断线回登录页时 MainWindow::offlineLogin() 会调
+		//   UserMgr::Clear() 把 _user_info 置空，而 ChatDialog 是常驻对象、
+		//   这个心跳定时器并不会停 —— 原来这里直接 user_info->_uid，
+		//   回登录页后 10 秒内必被定时器打崩（nullptr 解引用，signal 11）。
+		//   （判空是保命；停表见 clearSessionState()/applyLoginSession()。）
 		auto user_info = UserMgr::GetInstance()->GetUserInfo();
+		if (user_info == nullptr) {
+			return;
+		}
 		QJsonObject textObj;
 		textObj["fromuid"] = user_info->_uid;
 		QJsonDocument doc(textObj);
@@ -325,6 +318,13 @@ void ChatDialog::slot_text_chat_msg(std::vector<std::shared_ptr<TextChatData>> m
 		thread_data->AddMsg(msg);
 
 		if (_cur_chat_thread_id != thread_id) {
+			// ★ 后台消息：给对应会话累计未读，列表项右上角显示数字徽标
+			auto it = _chat_thread_items.find(thread_id);
+			if (it != _chat_thread_items.end()) {
+				if (auto* w = qobject_cast<ChatUserWid*>(ui->chat_user_list->itemWidget(it.value()))) {
+					w->addUnread(1);
+				}
+			}
 			continue;
 		}
 
@@ -623,6 +623,108 @@ void ChatDialog::resetLoadingState()
 	showLoadingDlg(false);
 }
 
+// ★ 换账号/登出时的 UI 状态清理（数据侧由 UserMgr::Clear 负责，这里清 widget 侧）。
+//   ChatDialog 是 MainWindow 的常驻成员，跨登录/登出不销毁；
+//   不清的话，会话列表/联系人/聊天页停留的全是上一个账号的内容。
+void ChatDialog::clearSessionState()
+{
+	// 复位加载计数 + 关掉可能残留的模态 LoadingDlg（既有逻辑）
+	resetLoadingState();
+
+	// 会话列表：清掉全部 item（clear 会连带 itemWidget 一起回收）
+	ui->chat_user_list->clear();
+	// thread_id -> item 的映射与"当前会话"一并失效，防止悬挂指针
+	_chat_thread_items.clear();
+	_cur_chat_thread_id = 0;
+
+	// 联系人列表：只删好友项，保留"新的朋友/联系人分组"这些固定结构
+	ui->con_user_list->removeFriendItems();
+
+	// 聊天页：清掉上一个账号渲染的消息气泡与当前会话绑定
+	ui->chat_page->resetForLogout();
+
+	// ★ 好友申请页：ApplyFriendPage 是常驻页面，申请条目只在构造时 loadApplyList()
+	//   一次、之后靠 AddNewApply 追加，不清就一直挂着上一个账号的申请。
+	ui->friend_apply_page->clearAll();
+
+	// ★ 搜索结果列表：换号后残留上一次搜索出来的用户
+	ui->search_list->clear();
+
+	// ★ 心跳定时器停掉：回登录页后 UserMgr 已被 Clear，再发心跳也没有意义
+	//   （而且定时器回调里 user_info 会是空指针，虽然已判空，但没必要跑）。
+	//   下次登录由 applyLoginSession() 重新启动。
+	if (_timer) {
+		_timer->stop();
+	}
+
+	// 回到聊天页签的默认态
+	_b_loading = false;
+	_mode = ChatMode;
+	_state = ChatMode;
+	ui->stackedWidget->setCurrentWidget(ui->chat_page);
+}
+
+// ★ 左侧自己的头像：从 UserMgr::_icon（URL）异步拉取。
+//   抽成函数是因为构造函数只在【首次登录】跑一次，之后换账号必须重新拉，
+//   否则侧边栏头像永远是第一个账号的。
+void ChatDialog::loadSelfAvatar()
+{
+	QString head_icon = UserMgr::GetInstance()->GetIcon();
+	if (head_icon.isEmpty()) {
+		ui->side_head_lb->setPixmap(QPixmap());   // 新账号没头像 -> 清掉旧的
+		return;
+	}
+	QPointer<ChatDialog> guard(this);
+	ImageManager::instance()->loadAvatar(
+		head_icon, [guard](bool ok, const QPixmap& pix, const QString& err) {
+			if (!guard) {
+				return;     // 窗口已销毁（下载途中退出登录）
+			}
+			if (ok && !pix.isNull()) {
+				QPixmap scaledPixmap = pix.scaled(guard->ui->side_head_lb->size(),
+					Qt::KeepAspectRatio, Qt::SmoothTransformation);
+				guard->ui->side_head_lb->setPixmap(scaledPixmap);
+			} else {
+				qCDebug(lcChat) << "ChatDialog load self avatar failed:" << err;
+			}
+		});
+}
+
+// ★ 登录成功后由 MainWindow 调用：把【本次登录】账号的数据灌进常驻 widget。
+//   ChatDialog 只在首次登录 new 一次，下列页面/控件都在构造时填过值，
+//   不重新灌的话换号登录后显示的还是上一个账号：
+//     - 侧边栏头像（构造时拉）
+//     - 个人信息页昵称/用户名/签名/性别/头像（构造时填）
+//     - 好友申请页（构造时 loadApplyList，之后只靠 AddNewApply 追加）
+void ChatDialog::applyLoginSession()
+{
+	loadSelfAvatar();
+	ui->user_info_page->refreshUserInfo();
+	ui->friend_apply_page->loadApplyList();   // 内部先 clearAll，不会重复堆积
+	// 登录成功后重启心跳（clearSessionState 里停掉的）
+	if (_timer) {
+		_timer->start(10000);
+	}
+}
+
+// ★ 自动重连成功后由 MainWindow 调用。
+//   断线期间服务端往旧 session 推的消息全部丢失，好友/申请列表也可能变了
+//   （TcpMgr 侧重灌了 UserMgr 数据，这里负责 UI 侧重拉）。
+//   ⚠️ slot_load_chat_thread 是【只追加不清空】的，所以必须先清掉旧行，
+//      否则同一会话会出现两行；ChatPage 侧有 _rendered_ids 去重兜底气泡。
+void ChatDialog::refreshAfterReconnect()
+{
+	qCDebug(lcChat) << "refreshAfterReconnect: reload chat thread list";
+	resetLoadingState();
+	ui->chat_user_list->clear();
+	_chat_thread_items.clear();
+	_cur_chat_thread_id = 0;
+	// 气泡也清掉：重连后按 message_id 重渲（ChatPage::_rendered_ids 会去重，
+	// 但先清更干净，避免"发送中"状态的气泡残留）
+	ui->chat_page->resetForLogout();
+	loadChatList();
+}
+
 void ChatDialog::AddLBGroup(StateWidget* lb)
 {
 	_lb_list.push_back(lb);
@@ -793,6 +895,9 @@ void ChatDialog::SetSelectChatPage(int thread_id)
 			return;
 		}
 
+		// ★ 打开会话即视为已读：清掉未读徽标
+		con_item->clearUnread();
+
 		//设置信息
 		auto chat_data = con_item->GetChatData();
 		ui->chat_page->SetChatData(chat_data);
@@ -824,6 +929,9 @@ void ChatDialog::SetSelectChatPage(int thread_id)
 		if (!con_item) {
 			return;
 		}
+
+		// ★ 打开会话即视为已读：清掉未读徽标
+		con_item->clearUnread();
 
 		//设置信息
 		auto chat_data = con_item->GetChatData();

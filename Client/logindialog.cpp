@@ -3,6 +3,7 @@
 #include <QDebug>
 #include "httpmgr.h"
 #include "tcpmgr.h"
+#include "usermgr.h"
 #include <QRegularExpression>
 #include <QPainter>
 #include <QPainterPath>
@@ -350,6 +351,11 @@ void LoginDialog::initHttpHandlers()
 
         _uid = si.Uid;
         _token = si.Token;
+        // ★ token 的真正来源就是这里（GateServer 的 HTTP 登录回包）。
+        //   必须顺手存进 UserMgr：断线自动重连要靠它判断"是否登录过"，
+        //   并且重连后要拿它重放聊天登录握手。
+        //   （ChatServer 的 CHAT_LOGIN_RSP 并不回 token，别指望从那边拿。）
+        UserMgr::GetInstance()->SetToken(si.Token);
         qCDebug(lcUser) << "email is " << email << " uid is " << si.Uid <<" host is "
                 << si.Host << " Port is " << si.Port << " Token is " << si.Token;
         emit sig_connect_tcp(si);

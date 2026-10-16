@@ -8,6 +8,8 @@
 #include <QDir>
 #include <QCoreApplication>
 #include <QDateTime>
+#include <QFileInfo>
+#include <QTextStream>
 #include <exception>
 #include <csignal>
 #include <cstdio>
@@ -124,6 +126,45 @@ static LONG WINAPI MyUnhandledExceptionFilter(EXCEPTION_POINTERS* ep)
 }
 #endif
 
+// ============================================================
+//  运行日志落盘：Hcat.exe 是 -subsystem,windows 的 GUI 程序，
+//  没有控制台，qDebug/qCDebug 的输出重定向不到文件里（以前排查问题
+//  只能上 gdb）。这里装一个 message handler，把所有日志同时写到
+//  exe 同级的 client.log（带时间戳 + 分类），超过 2MB 自动截断重写。
+//  用法：正常跑就有；想看实时可以 Get-Content client.log -Wait
+// ============================================================
+static QFile* g_logFile = nullptr;
+static QtMessageHandler g_prevHandler = nullptr;
+
+static void logToFile(QtMsgType type, const QMessageLogContext& ctx, const QString& msg)
+{
+    if (g_logFile && g_logFile->isOpen()) {
+        QTextStream ts(g_logFile);
+        ts << QDateTime::currentDateTime().toString(QString("yyyy-MM-dd hh:mm:ss.zzz"))
+           << " [" << (ctx.category ? ctx.category : QString("default")) << "] "
+           << msg << "\n";
+        g_logFile->flush();     // 崩溃时也要能留下最后几行
+    }
+    if (g_prevHandler) {
+        g_prevHandler(type, ctx, msg);
+    }
+}
+
+static void openClientLog()
+{
+    QDir dir(QCoreApplication::applicationDirPath());
+    const QString path = dir.filePath(QString("client.log"));
+    // 超过 2MB 就重开一个，防止无限增长
+    if (QFile::exists(path) && QFileInfo(path).size() > 2 * 1024 * 1024) {
+        QFile::remove(path);
+    }
+    g_logFile = new QFile(path);
+    if (!g_logFile->open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text)) {
+        delete g_logFile;
+        g_logFile = nullptr;
+    }
+}
+
 int main(int argc, char *argv[])
 {
 //双保险
@@ -147,6 +188,10 @@ int main(int argc, char *argv[])
     // 必须在 QApplication 之后，因为 QLoggingCategory 依赖 Qt 的日志系统。
     // 运行时控制示例：$env:QT_LOGGING_RULES="hcat.network.debug=true"
     init_log_categories();
+
+    // 日志落盘（见文件顶部 logToFile 的注释）
+    openClientLog();
+    g_prevHandler = qInstallMessageHandler(logToFile);
 
     // 应用图标：所有窗口标题栏 + 任务栏统一显示这只猫。
     // 用 512 的 PNG（qrc 里），比 exe 内嵌的 .ico（上限256）更清晰；
