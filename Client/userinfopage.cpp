@@ -252,17 +252,27 @@ void UserInfoPage::submitUserInfo()
     }
 
     // 有新头像：先上传，成功后拿路径再提交
-    ui->submit_btn->setText("上传头像中...");
+    ui->submit_btn->setText("上传头像中…");
+    ui->submit_btn->setEnabled(false);
     UploadManager::instance()->uploadImageData(
         uid, _pending_icon, QString("avatar.png"),
         [this, doSubmit](bool ok, const QString& urlPath, const QString& errMsg) {
+            ui->submit_btn->setEnabled(true);
             if (!ok) {
-                ui->submit_btn->setEnabled(true);
                 ui->submit_btn->setText("提交");
                 QMessageBox::warning(this, tr("上传失败"), errMsg);
                 return;
             }
             ui->submit_btn->setText("提交中...");
             doSubmit(urlPath);
+        },
+        // 进度：直接显示在按钮文字上（"上传头像中 45%"），不另弹进度框
+        [this](qint64 sent, qint64 total) {
+            if (total <= 0) {
+                ui->submit_btn->setText("上传头像中…");
+                return;
+            }
+            const int pct = qBound(0, static_cast<int>(sent * 100 / total), 100);
+            ui->submit_btn->setText(QString("上传头像中 %1%").arg(pct));
         });
 }

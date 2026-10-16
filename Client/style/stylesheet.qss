@@ -902,3 +902,22 @@ QPushButton[role="ghost"] {
 }
 QPushButton[role="ghost"]:hover { border-color: #ff7a45; color: #ff7a45; }
 QPushButton[role="ghost"]:pressed { background-color: #fff3ec; }
+/* ============================================================
+   上传进度条（ChatPage 输入框上方，objectName=upload_bar）
+   细条形态：6px 高、圆角、主色填充。不确定进度时 Qt 会显示
+   滚动动画（setRange(0,0)），这里把 chunk 颜色也交给 qss 管。
+   ============================================================ */
+QProgressBar#upload_bar {
+    background: #f0f0f0;
+    border: none;
+    border-radius: 3px;
+    max-height: 6px;
+    min-height: 6px;
+}
+QProgressBar#upload_bar::chunk {
+    background: #ff7a45;
+    border-radius: 3px;
+}
+QProgressBar#upload_bar[indeterminate="true"]::chunk {
+    background: #ff9a6b;
+}

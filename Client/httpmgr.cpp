@@ -46,7 +46,8 @@ HttpMgr::HttpMgr()
 
 void HttpMgr::PostHttpReqRaw(QUrl url, const QJsonObject& json,
                              std::function<void(bool, const QString&, const QString&)> cb,
-                             QObject* ctx)
+                             QObject* ctx,
+                             std::function<void(qint64 sent, qint64 total)> progressCb)
 {
     QByteArray data = QJsonDocument(json).toJson(QJsonDocument::Compact);
     QNetworkRequest request(url);
@@ -57,6 +58,15 @@ void HttpMgr::PostHttpReqRaw(QUrl url, const QJsonObject& json,
     QNetworkReply *reply = _manager.post(request, data);
     // ctx 为空时退化成 this，至少保证不会在 HttpMgr 析构后回调
     QObject* guard = (ctx != nullptr) ? ctx : static_cast<QObject*>(this);
+
+    // 上传进度：大文件（base64 后 20MB+）时让 UI 能显示进度条。
+    // total 在连接建立前可能是 -1，调用方要能兼容。
+    if (progressCb) {
+        QObject::connect(reply, &QNetworkReply::uploadProgress, guard,
+                         [progressCb](qint64 sent, qint64 total) {
+                             progressCb(sent, total);
+                         });
+    }
 
     QObject::connect(reply, &QNetworkReply::finished, guard,
                      [reply, cb]()

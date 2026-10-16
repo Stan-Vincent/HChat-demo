@@ -63,6 +63,8 @@ def upload_file(path, raw_size):
 
 def main():
     tmp = 'upload_big_tmp.bin'
+    # 记录上传成功时服务端返回的 url，finish 时把落盘的文件也删掉
+    server_files = []
     try:
         # ---------- 1) 19MB：必须成功 ----------
         raw = os.urandom(19 * 1024 * 1024)
@@ -74,6 +76,8 @@ def main():
         else:
             report('19MB 上传成功', st == 200 and obj.get('error') == 0,
                    'status=%s error=%s url=%s' % (st, obj.get('error'), obj.get('url', '')))
+            if obj.get('url'):
+                server_files.append(obj['url'])
 
         # ---------- 2) 21MB：必须被 LogicSystem 明确拒绝 ----------
         raw = os.urandom(21 * 1024 * 1024)
@@ -104,13 +108,17 @@ def main():
     finally:
         if os.path.exists(tmp):
             os.remove(tmp)
-        # 清理服务端落盘的测试文件
-        for name in os.listdir('.'):
-            if name.startswith('upload_big_tmp'):
+        # 清理服务端落盘的测试文件（GateServer 的工作目录，相对本仓库根目录）
+        gate_upload = os.path.join('GateServer', 'upload')
+        for url in server_files:
+            name = os.path.basename(url)
+            path = os.path.join(gate_upload, name)
+            if os.path.exists(path):
                 try:
-                    os.remove(name)
-                except OSError:
-                    pass
+                    os.remove(path)
+                    print('    已删除服务端测试文件:', path)
+                except OSError as e:
+                    print('    ⚠ 删不掉服务端测试文件 %s: %s' % (path, e))
 
     print('-' * 62)
     bad = [n for n, ok in results if not ok]

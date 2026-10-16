@@ -28,9 +28,12 @@ public:
     //
     // 这个版本直接在自己的 reply 上连finished，一请求一回调，天然一一对应。
     // ctx 是生命周期守卫：ctx 被销毁时 Qt 自动断开连接，回调不会再被调用。
+    // progressCb 可选：上传进度（已发送字节 / 总字节）。大文件上传时给 UI 做进度条用；
+    //   注意 QNAM 的 total 在连接建立前可能是 -1（未知），UI 要能兼容。
     void PostHttpReqRaw(QUrl url, const QJsonObject& json,
                         std::function<void(bool ok, const QString& res, const QString& errMsg)> cb,
-                        QObject* ctx);
+                        QObject* ctx,
+                        std::function<void(qint64 sent, qint64 total)> progressCb = nullptr);
 private:
     friend class Singleton<HttpMgr>;
     HttpMgr();

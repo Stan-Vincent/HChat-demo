@@ -21,6 +21,10 @@
  * 用法：
  *   UploadManager::instance()->uploadImage(uid, localPath,
  *       [ok, urlPath, errMsg](bool ok, const QString& urlPath, const QString& errMsg) { ... });
+ *
+ * 【上传进度】每个接口都带一个可选的 progressCb(sent, total)：
+ *   大文件（base64 后可能 20MB+）时 UI 要能显示进度条，否则用户分不清是在传还是卡死。
+ *   total 在连接建立前可能是 -1，UI 要能兼容；进度回调在 ctx 对象销毁后自动断开。
  */
 class UploadManager : public QObject
 {
@@ -30,18 +34,24 @@ public:
 
     UploadManager() = default;
 
+    // 上传进度回调：已发送字节 / 总字节（total 可能是 -1 = 未知）
+    using ProgressCb = std::function<void(qint64 sent, qint64 total)>;
+
     // 把本地图片文件上传，返回服务端上的相对路径
     void uploadImage(int uid, const QString& localPath,
-                     std::function<void(bool ok, const QString& urlPath, const QString& errMsg)> cb);
+                     std::function<void(bool ok, const QString& urlPath, const QString& errMsg)> cb,
+                     ProgressCb progressCb = nullptr);
 
     // 把内存里的图片（如裁剪后的头像）上传，fmt 传 "png"/"jpg"
     void uploadImageData(int uid, const QImage& image, const QString& fileName,
-                         std::function<void(bool ok, const QString& urlPath, const QString& errMsg)> cb);
+                         std::function<void(bool ok, const QString& urlPath, const QString& errMsg)> cb,
+                         ProgressCb progressCb = nullptr);
 
     // 把本地任意文件（文档/压缩包/图片等）上传，走 /upload_file。
     // 内部读的是原始字节 + base64，与图片上传同一套逻辑，只是大小上限和路由不同。
     void uploadFile(int uid, const QString& localPath,
-                    std::function<void(bool ok, const QString& urlPath, const QString& errMsg)> cb);
+                    std::function<void(bool ok, const QString& urlPath, const QString& errMsg)> cb,
+                    ProgressCb progressCb = nullptr);
 
     // 限制大小：超过这个字节数直接失败，不浪费带宽
     static constexpr qint64 MAX_IMAGE_SIZE = 10 * 1024 * 1024;   // 10 MB
@@ -54,7 +64,8 @@ private:
     // endpoint: "/upload_image"（图片，默认）或 "/upload_file"（任意文件）
     void doUpload(int uid, const QString& fileName, const QByteArray& rawBytes,
                   std::function<void(bool, const QString&, const QString&)> cb,
-                  const QString& endpoint = "/upload_image");
+                  const QString& endpoint = "/upload_image",
+                  ProgressCb progressCb = nullptr);
 };
 
 #endif // UPLOADMANAGER_H

@@ -11,6 +11,7 @@
 #include <QPixmap>
 #include <QPointer>
 #include <QNetworkAccessManager>
+#include <QProgressBar>
 
 namespace Ui {
 class ChatPage;
@@ -69,6 +70,16 @@ private:
     static QWidget* makeBubble(ChatMsgType type, const QString& content, ChatRole role);
     // 为某条已发出但未收到回执的消息启动超时计时（超时则标记发送失败）
     void armResendTimer(const QString& uuid);
+
+    // ---------- 上传进度 ----------
+    // 开始一个上传任务，返回任务序号（用于把进度回调对上号）
+    int beginUploadTask(const QString& fileName);
+    // 更新某个任务的进度；total 可能是 -1（未知）
+    void updateUploadProgress(int taskId, qint64 sent, qint64 total);
+    // 任务结束（成功/失败都调）：摘掉它并按剩余任务刷新进度条
+    void endUploadTask(int taskId);
+    // 按所有在途任务汇总刷新进度条；没有在途任务就隐藏
+    void refreshUploadBar();
     // 重发所需的上下文：文本存内容，图片存本地路径+预览
     struct ResendContext {
         QString content;            // 文本：文本内容；图片：本地路径（重发时重新上传）
@@ -98,6 +109,15 @@ private:
         QPointer<FileBubble> bubble;   // 上传成功后回填服务端 url，供点击下载
     };
     QNetworkAccessManager* _nam = nullptr;   // 用于下载文件消息本体
+
+    // ---------- 上传进度条 ----------
+    // 图片/文件是"先上传拿到服务端地址、再发消息"，19MB 的文件 base64 后 26MB，
+    // 慢网络下要好几分钟。没有进度条用户分不清是在传还是卡死。
+    // 支持多个文件同时上传：按 taskId 记录各自进度，汇总成一条总进度。
+    QProgressBar* _upload_bar = nullptr;                 // 输入框上方的细进度条
+    int _upload_task_seq = 0;                            // 任务序号自增
+    QHash<int, QPair<qint64, qint64>> _upload_tasks;     // taskId -> (已发送, 总计)
+    QString _upload_names;                               // 在途文件名（进度条左侧文字用）
 };
 
 #endif // CHATPAGE_H

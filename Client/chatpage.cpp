@@ -77,6 +77,22 @@ ChatPage::ChatPage(QWidget *parent) :
     _emo_panel->hide();
     connect(ui->emo_lb, &ClickedLabel::clicked, this, &ChatPage::slot_toggle_emoji_panel);
     connect(_emo_panel, &EmojiPanel::sig_emoji_selected, this, &ChatPage::slot_insert_emoji);
+
+    // ---------- 上传进度条 ----------
+    // 插在输入框（chatEdit）正上方：不抢焦点、默认隐藏，有上传任务时才出现。
+    // 用代码插入而不是改 .ui：.ui 的收尾顺序（</widget> 必须在 <customwidgets> 前）
+    // 很容易写错，能不动就不动。
+    _upload_bar = new QProgressBar(this);
+    _upload_bar->setObjectName("upload_bar");
+    _upload_bar->setFixedHeight(6);
+    _upload_bar->setTextVisible(false);       // 细条形态，百分比显示在 tooltip/格式里
+    _upload_bar->setRange(0, 100);
+    _upload_bar->setValue(0);
+    _upload_bar->hide();
+    if (ui->verticalLayout_2) {
+        ui->verticalLayout_2->insertWidget(
+            ui->verticalLayout_2->indexOf(ui->chatEdit), _upload_bar);
+    }
     connect(_emo_panel, &EmojiPanel::sig_panel_hidden, this, &ChatPage::slot_emo_panel_hidden);
 
     // 文件功能：文件夹图标 → 打开文件选择框（多选），选中的文件插入输入框
@@ -548,12 +564,14 @@ void ChatPage::slot_resend(const QString& unique_id)
     if (ctx.type == ChatMsgType::PIC) {
         // 图片重发：先重新上传本地文件，拿到服务端地址再发包
         QPointer<ChatPage> self(this);
+        const int task_id = beginUploadTask(QFileInfo(ctx.content).fileName());
         UploadManager::instance()->uploadImage(
             UserMgr::GetInstance()->GetUid(), ctx.content,
-            [self, unique_id, ctx, sendReq](bool ok, const QString& urlPath, const QString& errMsg) {
+            [self, unique_id, ctx, sendReq, task_id](bool ok, const QString& urlPath, const QString& errMsg) {
                 if (!self) {
                     return;
                 }
+                self->endUploadTask(task_id);
                 if (!ok) {
                     qCDebug(lcChat) << "resend upload image failed:" << errMsg;
                     // 上传失败：维持失败态，等用户再次点击
@@ -567,6 +585,13 @@ void ChatPage::slot_resend(const QString& unique_id)
                     PictureBubble::_pixmap_cache.insert(urlPath, ctx.preview);
                 }
                 sendReq(urlPath);
+            },
+            // 上传进度（重发路径同样要显示）
+            [self, task_id](qint64 sent, qint64 total) {
+                if (!self) {
+                    return;
+                }
+                self->updateUploadProgress(task_id, sent, total);
             });
     } else {
         sendReq(ctx.content);
@@ -601,6 +626,80 @@ struct PendingImage {
     int other_id = 0;     // 接收方 uid
     int thread_id = 0;
 };
+
+// ---------- 上传进度 ----------
+int ChatPage::beginUploadTask(const QString& fileName)
+{
+    const int id = ++_upload_task_seq;
+    _upload_tasks.insert(id, qMakePair<qint64, qint64>(0, 0));
+    if (!fileName.isEmpty()) {
+        _upload_names = _upload_names.isEmpty() ? fileName
+                                                : _upload_names + QString("、") + fileName;
+    }
+    refreshUploadBar();
+    return id;
+}
+
+void ChatPage::updateUploadProgress(int taskId, qint64 sent, qint64 total)
+{
+    auto it = _upload_tasks.find(taskId);
+    if (it == _upload_tasks.end()) {
+        return;
+    }
+    it.value() = qMakePair(sent, total);
+    refreshUploadBar();
+}
+
+void ChatPage::endUploadTask(int taskId)
+{
+    if (_upload_tasks.remove(taskId) > 0) {
+        // 文件名列表简单重建：只剩一个任务时保留它的名字，多个就显示个数
+        if (_upload_tasks.isEmpty()) {
+            _upload_names.clear();
+        }
+        refreshUploadBar();
+    }
+}
+
+void ChatPage::refreshUploadBar()
+{
+    if (!_upload_bar) {
+        return;
+    }
+    if (_upload_tasks.isEmpty()) {
+        _upload_bar->hide();
+        _upload_bar->setToolTip(QString());
+        return;
+    }
+
+    qint64 sent_sum = 0, total_sum = 0;
+    bool total_known = false;
+    for (const auto& t : _upload_tasks) {
+        sent_sum += t.first;
+        if (t.second > 0) {
+            total_sum += t.second;
+            total_known = true;
+        }
+    }
+
+    _upload_bar->show();
+    if (total_known && total_sum > 0) {
+        // 从"不确定进度"模式切回来要把范围恢复成 0..100
+        _upload_bar->setRange(0, 100);
+        const int pct = static_cast<int>(sent_sum * 100 / total_sum);
+        _upload_bar->setValue(qBound(0, pct, 100));
+        qCDebug(lcChat) << "upload progress:" << pct << "%"
+                        << sent_sum << "/" << total_sum << "tasks:" << _upload_tasks.size();
+        _upload_bar->setToolTip(QString("正在上传 %1（%2/%3）")
+            .arg(_upload_names.isEmpty() ? QString("文件") : _upload_names)
+            .arg(sent_sum / 1024).arg(total_sum / 1024));
+    } else {
+        // total 还是 -1（连接未建立）：走不确定进度模式，别显示 0% 骗人
+        _upload_bar->setRange(0, 0);
+        _upload_bar->setToolTip(QString("正在上传 %1…")
+            .arg(_upload_names.isEmpty() ? QString("文件") : _upload_names));
+    }
+}
 
 void ChatPage::on_send_btn_clicked()
 {
@@ -831,12 +930,15 @@ void ChatPage::on_send_btn_clicked()
     // 用 QPointer 兜底：上传是异步的，回包到达时这个页面可能已被销毁。
     QPointer<ChatPage> self(this);
     for (const auto& img : pending_images) {
+        const int task_id = beginUploadTask(QFileInfo(img.local_path).fileName());
         UploadManager::instance()->uploadImage(
             UserMgr::GetInstance()->GetUid(), img.local_path,
-            [self, img](bool ok, const QString& urlPath, const QString& errMsg) {
+            [self, img, task_id](bool ok, const QString& urlPath, const QString& errMsg) {
                 if (!self) {
                     return;                      // 页面已经没了
                 }
+                // 无论成败都要摘掉这个任务，否则进度条永远挂着
+                self->endUploadTask(task_id);
                 if (!ok) {
                     qCDebug(lcChat) << "upload image failed:" << errMsg;
                     return;
@@ -866,18 +968,27 @@ void ChatPage::on_send_btn_clicked()
                 // ★ 图片是"上传成功后才真正发包"，超时计时必须在发包这一刻启动，
                 //   否则上传耗时会被算进超时，导致还没发出去就被误判失败。
                 self->armResendTimer(img.uuid);
+            },
+            // 上传进度：回填到页面顶部的聚合进度条（QPointer 防页面已销毁）
+            [self, task_id](qint64 sent, qint64 total) {
+                if (!self) {
+                    return;
+                }
+                self->updateUploadProgress(task_id, sent, total);
             });
     }
 
     // ---------- 文件：上传成功后再把消息发给服务端 ----------
     // 与图片同构：先异步上传拿到服务端地址，再发 msg_type=2 的消息包。
     for (const auto& pf : pending_files) {
+        const int task_id = beginUploadTask(pf.file_name);
         UploadManager::instance()->uploadFile(
             UserMgr::GetInstance()->GetUid(), pf.local_path,
-            [self, pf](bool ok, const QString& urlPath, const QString& errMsg) {
+            [self, pf, task_id](bool ok, const QString& urlPath, const QString& errMsg) {
                 if (!self) {
                     return;
                 }
+                self->endUploadTask(task_id);
                 if (!ok) {
                     qCDebug(lcChat) << "upload file failed:" << errMsg;
                     // 上传失败：把气泡标成失败态，别让它一直停在"发送中"
@@ -917,6 +1028,13 @@ void ChatPage::on_send_btn_clicked()
                 QByteArray data = QJsonDocument(req).toJson(QJsonDocument::Compact);
                 emit TcpMgr::GetInstance()->sig_send_data(ReqId::ID_TEXT_CHAT_MSG_REQ, data);
                 qCDebug(lcChat) << "file msg sent, url =" << urlPath;
+            },
+            // 上传进度：文件往往几十 MB，进度条必须有
+            [self, task_id](qint64 sent, qint64 total) {
+                if (!self) {
+                    return;
+                }
+                self->updateUploadProgress(task_id, sent, total);
             });
     }
 
@@ -1184,4 +1302,12 @@ void ChatPage::resetForLogout()
     _chat_data.reset();
     ui->chatEdit->clear();
     ui->title_lb->setText(QString());
+    // 上传进度条收掉：在途任务随着 HttpMgr 的连接（ctx=UploadManager）可能还在跑，
+    // 但页面已经换账号，不能把上个账号的上传进度显示在新账号的界面上。
+    _upload_tasks.clear();
+    _upload_names.clear();
+    if (_upload_bar) {
+        _upload_bar->hide();
+        _upload_bar->setRange(0, 100);
+    }
 }

@@ -17,7 +17,8 @@ std::shared_ptr<UploadManager> UploadManager::instance()
 }
 
 void UploadManager::uploadImage(int uid, const QString& localPath,
-                               std::function<void(bool, const QString&, const QString&)> cb)
+                               std::function<void(bool, const QString&, const QString&)> cb,
+                               ProgressCb progressCb)
 {
     QFileInfo fi(localPath);
     if (!fi.exists() || !fi.isFile()) {
@@ -42,11 +43,12 @@ void UploadManager::uploadImage(int uid, const QString& localPath,
         return;
     }
 
-    doUpload(uid, fi.fileName(), raw, std::move(cb));
+    doUpload(uid, fi.fileName(), raw, std::move(cb), QString("/upload_image"), std::move(progressCb));
 }
 
 void UploadManager::uploadImageData(int uid, const QImage& image, const QString& fileName,
-                                   std::function<void(bool, const QString&, const QString&)> cb)
+                                   std::function<void(bool, const QString&, const QString&)> cb,
+                                   ProgressCb progressCb)
 {
     if (image.isNull()) {
         cb(false, "", "图片无效");
@@ -71,14 +73,15 @@ void UploadManager::uploadImageData(int uid, const QImage& image, const QString&
     if (!name.endsWith(".png", Qt::CaseInsensitive)) {
         name += ".png";
     }
-    doUpload(uid, name, raw, std::move(cb));
+    doUpload(uid, name, raw, std::move(cb), QString("/upload_image"), std::move(progressCb));
 }
 
 // 通用文件上传：与 uploadImage 完全同构（读原始字节 + base64），
 // 区别只有两点：大小上限用 MAX_FILE_SIZE(20MB)、路由走 /upload_file。
 // 服务端已把上传接口泛化，会保留原始扩展名（危险类型改存 .bin）。
 void UploadManager::uploadFile(int uid, const QString& localPath,
-                               std::function<void(bool, const QString&, const QString&)> cb)
+                               std::function<void(bool, const QString&, const QString&)> cb,
+                               ProgressCb progressCb)
 {
     QFileInfo fi(localPath);
     if (!fi.exists() || !fi.isFile()) {
@@ -103,12 +106,13 @@ void UploadManager::uploadFile(int uid, const QString& localPath,
         return;
     }
 
-    doUpload(uid, fi.fileName(), raw, std::move(cb), "/upload_file");
+    doUpload(uid, fi.fileName(), raw, std::move(cb), QString("/upload_file"), std::move(progressCb));
 }
 
 void UploadManager::doUpload(int uid, const QString& fileName, const QByteArray& rawBytes,
                              std::function<void(bool, const QString&, const QString&)> cb,
-                             const QString& endpoint)
+                             const QString& endpoint,
+                             ProgressCb progressCb)
 {
     QJsonObject json;
     json["uid"] = uid;
@@ -150,7 +154,9 @@ void UploadManager::doUpload(int uid, const QString& fileName, const QByteArray&
         },
         // ctx 传 UploadManager 自己：manager 是 make_shared 创建的，
         // 只要它还在，连接就在；它没了连接自动断开，不会回调已销毁的对象。
-        this);
+        this,
+        // 上传进度透传给 UI（大文件时显示进度条）
+        progressCb);
 
     qCDebug(lcNetwork) << "upload_image requested:" << fileName << rawBytes.size() << "bytes";
 }
