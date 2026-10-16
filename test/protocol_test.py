@@ -14,7 +14,8 @@ HChat 服务端协议级自动化测试
 import socket, json, struct, sys, time, subprocess, os
 
 HOST = '127.0.0.1'
-CHAT_PORT = 8990
+# 默认打 ChatServer 1；用 HCHAT_PORT=8991 可以把整套用例打到 ChatServer 2
+CHAT_PORT = int(os.environ.get('HCHAT_PORT', '8990'))
 GATE = 'http://127.0.0.1:8080'
 
 # ---- 消息 ID（与 Client/global.h 一致）----
@@ -34,6 +35,13 @@ ID_LOAD_CHAT_MSG_REQ = 1029
 ID_LOAD_CHAT_MSG_RSP = 1030
 
 GREEN, RED, YELLOW, RESET = '\033[32m', '\033[31m', '\033[33m', '\033[0m'
+
+
+class ErrorCodes:
+    """与 ChatServer/const.h 对齐（服务端回包里带的错误码）"""
+    Success = 0
+    UidInvalid = 1011   # uid 无效（发消息时 fromuid 不属于该线程）
+    Error_MySql = 1014  # 数据库查询失败（thread_id 不存在）
 
 
 def xor_string(s):
@@ -127,6 +135,26 @@ def server_alive():
         return False
 
 
+def wait_rsp(cli, expect_id, match=None, timeout=10.0):
+    """从 TCP 流里捞出指定 ID 的回包，跳过其它消息。
+
+    match: {'fromuid': 6} 形式的字段要求，用来在同类型的多条回包里
+           认出"自己那条"（畸形/异常用例会留下没收的回包，纯按 ID 取会错位）。
+    """
+    t0 = time.time()
+    while time.time() - t0 < timeout:
+        r = cli.recv()
+        if r is None:
+            continue
+        if r[0] != expect_id:
+            continue
+        body = r[1]
+        if match and any(body.get(k) != v for k, v in match.items()):
+            continue
+        return body
+    return None
+
+
 # ==================== 用例 ====================
 CASES = []
 
@@ -171,6 +199,83 @@ def t_login(c):
     return 'uid=%s, 好友数=%d' % (c['uid'], len(c['rsp'].get('friend_list', [])))
 
 
+# ==================== thread 归属校验回归（2026-10-16 新增）====================
+# 背景：chat_message 里曾出现 sender 不属于该 thread 的脏行（msg 63/64/65），
+# 表现为"一个会话里混进第三个人的消息"。服务端现在做三重校验：
+#   1) thread 不存在            -> Error_MySql
+#   2) fromuid 不是线程成员      -> UidInvalid(1011)
+#   3) touid != 推导出的对端     -> 自动修正为对端（回包里能看到修正后的 touid）
+# 本组用例用【回包断言】而不是只发不看：库 fixed 之后必须真的拦得住。
+# 测试账号 uid=2（test@test.com），thread 1 = (2,3)，peer=3；uid 6 是局外人。
+THREAD_ID = 1
+PEER_UID = 3
+OUTSIDER_UID = 6
+
+
+@case('thread校验-合法消息')
+def t_thread_owner_ok(c):
+    """uid 属于线程、touid 就是对端 -> 必须 error=0"""
+    c['cli'].send(ID_TEXT_CHAT_MSG_REQ,
+                  {'fromuid': c['uid'], 'touid': PEER_UID, 'thread_id': THREAD_ID,
+                   'text_array': [{'content': '[AUTOTEST] thread归属-合法消息',
+                                   'unique_id': 'ut_ok'}]})
+    r = wait_rsp(c['cli'], ID_TEXT_CHAT_MSG_RSP, {'fromuid': c['uid']})
+    if r is None:
+        raise AssertionError('没收到自己的 TEXT_CHAT_MSG_RSP')
+    if r.get('error') != 0:
+        raise AssertionError('合法消息被拒: %s' % r)
+    return 'error=0 touid=%s' % r.get('touid')
+
+
+@case('thread校验-伪造touid')
+def t_thread_forged_touid(c):
+    """touid 指向局外人 -> 服务端应自动修正成对端并照常入库"""
+    c['cli'].send(ID_TEXT_CHAT_MSG_REQ,
+                  {'fromuid': c['uid'], 'touid': OUTSIDER_UID, 'thread_id': THREAD_ID,
+                   'text_array': [{'content': '[AUTOTEST] thread归属-伪造touid',
+                                   'unique_id': 'ut_touid'}]})
+    r = wait_rsp(c['cli'], ID_TEXT_CHAT_MSG_RSP, {'fromuid': c['uid']})
+    if r is None:
+        raise AssertionError('没收到自己的 TEXT_CHAT_MSG_RSP')
+    if r.get('error') != 0:
+        raise AssertionError('伪造 touid 被整条拒了（预期是修正后照常发）: %s' % r)
+    if r.get('touid') != PEER_UID:
+        raise AssertionError('touid 未被修正为对端 %d，实际=%s' % (PEER_UID, r.get('touid')))
+    return 'touid %d -> %d（已修正）' % (OUTSIDER_UID, r.get('touid'))
+
+
+@case('thread校验-越权uid')
+def t_thread_forged_uid(c):
+    """fromuid 不是该线程成员 -> 必须 UidInvalid(1011)，且不入库"""
+    c['cli'].send(ID_TEXT_CHAT_MSG_REQ,
+                  {'fromuid': OUTSIDER_UID, 'touid': c['uid'], 'thread_id': THREAD_ID,
+                   'text_array': [{'content': '[AUTOTEST] thread归属-越权uid',
+                                   'unique_id': 'ut_uid'}]})
+    r = wait_rsp(c['cli'], ID_TEXT_CHAT_MSG_RSP, {'fromuid': OUTSIDER_UID})
+    if r is None:
+        raise AssertionError('没收到越权消息的回包（可能被静默丢弃了）')
+    if r.get('error') != ErrorCodes.UidInvalid:
+        raise AssertionError('越权 uid 未被拒，error=%s（预期 %d）'
+                             % (r.get('error'), ErrorCodes.UidInvalid))
+    return 'error=%d（已拒绝）' % r.get('error')
+
+
+@case('thread校验-不存在的线程')
+def t_thread_missing(c):
+    """thread_id 在 private_chat 里不存在 -> 必须 Error_MySql"""
+    c['cli'].send(ID_TEXT_CHAT_MSG_REQ,
+                  {'fromuid': c['uid'], 'touid': PEER_UID, 'thread_id': 99999,
+                   'text_array': [{'content': '[AUTOTEST] thread归属-不存在线程',
+                                   'unique_id': 'ut_none'}]})
+    r = wait_rsp(c['cli'], ID_TEXT_CHAT_MSG_RSP, {'thread_id': 99999})
+    if r is None:
+        raise AssertionError('没收到不存在线程的回包')
+    if r.get('error') != ErrorCodes.Error_MySql:
+        raise AssertionError('不存在的线程未被拒，error=%s（预期 %d）'
+                             % (r.get('error'), ErrorCodes.Error_MySql))
+    return 'error=%d（已拒绝）' % r.get('error')
+
+
 @case('空搜索')
 def t_search_empty(c):
     """★回归用例：曾经让 ChatServer 整个进程崩溃的那条"""
@@ -210,7 +315,7 @@ def t_search_float(c):
 
 @case('邮箱搜索')
 def t_search_email(c):
-    c['cli'].send(ID_SEARCH_USER_REQ, {'uid': '111112@qq.com'})
+    c['cli'].send(ID_SEARCH_USER_REQ, {'uid': '1@qq.com'})
     return '已发送邮箱'
 
 
@@ -308,14 +413,31 @@ def t_len_too_big(c):
 
 @case('长度声明为负(65535)')
 def t_len_max(c):
-    c['cli'].send_raw(struct.pack('>HH', ID_SEARCH_USER_REQ, 65535))
-    return '已发送 len=65535'
+    """★ 服务端设计行为：包体长度超限 -> CSession::ClearSession 直接断开连接
+    （防滥用，见 ChatServer/CSession.cpp:193）。这里断言"确实被断开"。
+    注意：上一条 len=60000 已经把连接断开，所以 send_raw 自己就可能抛 10053。"""
+    try:
+        c['cli'].send_raw(struct.pack('>HH', ID_SEARCH_USER_REQ, 65535))
+    except (ConnectionResetError, OSError) as e:
+        return '连接已断（上一条畸形包导致，符合预期）: %s' % e
+    try:
+        r = c['cli'].recv()
+    except (ConnectionResetError, OSError) as e:
+        return '连接被断开（符合预期）: %s' % e
+    if r is None:
+        return '连接被服务端断开（符合预期）'
+    return '服务端没有断开 len=65535 的连接，回包=%s' % (r,)
 
 
 @case('未注册的消息ID')
 def t_unknown_id(c):
-    c['cli'].send(60000, {'x': 1})
-    return '已发送未知 msg_id=60000'
+    """未注册 ID：服务端找不到回调就静默忽略（不断连、不回包）。
+    注意上一条用例已把连接断开，所以这里允许 send 抛断连异常。"""
+    try:
+        c['cli'].send(60000, {'x': 1})
+        return '已发送未知 msg_id=60000（服务端静默忽略）'
+    except (ConnectionResetError, OSError) as e:
+        return '连接已断（上一条畸形包导致，符合预期）: %s' % e
 
 
 # ==================== 主流程 ====================
@@ -332,7 +454,7 @@ def main():
         return 2
 
     try:
-        cli, uid, token = login('111112@qq.com')
+        cli, uid, token = login('test@test.com')
     except Exception as e:
         print('%s[致命] 登录失败：%s%s' % (RED, e, RESET))
         return 2
