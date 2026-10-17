@@ -49,6 +49,11 @@ enum ReqId{
     ID_LOAD_CHAT_MSG_RSP = 1030,
     ID_UPDATE_FRIEND_BACK_REQ = 1031, //modify friend remark request
     ID_UPDATE_FRIEND_BACK_RSP = 1032, //modify friend remark response      //加载聊天消息
+    // ---- 群聊（与 ChatServer/const.h 的 MSG_IDS 对齐）----
+    ID_CREATE_GROUP_CHAT_REQ = 1033,  //创建群聊请求
+    ID_CREATE_GROUP_CHAT_RSP = 1034,  //创建群聊回复
+    ID_ADD_GROUP_MEMBER_REQ = 1035,   //添加群成员请求
+    ID_ADD_GROUP_MEMBER_RSP = 1036,   //添加群成员回复
     // ---- 以下是 HTTP（GateServer）用的，不是 TCP 协议的消息号 ----
     ID_UPLOAD_IMAGE_REQ = 2001,   //上传图片（发HTTP）
     ID_UPLOAD_IMAGE_RSP = 2002,   //上传图片回包

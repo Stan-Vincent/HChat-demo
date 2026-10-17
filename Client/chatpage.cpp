@@ -290,22 +290,26 @@ void ChatPage::SetChatData(std::shared_ptr<ChatThreadData> chat_data) {
     _chat_data = chat_data;
     _last_section_date = QDate();   // 时间分隔条状态随会话切换重置
     auto other_id = _chat_data->GetOtherId();
-    if(other_id == 0) {
-        //说明是群聊
-        ui->title_lb->setText(_chat_data->GetGroupName());
-        //todo...加载群聊信息和成员信息
-        return;
+    // ★ 群聊：other_id 为 0，查不到好友条目，标题用群名。
+    //   以前这里直接 return，导致切到群会话时消息列表没清、草稿没还原，
+    //   上一段私聊的气泡会残留在群里。现在只换标题，其余流程与私聊一致。
+    if (other_id == 0) {
+        auto group_name = _chat_data->GetGroupName();
+        ui->title_lb->setText(group_name.isEmpty()
+                                  ? QString("群聊 %1").arg(_chat_data->GetThreadId())
+                                  : group_name);
+    }
+    else {
+        //私聊
+        auto friend_info = UserMgr::GetInstance()->GetFriendById(other_id);
+        if (friend_info == nullptr) {
+            return;
+        }
+        ui->title_lb->setText(friend_info->GetDisplayName());
     }
 
     // 还原这个会话的草稿（没有草稿就清空输入框）
     restoreDraft(_chat_data->GetThreadId());
-
-    //私聊
-    auto friend_info = UserMgr::GetInstance()->GetFriendById(other_id);
-    if (friend_info == nullptr) {
-        return;
-    }
-    ui->title_lb->setText(friend_info->GetDisplayName());
     ui->chat_data_list->removeAllItem();
     _unrsp_item_map.clear();
     _resend_ctx.clear();   // 切换会话：作废上一段会话的可重发上下文（旧气泡已被销毁）
@@ -431,13 +435,23 @@ void ChatPage::AppendChatMsg(std::shared_ptr<ChatDataBase> msg)
     else {
         auto friend_info = UserMgr::GetInstance()->GetFriendById(msg->GetSendUid());
         if (friend_info == nullptr) {
-            // ★ 对方还没进好友列表（比如消息先于 AuthFriend 回包到达）。
-            //   这里必须 return：继续走下去 pChatItem 的用户名/头像都是空的。
-            qCDebug(lcChat) << "AppendChatMsg: friend not found, uid =" << msg->GetSendUid();
-            return;
+            // ★ 群里发消息的人不一定是自己的好友，查不到是常态。
+            //   以前一律 return，非好友在群里说的话整条不显示。
+            //   群聊兜底显示 "用户 <uid>"、头像留空；私聊维持原来的 return。
+            auto thread_data = UserMgr::GetInstance()->GetChatThreadByThreadId(msg->GetThreadId());
+            if (!(thread_data && thread_data->IsGroup())) {
+                // ★ 对方还没进好友列表（比如消息先于 AuthFriend 回包到达）。
+                //   这里必须 return：继续走下去 pChatItem 的用户名/头像都是空的。
+                qCDebug(lcChat) << "AppendChatMsg: friend not found, uid =" << msg->GetSendUid();
+                return;
+            }
+            userName = QString("用户 %1").arg(msg->GetSendUid());
+            userIcon.clear();
         }
-        userName = friend_info->GetDisplayName();
-        userIcon = friend_info->_icon;
+        else {
+            userName = friend_info->GetDisplayName();
+            userIcon = friend_info->_icon;
+        }
     }
 
     // ★ 统一走工厂：文本和图片都会返回非空，FILE 才返回 nullptr。

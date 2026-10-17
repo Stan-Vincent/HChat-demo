@@ -13,6 +13,15 @@ public:
     bool HandlePost(std::string path, std::shared_ptr<HttpConnection> con);
     void RegGet(std::string url, HttpHandler handler);
     void RegPost(std::string url, HttpHandler handler);
+
+    // Streaming upload. HttpConnection intercepts POST /upload_image and
+    // POST /upload_file before HandlePost(), streams the raw request body to
+    // disk chunk by chunk, and calls PrepareUpload() once the request header
+    // is parsed (open the output file, validate parameters) and FinishUpload()
+    // once the whole body has landed (finalise the name, write the response).
+    bool PrepareUpload(std::shared_ptr<HttpConnection> con);
+    void FinishUpload(std::shared_ptr<HttpConnection> con);
+
 private:
     LogicSystem();
 

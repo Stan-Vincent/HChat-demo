@@ -89,6 +89,27 @@ bool MysqlMgr::GetPrivateChatUsers(int thread_id, int& user1_id, int& user2_id)
 	return _dao.GetPrivateChatUsers(thread_id, user1_id, user2_id);
 }
 
+bool MysqlMgr::GetThreadType(int thread_id, std::string& type)
+{
+	return _dao.GetThreadType(thread_id, type);
+}
+
+bool MysqlMgr::GetGroupMembers(int thread_id, std::vector<int>& members)
+{
+	return _dao.GetGroupMembers(thread_id, members);
+}
+
+bool MysqlMgr::CreateGroupChat(const std::string& name, int owner_id,
+	const std::vector<int>& members, int& thread_id)
+{
+	return _dao.CreateGroupChat(name, owner_id, members, thread_id);
+}
+
+bool MysqlMgr::AddGroupMembers(int thread_id, const std::vector<int>& new_members)
+{
+	return _dao.AddGroupMembers(thread_id, new_members);
+}
+
 std::shared_ptr<PageResult> MysqlMgr::LoadChatMsg(int threadId, int lastId, int pageSize)
 {
 	return _dao.LoadChatMsg(threadId, lastId, pageSize);

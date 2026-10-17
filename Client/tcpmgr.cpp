@@ -658,7 +658,13 @@ void TcpMgr::initHandlers()
             int status = data["status"].toInt();
             int msg_type = data["msg_type"].toInt();
             if (msg_type < 0 || msg_type > 2) { msg_type = 0; }
-            auto chat_data = std::make_shared<TextChatData>(msg_id,unique_id, thread_id, ChatFormType::PRIVATE,
+            // The wire payload only carries thread_id; whether this is a
+            // group is decided locally from the thread list we loaded at
+            // login.  Hardcoding PRIVATE used to mislabel every group msg.
+            auto thread_data = UserMgr::GetInstance()->GetChatThreadByThreadId(thread_id);
+            auto form_type = (thread_data && thread_data->IsGroup())
+                                 ? ChatFormType::GROUP : ChatFormType::PRIVATE;
+            auto chat_data = std::make_shared<TextChatData>(msg_id,unique_id, thread_id, form_type,
                 static_cast<ChatMsgType>(msg_type), msg_content, sender, status, chat_time);
             chat_datas.push_back(chat_data);
         }
@@ -710,7 +716,13 @@ void TcpMgr::initHandlers()
             int status = data["status"].toInt();
             int msg_type = data["msg_type"].toInt();
             if (msg_type < 0 || msg_type > 2) { msg_type = 0; }
-            auto chat_data = std::make_shared<TextChatData>(msg_id, unique_id, thread_id, ChatFormType::PRIVATE,
+            // The wire payload only carries thread_id; whether this is a
+            // group is decided locally from the thread list we loaded at
+            // login.  Hardcoding PRIVATE used to mislabel every group msg.
+            auto thread_data = UserMgr::GetInstance()->GetChatThreadByThreadId(thread_id);
+            auto form_type = (thread_data && thread_data->IsGroup())
+                                 ? ChatFormType::GROUP : ChatFormType::PRIVATE;
+            auto chat_data = std::make_shared<TextChatData>(msg_id, unique_id, thread_id, form_type,
                 static_cast<ChatMsgType>(msg_type), msg_content, sender, status, chat_time);
             chat_datas.push_back(chat_data);
         }
@@ -825,6 +837,7 @@ void TcpMgr::initHandlers()
             cti->_type = value["type"].toString();
             cti->_user1_id = value["user1_id"].toInt();
             cti->_user2_id = value["user2_id"].toInt();
+            cti->_name = value["name"].toString();
             chat_threads.push_back(cti);
         }
 

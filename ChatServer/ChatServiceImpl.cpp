@@ -135,6 +135,11 @@ Status ChatServiceImpl::NotifyTextChatMsg(::grpc::ServerContext* context,
 		element["unique_id"] = msg.unique_id();
 		element["message_id"] = msg.msg_id();
 		element["chat_time"] = msg.chat_time();
+		// Image/file fields: mirror of LogicSystem::DealChatTextMsg, so a
+		// message relayed from another ChatServer keeps its real type.
+		element["msg_type"] = msg.msg_type();
+		element["total_size"] = (Json::Int64)msg.total_size();
+		element["md5"] = msg.md5();
 		text_array.append(element);
 	}
 	rtvalue["chat_datas"] = text_array;

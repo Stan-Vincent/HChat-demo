@@ -79,6 +79,14 @@ int  ChatThreadData::GetOtherId() {
     return _other_id;
 }
 
+void ChatThreadData::SetGroupInfo(QString name, std::vector<int> members)
+{
+    _group_name = name;
+    _group_members = std::move(members);
+    _is_group = true;
+    _other_id = 0;
+}
+
 QString ChatThreadData::GetGroupName()
 {
     return _group_name;

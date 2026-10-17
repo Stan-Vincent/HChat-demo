@@ -50,6 +50,25 @@ void ChatUserWid::SetChatData(std::shared_ptr<ChatThreadData> chat_data) {
     // ★ 必须判空：GetFriendById 查不到会返回 nullptr，
     //   之前这里直接 other_info->_icon，库里一旦有 uid=0 的坏会话就会闪退。
     if (other_info == nullptr) {
+        // ★ 群聊没有单一 peer（other_id 为 0），必然查不到好友条目。
+        //   这里原来直接 return，结果会话列表里出现一行空白。
+        //   改成用群名兜底，时间照常取最后一条消息。
+        if (_chat_data->IsGroup()) {
+            auto group_name = _chat_data->GetGroupName();
+            ui->user_name_lb->setText(group_name.isEmpty()
+                ? QString("群聊 %1").arg(_chat_data->GetThreadId()) : group_name);
+            ui->user_chat_lb->setText(chat_data->GetLastMsg());
+            const auto& g_map = chat_data->GetMsgMapRef();
+            if (!g_map.isEmpty()) {
+                auto g_last = g_map.end();
+                --g_last;
+                setLastTime(QDateTime::fromString(g_last.value()->GetChatTime(),
+                                                  QString("yyyy-MM-dd hh:mm:ss")));
+            } else {
+                setLastTime(QDateTime());
+            }
+            return;
+        }
         qCDebug(lcChat) << "SetChatData: friend info not found, other_id =" << other_id;
         return;
     }

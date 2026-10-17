@@ -205,6 +205,7 @@ struct ChatThreadInfo {
     QString _type;     // "private" or "group"
     int _user1_id;    // 私聊时对应 private_chat.user1_id；群聊时设为 0
     int _user2_id;    // 私聊时对应 private_chat.user2_id；群聊时设为 0
+    QString _name;      // group display name; empty for private
 };
 
 //客户端本地存储的聊天线程数据结构
@@ -218,6 +219,12 @@ public:
     void SetOtherId(int other_id);
     int  GetOtherId();
     QString GetGroupName();
+    // ---- group chat ----
+    // A group has no single peer (_other_id stays 0); it carries a display
+    // name and a member list instead.
+    void SetGroupInfo(QString name, std::vector<int> members);
+    bool IsGroup() const { return _is_group; }
+    std::vector<int> GetGroupMembers() const { return _group_members; }
     QMap<int, std::shared_ptr<ChatDataBase>> GetMsgMap();
     int  GetThreadId();
     QMap<int, std::shared_ptr<ChatDataBase>>&  GetMsgMapRef();
@@ -234,6 +241,9 @@ private:
     QString _last_msg;
     //群聊信息,成员列表
     std::vector<int> _group_members;
+    // true once SetGroupInfo() has run; distinguishes "group" from
+    // "private thread with a broken peer id" (both have _other_id == 0).
+    bool _is_group = false;
     //群聊名称
     QString _group_name;
     //缓存消息map，抽象为基类，因为会有图片等其他类型消息

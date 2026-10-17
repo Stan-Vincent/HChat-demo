@@ -46,3 +46,19 @@ node_modules/
 Thumbs.db
 Desktop.ini
 *.swp
+
+# ---------- test/beast_proto（Beast 原型验证台）----------
+# 只入库 .cpp/.py/.sh 源码，编译产物与几百 MB 的测试数据不入库
+test/beast_proto/*.exe
+test/beast_proto/upload_probe/*.exe
+test/beast_proto/*.bin
+test/beast_proto/upload_probe/*.bin
+test/beast_proto/*.log
+test/beast_proto/ofs/
+test/beast_proto/mock_upload/
+test/beast_proto/upload_probe/build/
+test/beast_proto/curl_resp.txt
+
+# ---------- test/run_all.sh 每次跑留下的日志与服务端 stdout ----------
+test/_logs/
+test/_db_backup/*.sql

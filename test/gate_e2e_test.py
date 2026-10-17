@@ -3,11 +3,19 @@
 顺带验证路径穿越防护。只用标准库，不需要requests。"""
 import json
 import base64
-import urllib.request
+import os
 import sys
+import urllib.request
+from urllib.parse import quote
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import dbconf   # MySQL 连接信息统一从 GateServer/config.ini 读
 
 BASE = "http://127.0.0.1:8080"
 PASS, FAIL = 0, 0
+
+# 上传落到 GateServer/upload 下，测完删掉，别在仓库里堆垃圾
+SERVER_FILES = []
 
 
 def report(name, ok, detail=""):
@@ -33,6 +41,23 @@ def post_json(path, obj):
         return -1, str(e).encode()
 
 
+def post_raw(path, data, ctype="application/octet-stream", timeout=30):
+    """发 body 为【原始字节】的 POST —— 2026-10-17 起 /upload_* 只认这个协议。
+
+    老协议是 JSON 里塞 base64 的 data 字段，已被服务端明确拒绝
+    （error=1001, msg="expected a raw binary body, not application/json"）。
+    服务端只挡 Content-Type 里含 json 的，其它类型都放行。"""
+    req = urllib.request.Request(BASE + path, data=data,
+                                 headers={"Content-Type": ctype})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return r.status, r.read()
+    except urllib.error.HTTPError as e:
+        return e.code, e.read()
+    except Exception as e:
+        return -1, str(e).encode()
+
+
 def get_bytes(path):
     try:
         with urllib.request.urlopen(BASE + path, timeout=10) as r:
@@ -48,18 +73,16 @@ def get_bytes(path):
 #   UPDATE 匹配不到行 -> rows 0 -> "update failed"，那是测试数据错不是接口 bug。
 #   这里直接问 MySQL 要一个真实 uid，避免以后数据变了又踩。
 def pick_uid():
-    import subprocess
-    mysql = r"D:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe"
-    try:
-        out = subprocess.run(
-            [mysql, "-h127.0.0.1", "-P3308", "-uroot", "-p123456", "Hcat", "-N", "-B",
-             "-e", "SELECT uid FROM user ORDER BY id LIMIT 1;"],
-            capture_output=True, timeout=15)
-        v = out.stdout.decode("utf-8", "replace").strip().splitlines()
-        if v and v[0].strip().isdigit():
-            return int(v[0].strip())
-    except Exception as e:
-        print("  (查库失败(%s)，退回 uid=2)" % e)
+    """问库要一个真实 uid。
+
+    ★ 口令绝不能写死：这里原来写死 -p123456（真实口令是 Hcat@2026Secure），
+      连不上库时**不报错**，只是静默退回 uid=2 —— 测试照样"通过"，
+      但验的是不是你想的那个人、退出时的资料还原有没有生效，全都是问号。
+      现在统一走 dbconf。"""
+    v = dbconf.query("SELECT uid FROM user ORDER BY id LIMIT 1;")
+    if v.splitlines() and v.splitlines()[0].strip().isdigit():
+        return int(v.splitlines()[0].strip())
+    print("  (查库失败，退回 uid=2 —— 检查 dbconf.MYSQL_EXE 与 config.ini [Mysql])")
     return 2
 
 UID = pick_uid()
@@ -67,12 +90,7 @@ print("  (使用 uid=%d)" % UID)
 
 # ---- 先把原始资料读下来，测完好还原 ----
 def mysql_query(sql):
-    import subprocess
-    mysql = r"D:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe"
-    out = subprocess.run(
-        [mysql, "-h127.0.0.1", "-P3308", "-uroot", "-p123456", "Hcat", "-N", "-B", "-e", sql],
-        capture_output=True, timeout=15)
-    return out.stdout.decode("utf-8", "replace").strip()
+    return dbconf.query(sql)
 
 RESTORE = None
 try:
@@ -87,20 +105,28 @@ try:
 except Exception as e:
     print("  (备份原资料异常 %s)" % e)
 
-# ---- 1x. 上传 ----
+# ---- 1x. 上传（流式原始字节协议）----
 # 造一个最小的合法 PNG（1x1 像素）
 PNG_1PX = base64.b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmM"
     "IQAAAABJRU5ErkJggg==")
-b64 = base64.b64encode(PNG_1PX).decode()
 
-st, body = post_json("/upload_image",
-                     {"uid": UID, "file_name": "e2e_test.png", "data": b64})
-obj = json.loads(body) if st == 200 else {}
+
+def upload(name, data, ep="/upload_image"):
+    """按新协议上传：query 带 uid/file_name，body 就是文件原始字节。"""
+    st, body = post_raw("%s?uid=%d&file_name=%s" % (ep, UID, quote(name)), data)
+    obj = json.loads(body) if st == 200 else {}
+    if obj.get("url"):
+        SERVER_FILES.append(obj["url"])
+    return st, obj
+
+
+st, obj = upload("e2e_test.png", PNG_1PX)
 report("upload_image 返回 200", st == 200, "status=%d" % st)
 report("upload_image error==0", obj.get("error") == 0, str(obj.get("msg", "")))
 url = obj.get("url", "")
 report("upload_image 返回 url", bool(url), url)
+report("上传的 .png 扩展名保留", url.endswith(".png"), url)
 
 # ---- 2x. 下载刚上传的 ----
 if url:
@@ -148,19 +174,25 @@ st, body = post_json("/update_userinfo",
 obj = json.loads(body) if st == 200 else {}
 report("uid=0 被拒绝", obj.get("error") != 0, "error=%s" % obj.get("error"))
 
-# ---- 6x. 空 data 上传要报错，不能崩 ----
-st, body = post_json("/upload_image",
-                     {"uid": UID, "file_name": "x.png", "data": ""})
-obj = json.loads(body) if st == 200 else {}
-report("空 data 返回错误而非崩溃", obj.get("error") != 0,
-       "error=%s" % obj.get("error"))
+# ---- 6x. 空文件要报错，不能崩 ----
+st, obj = upload("x.png", b"")
+report("空文件返回错误而非崩溃", obj.get("error") != 0,
+       "error=%s msg=%s" % (obj.get("error"), obj.get("msg")))
 
-# ---- 6b. 坏 base64 不能崩 ----
+# ---- 6b. 可执行文件扩展名必须被中和成 .bin ----
+# 否则 GET /upload/xxx.exe 能直接把可运行文件喂回去，是个真漏洞。
+st, obj = upload("evil.exe", b"MZ\x90\x00", ep="/upload_file")
+u = obj.get("url", "")
+report("exe 扩展名被中和成 .bin", obj.get("error") == 0 and u.endswith(".bin"),
+       u or str(obj.get("msg")))
+
+# ---- 6c2. 老协议（base64 塞 JSON）必须被明确拒绝，不能被当成文件内容写盘 ----
 st, body = post_json("/upload_image",
-                     {"uid": UID, "file_name": "x.png", "data": "!!!not-base64!!!"})
+                     {"uid": UID, "file_name": "old.png",
+                      "data": base64.b64encode(PNG_1PX).decode()})
 obj = json.loads(body) if st == 200 else {}
-report("坏 base64 返回错误而非崩溃", obj.get("error") != 0,
-       "error=%s" % obj.get("error"))
+report("老 base64/JSON 协议被拒", obj.get("error") != 0,
+       "error=%s msg=%s" % (obj.get("error"), obj.get("msg")))
 
 # ---- 6c. 非法 JSON 不能崩 ----
 req = urllib.request.Request(BASE + "/upload_image", data=b"{not json",
@@ -191,5 +223,18 @@ if RESTORE:
         print("  [还原] 已把 uid=%d 的资料改回原值" % UID)
     else:
         print("  [警告] 还原失败，请手动检查 uid=%d 的 nick/desc/icon/sex" % UID)
+
+# ---- 清理本次上传落到服务端的文件 ----
+updir = os.path.join(dbconf.ROOT, "GateServer", "upload")
+removed = 0
+for u in SERVER_FILES:
+    p = os.path.join(updir, os.path.basename(u))
+    if os.path.exists(p):
+        try:
+            os.remove(p)
+            removed += 1
+        except OSError as e:
+            print("  [警告] 删不掉 %s: %s" % (p, e))
+print("  [清理] 服务端测试文件 %d 个" % removed)
 
 sys.exit(FAIL)

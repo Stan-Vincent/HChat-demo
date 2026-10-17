@@ -6,6 +6,7 @@
 #include <QDir>
 #include <QDateTime>
 #include <QVariant>
+#include "uploadmanager.h"
 
 
 MessageTextEdit::MessageTextEdit(QWidget *parent)
@@ -151,11 +152,14 @@ void MessageTextEdit::insertTextFile(const QString &url)
         return;
     }
 
-    // ★ 20MB：与 UploadManager::MAX_FILE_SIZE 以及服务端 MAX_UPLOAD_BYTES 保持一致，
+    // ★ 与 UploadManager::MAX_FILE_SIZE、服务端 kMaxUploadBytes 用同一个数，
     //   否则会出现"客户端放行了、服务端却拒收"的割裂体验。
-    if(fileInfo.size()>20*1024*1024)
+    //   2026-10-17 起是 300MB：上传改成流式之后内存不再是瓶颈，
+    //   上限就等于服务端上限，不再各自为政。
+    if(fileInfo.size() > UploadManager::MAX_FILE_SIZE)
     {
-        QMessageBox::information(this,"提示","发送的文件大小不能大于20M");
+        QMessageBox::information(this,"提示",
+            QString("发送的文件大小不能大于%1MB").arg(UploadManager::MAX_FILE_SIZE/1024/1024));
         return;
     }
 

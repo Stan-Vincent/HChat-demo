@@ -18,6 +18,8 @@ enum ErrorCodes {
 	CREATE_CHAT_FAILED = 1012, //创建聊天失败
 	LOAD_CHAT_FAILED = 1013,
 	Error_MySql = 1014, //database error //加载聊天失败
+	CREATE_GROUP_FAILED = 1015,      //创建群聊失败
+	ADD_GROUP_MEMBER_FAILED = 1016,  //添加群成员失败
 };
 
 
@@ -79,6 +81,11 @@ enum MSG_IDS {
 	ID_LOAD_CHAT_MSG_RSP = 1030,
 	ID_UPDATE_FRIEND_BACK_REQ = 1031, //modify friend remark request
 	ID_UPDATE_FRIEND_BACK_RSP = 1032, //modify friend remark response
+	// ---- group chat ----
+	ID_CREATE_GROUP_CHAT_REQ = 1033,  //创建群聊请求
+	ID_CREATE_GROUP_CHAT_RSP = 1034,  //创建群聊回复
+	ID_ADD_GROUP_MEMBER_REQ = 1035,   //添加群成员请求
+	ID_ADD_GROUP_MEMBER_RSP = 1036,   //添加群成员回复
       //加载聊天消息
 };
 

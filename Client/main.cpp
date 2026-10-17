@@ -15,6 +15,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include "logcategory.h"
+#include "uploadmanager.h"
 
 #ifdef _WIN32
 //   ★必须先定这两个宏再包含 windows.h：
@@ -225,6 +226,14 @@ int main(int argc, char *argv[])
     QString gate_port = settings.value("GateServer/port").toString();
     //获取GateServer的网络地址和端口
     gate_url_prefix = "http://"+gate_host+":"+gate_port;
+
+    // 上传上限：从 config.ini 的 [Upload] MaxBytes 读。
+    // ⚠ 客户端和服务端各有一份 config.ini，两边必须配成同一个值：
+    //   客户端配大了 -> 用户传了几百 MB 才被服务端告知"太大"；
+    //   客户端配小了 -> 服务端明明能收，客户端却先拦下来。
+    // 没配或配错时 setMaxBytes 会保持 300MB 默认值，不会把上限压成 0。
+    bool max_ok = false;
+    UploadManager::setMaxBytes(settings.value("Upload/MaxBytes").toLongLong(&max_ok));
 
     MainWindow w;
     w.show();

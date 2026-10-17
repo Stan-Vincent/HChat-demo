@@ -194,6 +194,28 @@ def login(email, pwd=PLAIN_PWD):
     return c, rsp['uid'], rsp['token']
 
 
+def test_email():
+    """拿一个库里真实存在的邮箱来登录。
+
+    ★ 这里原来写死 test@test.com，而库里 uid=2 现在的邮箱是 0@1.com。
+      后果很误导：28 个用例不是"失败"，而是以 [致命] 登录失败 全军覆没，
+      第一眼看上去像 ChatServer 被打崩了，其实是测试账号对不上。
+      测试账号换过好几轮邮箱，所以改成问库要，不再写死。
+    """
+    env = os.environ.get('HCAT_TEST_EMAIL')
+    if env:
+        return env
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from dbconf import pick_email
+        mail = pick_email()
+        if mail:
+            return mail
+    except Exception:
+        pass
+    return '0@1.com'
+
+
 @case('正常登录')
 def t_login(c):
     return 'uid=%s, 好友数=%d' % (c['uid'], len(c['rsp'].get('friend_list', [])))
@@ -206,7 +228,8 @@ def t_login(c):
 #   2) fromuid 不是线程成员      -> UidInvalid(1011)
 #   3) touid != 推导出的对端     -> 自动修正为对端（回包里能看到修正后的 touid）
 # 本组用例用【回包断言】而不是只发不看：库 fixed 之后必须真的拦得住。
-# 测试账号 uid=2（test@test.com），thread 1 = (2,3)，peer=3；uid 6 是局外人。
+# 测试账号 uid=2（邮箱由 test_email() 从库里取，不写死），thread 1 = (2,3)，peer=3；
+# uid 6 是局外人。
 THREAD_ID = 1
 PEER_UID = 3
 OUTSIDER_UID = 6
@@ -453,10 +476,12 @@ def main():
         print('%s[致命] ChatServer(%d) 没在监听，先启动服务端再跑测试%s' % (RED, CHAT_PORT, RESET))
         return 2
 
+    mail = test_email()
     try:
-        cli, uid, token = login('test@test.com')
+        cli, uid, token = login(mail)
     except Exception as e:
-        print('%s[致命] 登录失败：%s%s' % (RED, e, RESET))
+        print('%s[致命] 登录失败(%s)：%s%s' % (RED, mail, e, RESET))
+        print('      可用 HCAT_TEST_EMAIL=xxx@yyy 指定；库里没这个人就去 MySQL 加。')
         return 2
 
     rsp = cli.recv()

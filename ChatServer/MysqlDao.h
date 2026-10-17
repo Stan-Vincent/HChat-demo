@@ -262,6 +262,21 @@ public:
 	// Look up the two members of a private thread.
 	// Returns false when the thread_id does not exist (or is not a private chat).
 	bool GetPrivateChatUsers(int thread_id, int& user1_id, int& user2_id);
+	// ---- group chat ------------------------------------------------------
+	// GetUserThreads() already UNIONs private threads with group threads
+	// (group rows come from group_chat_member), so the only thing the chat
+	// path still needs is: what kind of thread is this, and who is in it.
+	// Reads chat_thread.type ("private" / "group").
+	bool GetThreadType(int thread_id, std::string& type);
+	// Every member uid of a group thread.  false means the thread does not
+	// exist; an empty vector with true means a group with nobody in it.
+	bool GetGroupMembers(int thread_id, std::vector<int>& members);
+	// chat_thread + group_chat + group_chat_member in one transaction.
+	// The owner is always inserted as the first member.
+	bool CreateGroupChat(const std::string& name, int owner_id,
+		const std::vector<int>& members, int& thread_id);
+	// Adds members to an existing group.  Duplicates are ignored.
+	bool AddGroupMembers(int thread_id, const std::vector<int>& new_members);
 	std::shared_ptr<PageResult> LoadChatMsg(int threadId, int lastId, int pageSize);
 	bool AddChatMsg(std::vector<std::shared_ptr<ChatMessage>>& chat_datas);
 private:

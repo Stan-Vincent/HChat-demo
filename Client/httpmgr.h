@@ -4,6 +4,7 @@
 #include <QString>
 #include <QUrl>
 #include <QObject>
+#include <QIODevice>
 #include <QNetworkAccessManager>
 #include "global.h"
 
@@ -34,6 +35,24 @@ public:
                         std::function<void(bool ok, const QString& res, const QString& errMsg)> cb,
                         QObject* ctx,
                         std::function<void(qint64 sent, qint64 total)> progressCb = nullptr);
+
+    // ★ 流式上传用的 POST：请求体直接从 QIODevice 边读边发。
+    //
+    // 【为什么单独开一个】PostHttpReqRaw 收的是 QJsonObject，内部一定走
+    // QJsonDocument + base64，300MB 的文件会先在内存里膨胀成 400MB 的 JSON，
+    // 客户端自己就先 OOM 了。服务端上传接口现在也只吃原始字节
+    // （见 GateServer 的 buffer_body 流式实现），JSON 信封反而会被拒。
+    //
+    // 【调用方义务】body 必须是 new 出来的，且已经 open(ReadOnly)。
+    // QNAM 不接管 QIODevice 的所有权，所以本方法把 body 挂在 reply 的
+    // destroyed 上 deleteLater，调用方不要再自己 delete。
+    // size 是确切字节数（QFile::size()），用来填 Content-Length；
+    // 传 -1 表示未知（顺序设备），服务端会退化成按流计数。
+    void PostHttpReqRawBody(QUrl url, QIODevice* body, qint64 size,
+                            const QString& contentType,
+                            std::function<void(bool ok, const QString& res, const QString& errMsg)> cb,
+                            QObject* ctx,
+                            std::function<void(qint64 sent, qint64 total)> progressCb = nullptr);
 private:
     friend class Singleton<HttpMgr>;
     HttpMgr();

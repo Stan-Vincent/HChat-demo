@@ -4,6 +4,7 @@
 #include <json/reader.h>
 #include "CServer.h"
 #include "ConfigMgr.h"
+#include "HttpConnection.h"
 #include "const.h"
 #include "RedisMgr.h"
 #include "logger.h"
@@ -37,6 +38,8 @@ int main()
 
     //ConfigMgr:从config,ini文件里读取GateServer的端口号
     auto& gCfgMgr = ConfigMgr::Inst();
+    // 上传上限（含最低速率、总时长）从 config.ini 的 [Upload] 段读
+    InitUploadLimits();
     std::string gate_post_str = gCfgMgr["GateServer"]["Port"];
     //std::cout <<"gate_post_str:"<< gate_post_str << std::endl;
     unsigned short gate_port = atoi(gate_post_str.c_str());

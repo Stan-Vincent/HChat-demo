@@ -35,6 +35,12 @@ public:
 	// See MysqlDao::GetPrivateChatUsers: verify a sender really belongs to the
 	// thread it claims to write into.
 	bool GetPrivateChatUsers(int thread_id, int& user1_id, int& user2_id);
+	// ---- group chat (see MysqlDao for the contracts) ---------------------
+	bool GetThreadType(int thread_id, std::string& type);
+	bool GetGroupMembers(int thread_id, std::vector<int>& members);
+	bool CreateGroupChat(const std::string& name, int owner_id,
+		const std::vector<int>& members, int& thread_id);
+	bool AddGroupMembers(int thread_id, const std::vector<int>& new_members);
 	std::shared_ptr<PageResult> LoadChatMsg(int threadId, int lastId, int pageSize);
 	bool AddChatMsg(std::vector<std::shared_ptr<ChatMessage>>& chat_datas);
 private:

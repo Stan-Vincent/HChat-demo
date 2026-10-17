@@ -121,6 +121,12 @@ void LogicSystem::RegisterCallBacks() {
 
 	_fun_callbacks[ID_LOAD_CHAT_MSG_REQ] = std::bind(&LogicSystem::LoadChatMsg, this,
 		placeholders::_1, placeholders::_2, placeholders::_3);
+
+	_fun_callbacks[ID_CREATE_GROUP_CHAT_REQ] = std::bind(&LogicSystem::CreateGroupChat, this,
+		placeholders::_1, placeholders::_2, placeholders::_3);
+
+	_fun_callbacks[ID_ADD_GROUP_MEMBER_REQ] = std::bind(&LogicSystem::AddGroupMembers, this,
+		placeholders::_1, placeholders::_2, placeholders::_3);
 }
 
 void LogicSystem::LoginHandler(shared_ptr<CSession> session, const short &msg_id, const string &msg_data) {
@@ -562,8 +568,8 @@ void LogicSystem::DealChatTextMsg(std::shared_ptr<CSession> session, const short
 	// A forged or stale thread_id would write this message into somebody else's
 	// conversation -- exactly how cross-user rows once got into chat_message
 	// ("three people talking in one chat"). So: look the thread up, require the
-	// sender to be one of its two members, and derive the receiver from the
-	// thread instead of believing the client.
+	// sender to be a member, and derive the receiver(s) from the thread instead
+	// of believing the client.
 	// NOTE: Defer is declared here (before any early return) so every exit path
 	// still answers the client.
 	Defer defer([this, &rtvalue, session]() {
@@ -571,18 +577,59 @@ void LogicSystem::DealChatTextMsg(std::shared_ptr<CSession> session, const short
 		session->Send(return_str, ID_TEXT_CHAT_MSG_RSP);
 		});
 
-	int thread_u1 = 0, thread_u2 = 0;
-	if (!MysqlMgr::GetInstance()->GetPrivateChatUsers(thread_id, thread_u1, thread_u2)) {
+	// Threads come in two flavours and the membership rule differs:
+	//   private -> exactly two members, the receiver is the other one
+	//   group   -> N members, every member except the sender gets a copy
+	std::string thread_type;
+	if (!MysqlMgr::GetInstance()->GetThreadType(thread_id, thread_type)) {
 		LOG_ERROR("DealChatTextMsg: thread {} not found (uid={}, touid={})", thread_id, uid, touid);
 		rtvalue["error"] = ErrorCodes::Error_MySql;
 		return;
 	}
-	if (uid != thread_u1 && uid != thread_u2) {
-		LOG_ERROR("DealChatTextMsg: uid {} is not a member of thread {}", uid, thread_id);
-		rtvalue["error"] = ErrorCodes::UidInvalid;
-		return;
+	rtvalue["thread_type"] = thread_type;
+
+	// Everyone who must receive this message.  The sender is never in here: it
+	// already gets the very same chat_datas back in the response below.
+	std::vector<int> recipients;
+
+	if (thread_type == "group") {
+		std::vector<int> members;
+		if (!MysqlMgr::GetInstance()->GetGroupMembers(thread_id, members)) {
+			LOG_ERROR("DealChatTextMsg: group thread {} has no member rows (uid={})",
+				thread_id, uid);
+			rtvalue["error"] = ErrorCodes::Error_MySql;
+			return;
+		}
+		bool in_group = false;
+		for (int m : members) {
+			if (m == uid) {
+				in_group = true;
+				continue;
+			}
+			recipients.push_back(m);
+		}
+		if (!in_group) {
+			LOG_ERROR("DealChatTextMsg: uid {} is not a member of group thread {}", uid, thread_id);
+			rtvalue["error"] = ErrorCodes::UidInvalid;
+			return;
+		}
+		// A group message has no single receiver: chat_message.recv_id stores 0
+		// and every member is addressed by thread_id instead.
+		touid = 0;
+		rtvalue["touid"] = 0;
 	}
-	{
+	else if (thread_type == "private") {
+		int thread_u1 = 0, thread_u2 = 0;
+		if (!MysqlMgr::GetInstance()->GetPrivateChatUsers(thread_id, thread_u1, thread_u2)) {
+			LOG_ERROR("DealChatTextMsg: thread {} not found (uid={}, touid={})", thread_id, uid, touid);
+			rtvalue["error"] = ErrorCodes::Error_MySql;
+			return;
+		}
+		if (uid != thread_u1 && uid != thread_u2) {
+			LOG_ERROR("DealChatTextMsg: uid {} is not a member of thread {}", uid, thread_id);
+			rtvalue["error"] = ErrorCodes::UidInvalid;
+			return;
+		}
 		const int peer_uid = (uid == thread_u1) ? thread_u2 : thread_u1;
 		if (touid != peer_uid) {
 			LOG_WARN("DealChatTextMsg: touid {} != peer {} of thread {}, fixed",
@@ -590,6 +637,12 @@ void LogicSystem::DealChatTextMsg(std::shared_ptr<CSession> session, const short
 			touid = peer_uid;
 			rtvalue["touid"] = touid;
 		}
+		recipients.push_back(peer_uid);
+	}
+	else {
+		LOG_ERROR("DealChatTextMsg: unknown thread type '{}' for thread {}", thread_type, thread_id);
+		rtvalue["error"] = ErrorCodes::UidInvalid;
+		return;
 	}
 	std::vector<std::shared_ptr<ChatMessage>> chat_datas;
 	auto timestamp = getCurrentTimestamp();
@@ -645,47 +698,59 @@ void LogicSystem::DealChatTextMsg(std::shared_ptr<CSession> session, const short
 		rtvalue["chat_datas"].append(chat_msg);
 	}
 
-	//查询redis 查找touid对应的server ip
-	auto to_str = std::to_string(touid);
-	auto to_ip_key = USERIPPREFIX + to_str;
-	std::string to_ip_value = "";
-	bool b_ip = RedisMgr::GetInstance()->Get(to_ip_key, to_ip_value);
-	if (!b_ip) {
-		return;
-	}
-
+	// ---- deliver to every recipient --------------------------------------
+	// A private chat has exactly one recipient, a group has one per member.
+	// They may live on different ChatServers, so the routing below
+	// (redis USERIPPREFIX -> local session, else gRPC) runs once per uid.
 	auto& cfg = ConfigMgr::Inst();
 	auto self_name = cfg["SelfServer"]["Name"];
-	//直接通知对方有认证通过消息
-	if (to_ip_value == self_name) {
-		auto session = UserMgr::GetInstance()->GetSession(touid);
-		if (session) {
-			//在内存中则直接发送通知对方
-			std::string return_str = rtvalue.toStyledString();
-			session->Send(return_str, ID_NOTIFY_TEXT_CHAT_MSG_REQ);
+
+	for (int ruid : recipients) {
+		auto to_str = std::to_string(ruid);
+		auto to_ip_key = USERIPPREFIX + to_str;
+		std::string to_ip_value = "";
+		bool b_ip = RedisMgr::GetInstance()->Get(to_ip_key, to_ip_value);
+		if (!b_ip) {
+			// Offline: the row is already in MySQL, the client pulls history later.
+			LOG_INFO("DealChatTextMsg: uid {} offline, message kept in db", ruid);
+			continue;
 		}
 
-		return ;
+		// Same payload for everyone; only touid differs, and that is what the
+		// receiving client matches against itself.
+		Json::Value notify = rtvalue;
+		notify["touid"] = ruid;
+
+		if (to_ip_value == self_name) {
+			auto to_session = UserMgr::GetInstance()->GetSession(ruid);
+			if (to_session) {
+				to_session->Send(notify.toStyledString(), ID_NOTIFY_TEXT_CHAT_MSG_REQ);
+			}
+			continue;
+		}
+
+		TextChatMsgReq text_msg_req;
+		text_msg_req.set_fromuid(uid);
+		text_msg_req.set_touid(ruid);
+		text_msg_req.set_thread_id(thread_id);
+		for (const auto& chat_data : chat_datas) {
+			auto *text_msg = text_msg_req.add_textmsgs();
+			text_msg->set_unique_id(chat_data->unique_id);
+			text_msg->set_msgcontent(chat_data->content);
+			text_msg->set_msg_id(chat_data->message_id);
+			text_msg->set_chat_time(chat_data->chat_time);
+			// Image/file fields.  Without them the other ChatServer rebuilds the
+			// payload as plain text and the receiver shows a raw server path.
+			text_msg->set_msg_type(chat_data->msg_type);
+			text_msg->set_total_size((int64_t)chat_data->total_size);
+			text_msg->set_md5(chat_data->md5);
+		}
+
+		ChatGrpcClient::GetInstance()->NotifyTextChatMsg(to_ip_value, text_msg_req, notify);
 	}
 
 
-	TextChatMsgReq text_msg_req;
-	text_msg_req.set_fromuid(uid);
-	text_msg_req.set_touid(touid);
-	text_msg_req.set_thread_id(thread_id);
-	for (const auto& chat_data : chat_datas) {
-		auto *text_msg = text_msg_req.add_textmsgs();
-		text_msg->set_unique_id(chat_data->unique_id);
-		text_msg->set_msgcontent(chat_data->content);
-		text_msg->set_msg_id(chat_data->message_id);
-		text_msg->set_chat_time(chat_data->chat_time);
-	}
-
-
-	//发送通知 todo...
-	ChatGrpcClient::GetInstance()->NotifyTextChatMsg(to_ip_value, text_msg_req, rtvalue);
 }
-
 void LogicSystem::HeartBeatHandler(std::shared_ptr<CSession> session, const short& msg_id, const string& msg_data) {
 	Json::Reader reader;
 	Json::Value root;
@@ -965,6 +1030,8 @@ void LogicSystem::GetUserThreadsHandler(std::shared_ptr<CSession> session,
 		thread_value["type"] = thread->_type;
 		thread_value["user1_id"] = thread->_user1_id;
 		thread_value["user2_id"] = thread->_user2_id;
+		// Group threads carry a display name; private ones send an empty string.
+		thread_value["name"] = thread->_name;
 		rtvalue["threads"].append(thread_value);
 	}
 }
@@ -1083,4 +1150,140 @@ void LogicSystem::LoadChatMsg(std::shared_ptr<CSession> session,
 		std::cerr << "LoadChatMsg: 响应超过 " << MSG_BODY_SAFE
 			<< " 字节，丢弃 msg_id=" << dropped_id << std::endl;
 	}
+}
+
+// ---------------------------------------------------------------------------
+// 群聊：建群 / 加人。
+// 这一轮群聊的创建入口是 SQL，这两个接口是给客户端/测试脚本用的正规通道：
+// 建群 = chat_thread + group_chat + group_chat_member 三条写入（一个事务），
+// 加人 = 只能由现有成员发起，避免靠猜 thread_id 把自己塞进别人的群。
+// ---------------------------------------------------------------------------
+void LogicSystem::CreateGroupChat(std::shared_ptr<CSession> session, const short& msg_id, const string& msg_data)
+{
+	Json::Reader reader;
+	Json::Value root;
+	reader.parse(msg_data, root);
+	auto uid = root["uid"].asInt();
+	auto name = root["name"].asString();
+
+	Json::Value  rtvalue;
+	rtvalue["error"] = ErrorCodes::Success;
+	rtvalue["uid"] = uid;
+	rtvalue["name"] = name;
+
+	// The creator becomes the owner AND the first member row, so it has to be
+	// a real uid -- otherwise group_chat_member ends up holding uid 0 and every
+	// fan-out in DealChatTextMsg would try to deliver to a ghost.
+	if (uid <= 0) {
+		rtvalue["error"] = ErrorCodes::UidInvalid;
+		return;
+	}
+
+	Defer defer([this, &rtvalue, session]() {
+		std::string return_str = rtvalue.toStyledString();
+		session->Send(return_str, ID_CREATE_GROUP_CHAT_RSP);
+		});
+
+	std::vector<int> members;
+	for (const auto& m : root["members"]) {
+		int muid = m.asInt();
+		if (muid <= 0 || muid == uid) {
+			continue;
+		}
+		members.push_back(muid);
+	}
+
+	// Hard cap: DealChatTextMsg loops over every member per message, and the DAO
+	// inserts one row per member.  200 keeps both bounded.
+	const size_t kMaxGroupMembers = 200;
+	if (members.size() + 1 > kMaxGroupMembers) {
+		LOG_ERROR("CreateGroupChat: uid {} tried to create a group of {} members",
+			uid, members.size() + 1);
+		rtvalue["error"] = ErrorCodes::UidInvalid;
+		return;
+	}
+
+	int thread_id = 0;
+	if (!MysqlMgr::GetInstance()->CreateGroupChat(name, uid, members, thread_id)) {
+		rtvalue["error"] = ErrorCodes::CREATE_GROUP_FAILED;
+		return;
+	}
+
+	rtvalue["thread_id"] = thread_id;
+	LOG_INFO("创建群聊: thread={}, owner={}, 成员数={}", thread_id, uid, members.size() + 1);
+}
+
+void LogicSystem::AddGroupMembers(std::shared_ptr<CSession> session, const short& msg_id, const string& msg_data)
+{
+	Json::Reader reader;
+	Json::Value root;
+	reader.parse(msg_data, root);
+	auto uid = root["uid"].asInt();
+	auto thread_id = root["thread_id"].asInt();
+
+	Json::Value  rtvalue;
+	rtvalue["error"] = ErrorCodes::Success;
+	rtvalue["uid"] = uid;
+	rtvalue["thread_id"] = thread_id;
+
+	if (uid <= 0 || thread_id <= 0) {
+		rtvalue["error"] = ErrorCodes::UidInvalid;
+		return;
+	}
+
+	Defer defer([this, &rtvalue, session]() {
+		std::string return_str = rtvalue.toStyledString();
+		session->Send(return_str, ID_ADD_GROUP_MEMBER_RSP);
+		});
+
+	// Only somebody already in the group may invite.  Without this check a
+	// client could push itself (or a victim) into any group by guessing ids.
+	std::vector<int> members;
+	if (!MysqlMgr::GetInstance()->GetGroupMembers(thread_id, members)) {
+		rtvalue["error"] = ErrorCodes::Error_MySql;
+		return;
+	}
+	bool in_group = false;
+	for (int m : members) {
+		if (m == uid) {
+			in_group = true;
+			break;
+		}
+	}
+	if (!in_group) {
+		LOG_ERROR("AddGroupMembers: uid {} is not in thread {}", uid, thread_id);
+		rtvalue["error"] = ErrorCodes::UidInvalid;
+		return;
+	}
+
+	std::vector<int> new_members;
+	for (const auto& m : root["members"]) {
+		int muid = m.asInt();
+		if (muid <= 0) {
+			continue;
+		}
+		bool dup = false;
+		for (int exist : members) {
+			if (exist == muid) {
+				dup = true;
+				break;
+			}
+		}
+		if (!dup) {
+			new_members.push_back(muid);
+		}
+	}
+
+	// Nothing new to add: still Success, just a no-op.
+	if (new_members.empty()) {
+		return;
+	}
+
+	if (!MysqlMgr::GetInstance()->AddGroupMembers(thread_id, new_members)) {
+		rtvalue["error"] = ErrorCodes::ADD_GROUP_MEMBER_FAILED;
+		return;
+	}
+
+	rtvalue["added"] = (int)new_members.size();
+	LOG_INFO("群聊加人: thread={}, 新增={}", thread_id, new_members.size());
 }

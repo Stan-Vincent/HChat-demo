@@ -731,17 +731,19 @@ bool MysqlDao::GetUserThreads(
 		// 准备分页查询：CTE + UNION ALL + ORDER + LIMIT N+1
 		std::string sql =
 			"WITH all_threads AS ( "
-			"  SELECT thread_id, 'private' AS type, user1_id, user2_id "
+			"  SELECT thread_id, 'private' AS type, user1_id, user2_id, '' AS name "
 			"    FROM private_chat "
 			"   WHERE (user1_id = ? OR user2_id = ?) "
 			"     AND thread_id > ? "
 			"  UNION ALL "
-			"  SELECT thread_id, 'group'   AS type, 0 AS user1_id, 0 AS user2_id "
-			"    FROM group_chat_member "
-			"   WHERE user_id   = ? "
-			"     AND thread_id > ? "
+			"  SELECT m.thread_id, 'group' AS type, 0 AS user1_id, 0 AS user2_id, "
+			"         IFNULL(g.name, '') AS name "
+			"    FROM group_chat_member m "
+			"    LEFT JOIN group_chat g ON g.thread_id = m.thread_id "
+			"   WHERE m.user_id = ? "
+			"     AND m.thread_id > ? "
 			") "
-			"SELECT thread_id, type, user1_id, user2_id "
+			"SELECT thread_id, type, user1_id, user2_id, name "
 			"  FROM all_threads "
 			" ORDER BY thread_id "
 			" LIMIT ?;";
@@ -769,6 +771,7 @@ bool MysqlDao::GetUserThreads(
 			cti->_type = res->getString("type");
 			cti->_user1_id = res->getInt64("user1_id");
 			cti->_user2_id = res->getInt64("user2_id");
+			cti->_name = res->getString("name");
 			tmp.push_back(cti);
 		}
 
@@ -893,6 +896,177 @@ bool MysqlDao::GetPrivateChatUsers(int thread_id, int& user1_id, int& user2_id)
 	}
 	catch (sql::SQLException& e) {
 		std::cerr << "SQLException (GetPrivateChatUsers): " << e.what() << std::endl;
+		return false;
+	}
+}
+
+bool MysqlDao::GetThreadType(int thread_id, std::string& type)
+{
+	auto con = pool_->getConnection();
+	if (!con) {
+		return false;
+	}
+	Defer defer([this, &con]() {
+		pool_->returnConnection(std::move(con));
+		});
+	auto& conn = con->_con;
+	try {
+		std::string sql =
+			"SELECT type FROM chat_thread WHERE thread_id = ? LIMIT 1;";
+		std::unique_ptr<sql::PreparedStatement> pstmt(conn->prepareStatement(sql));
+		pstmt->setInt64(1, thread_id);
+		std::unique_ptr<sql::ResultSet> res(pstmt->executeQuery());
+		if (!res->next()) {
+			return false;
+		}
+		type = res->getString("type");
+		return true;
+	}
+	catch (sql::SQLException& e) {
+		std::cerr << "SQLException (GetThreadType): " << e.what() << std::endl;
+		return false;
+	}
+}
+
+bool MysqlDao::GetGroupMembers(int thread_id, std::vector<int>& members)
+{
+	auto con = pool_->getConnection();
+	if (!con) {
+		return false;
+	}
+	Defer defer([this, &con]() {
+		pool_->returnConnection(std::move(con));
+		});
+	auto& conn = con->_con;
+	try {
+		members.clear();
+		std::string sql =
+			"SELECT user_id FROM group_chat_member WHERE thread_id = ? ORDER BY user_id;";
+		std::unique_ptr<sql::PreparedStatement> pstmt(conn->prepareStatement(sql));
+		pstmt->setInt64(1, thread_id);
+		std::unique_ptr<sql::ResultSet> res(pstmt->executeQuery());
+		while (res->next()) {
+			members.push_back(res->getInt("user_id"));
+		}
+		return true;
+	}
+	catch (sql::SQLException& e) {
+		std::cerr << "SQLException (GetGroupMembers): " << e.what() << std::endl;
+		return false;
+	}
+}
+
+bool MysqlDao::CreateGroupChat(const std::string& name, int owner_id,
+	const std::vector<int>& members, int& thread_id)
+{
+	auto con = pool_->getConnection();
+	if (!con) {
+		return false;
+	}
+	Defer defer([this, &con]() {
+		pool_->returnConnection(std::move(con));
+		});
+	auto& conn = con->_con;
+	try {
+		conn->setAutoCommit(false);
+		// 1. Owner first, then the invitees, de-duplicated: group_chat_member is
+		//    keyed on (thread_id, user_id) so a repeat uid would abort the txn.
+		std::vector<int> all;
+		all.push_back(owner_id);
+		for (int uid : members) {
+			bool dup = false;
+			for (int exist : all) {
+				if (exist == uid) {
+					dup = true;
+					break;
+				}
+			}
+			if (!dup) {
+				all.push_back(uid);
+			}
+		}
+		// 2. chat_thread row
+		std::string insert_thread_sql =
+			"INSERT INTO chat_thread (type, created_at) VALUES ('group', NOW());";
+		std::unique_ptr<sql::PreparedStatement> pstmt_thread(conn->prepareStatement(insert_thread_sql));
+		pstmt_thread->executeUpdate();
+
+		std::string last_id_sql = "SELECT LAST_INSERT_ID();";
+		std::unique_ptr<sql::PreparedStatement> pstmt_last(conn->prepareStatement(last_id_sql));
+		std::unique_ptr<sql::ResultSet> res_last(pstmt_last->executeQuery());
+		res_last->next();
+		thread_id = res_last->getInt(1);
+
+		// 3. group_chat row (display name + owner)
+		std::string insert_group_sql =
+			"INSERT INTO group_chat (thread_id, name, owner_id) VALUES (?, ?, ?);";
+		std::unique_ptr<sql::PreparedStatement> pstmt_group(conn->prepareStatement(insert_group_sql));
+		pstmt_group->setInt64(1, thread_id);
+		pstmt_group->setString(2, name);
+		pstmt_group->setInt64(3, owner_id);
+		pstmt_group->executeUpdate();
+
+		// 4. one group_chat_member row per member
+		std::string insert_member_sql =
+			"INSERT INTO group_chat_member (thread_id, user_id) VALUES (?, ?);";
+		std::unique_ptr<sql::PreparedStatement> pstmt_member(conn->prepareStatement(insert_member_sql));
+		for (int uid : all) {
+			pstmt_member->setInt64(1, thread_id);
+			pstmt_member->setInt64(2, uid);
+			pstmt_member->executeUpdate();
+		}
+
+		conn->commit();
+		return true;
+	}
+	catch (sql::SQLException& e) {
+		std::cerr << "SQLException (CreateGroupChat): " << e.what() << std::endl;
+		conn->rollback();
+		return false;
+	}
+}
+
+bool MysqlDao::AddGroupMembers(int thread_id, const std::vector<int>& new_members)
+{
+	if (new_members.empty()) {
+		return true;
+	}
+	auto con = pool_->getConnection();
+	if (!con) {
+		return false;
+	}
+	Defer defer([this, &con]() {
+		pool_->returnConnection(std::move(con));
+		});
+	auto& conn = con->_con;
+	try {
+		conn->setAutoCommit(false);
+		// Only group threads own members; bail out otherwise.
+		std::string type_sql =
+			"SELECT type FROM chat_thread WHERE thread_id = ? LIMIT 1;";
+		std::unique_ptr<sql::PreparedStatement> pstmt_type(conn->prepareStatement(type_sql));
+		pstmt_type->setInt64(1, thread_id);
+		std::unique_ptr<sql::ResultSet> res_type(pstmt_type->executeQuery());
+		if (!res_type->next() || res_type->getString("type") != "group") {
+			conn->rollback();
+			return false;
+		}
+
+		// INSERT IGNORE: an already-present member is not an error.
+		std::string sql =
+			"INSERT IGNORE INTO group_chat_member (thread_id, user_id) VALUES (?, ?);";
+		std::unique_ptr<sql::PreparedStatement> pstmt(conn->prepareStatement(sql));
+		for (int uid : new_members) {
+			pstmt->setInt64(1, thread_id);
+			pstmt->setInt64(2, uid);
+			pstmt->executeUpdate();
+		}
+		conn->commit();
+		return true;
+	}
+	catch (sql::SQLException& e) {
+		std::cerr << "SQLException (AddGroupMembers): " << e.what() << std::endl;
+		conn->rollback();
 		return false;
 	}
 }

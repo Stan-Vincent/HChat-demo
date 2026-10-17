@@ -392,8 +392,19 @@ void ChatDialog::slot_load_chat_thread(bool load_more, int last_thread_id,
 	LoadingSession session(this);
 
 	for (auto& cti : chat_threads) {
-		//先处理单聊，群聊跳过，以后添加
+		// ★ 群聊：没有单一 peer，other_id 记 0，标题与成员走 SetGroupInfo。
+		//   以前这里直接 continue，群会话在列表里根本不会出现。
 		if (cti->_type == "group") {
+			auto group_data = std::make_shared<ChatThreadData>(0, cti->_thread_id, 0);
+			group_data->SetGroupInfo(cti->_name, {});
+			UserMgr::GetInstance()->AddChatThreadData(group_data, 0);
+			auto* group_wid = new ChatUserWid();
+			group_wid->SetChatData(group_data);
+			QListWidgetItem* group_item = new QListWidgetItem;
+			group_item->setSizeHint(group_wid->sizeHint());
+			ui->chat_user_list->addItem(group_item);
+			ui->chat_user_list->setItemWidget(group_item, group_wid);
+			_chat_thread_items.insert(cti->_thread_id, group_item);
 			continue;
 		}
 
