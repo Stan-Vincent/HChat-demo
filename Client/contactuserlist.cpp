@@ -1,5 +1,4 @@
 #include "contactuserlist.h"
-#include "global.h"
 #include "listitembase.h"
 #include "grouptipitem.h"
 #include "conuseritem.h"
@@ -110,6 +109,26 @@ void ContactUserList::removeFriendItems()
     }
 }
 
+// ★ 重新加载"联系人"分组下的好友项。
+//   用于退出重登后 applyLoginSession() 刷新，也用于构造时避免与 addContactUserList 重复。
+//   UserMgr::Clear() 已经把 _contact_loaded 复位为 0，所以这里直接复用分页读取。
+void ContactUserList::reloadFriendItems()
+{
+    removeFriendItems();
+
+    auto con_list = UserMgr::GetInstance()->GetConListPerPage();
+    for (auto& con_ele : con_list) {
+        auto *con_user_wid = new ConUserItem();
+        con_user_wid->SetInfo(con_ele->_uid, con_ele->_nick, con_ele->_icon, con_ele->_back);
+        QListWidgetItem *item = new QListWidgetItem;
+        item->setSizeHint(con_user_wid->sizeHint());
+        this->addItem(item);
+        this->setItemWidget(item, con_user_wid);
+    }
+
+    UserMgr::GetInstance()->UpdateContactLoadedCount();
+}
+
 bool ContactUserList::eventFilter(QObject *watched, QEvent *event)
 {
     // 检查事件是否是鼠标悬浮进入或离开
@@ -198,24 +217,7 @@ void ContactUserList::slot_item_clicked(QListWidgetItem *item)
        //跳转到好友申请界面
        emit sig_switch_apply_friend_page(); 
        return;
-   }
-
-   if(itemType == ListItemType::CONTACT_USER_ITEM){
-       // 创建对话框，提示用户
-       qCDebug(lcUser) << "contact user item clicked ";
-
-       auto con_item = qobject_cast<ConUserItem*>(customItem);
-       auto user_info = con_item->GetInfo();
-       // 备注可能已被修改：优先取 UserMgr 里最新的好友数据（含最新 _back），
-       // 取不到才退回 item 自带的拷贝，保证改完备注再点开显示的是新值。
-       auto latest = UserMgr::GetInstance()->GetFriendById(user_info->_uid);
-       if (latest) {
-           user_info = latest;
-       }
-       //跳转到好友申请界面
-       emit sig_switch_friend_info_page(user_info);
-       return;
-   }
+    }
 }
 
 void ContactUserList::slot_add_auth_firend(std::shared_ptr<AuthInfo> auth_info)

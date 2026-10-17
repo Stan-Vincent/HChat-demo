@@ -712,6 +712,9 @@ void ChatDialog::applyLoginSession()
 	loadSelfAvatar();
 	ui->user_info_page->refreshUserInfo();
 	ui->friend_apply_page->loadApplyList();   // 内部先 clearAll，不会重复堆积
+	// ★ 联系人列表：构造时只加载一次，退出重登后 clearSessionState() 会 removeFriendItems()，
+	//   不在这里重刷就会一直为空。
+	ui->con_user_list->reloadFriendItems();
 	// 登录成功后重启心跳（clearSessionState 里停掉的）
 	if (_timer) {
 		_timer->start(10000);
