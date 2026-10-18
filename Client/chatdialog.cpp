@@ -21,6 +21,9 @@
 #include "imagemanager.h"
 #include <QPointer>
 #include <QTimer>
+#include <QMenu>
+#include <QInputDialog>
+#include <QMessageBox>
 #include "logcategory.h"
 
 
@@ -42,6 +45,34 @@ ChatDialog::ChatDialog(QWidget* parent) :
 		ShowSearch(true);
 		ui->search_edit->setFocus();
 	});
+
+	//★ 「发起群聊」入口：右键会话列表 -> 菜单 -> 输入群名 -> 发 1033 建群。
+	//  用右键菜单而不用 add_btn（那是加好友搜索），也避免改 .ui 布局（.ui 有收尾顺序坑）。
+	ui->chat_user_list->setContextMenuPolicy(Qt::CustomContextMenu);
+	connect(ui->chat_user_list, &QWidget::customContextMenuRequested, this,
+		[this](const QPoint& pos) {
+			QMenu menu(ui->chat_user_list);
+			QAction* actCreate = menu.addAction("发起群聊");
+			QAction* chosen = menu.exec(ui->chat_user_list->viewport()->mapToGlobal(pos));
+			if (chosen != actCreate) {
+				return;   // 点了菜单外
+			}
+			bool ok = false;
+			QString name = QInputDialog::getText(this, tr("发起群聊"),
+				tr("请输入群名称："), QLineEdit::Normal, QString(), &ok);
+			if (!ok) {
+				return;   // 用户取消
+			}
+			name = name.trimmed();
+			if (name.isEmpty()) {
+				QMessageBox::warning(this, tr("发起群聊"), tr("群名称不能为空。"));
+				return;
+			}
+			sendCreateGroupReq(name);
+		});
+	// 建群回包（1034）
+	connect(TcpMgr::GetInstance().get(), &TcpMgr::sig_create_group_rsp,
+		this, &ChatDialog::slot_create_group_rsp);
 	QAction* searchAction = new QAction(ui->search_edit);
 	searchAction->setIcon(QIcon(":/res/search.png"));
 	ui->search_edit->addAction(searchAction, QLineEdit::LeadingPosition);
@@ -737,6 +768,55 @@ void ChatDialog::refreshAfterReconnect()
 	// 但先清更干净，避免"发送中"状态的气泡残留）
 	ui->chat_page->resetForLogout();
 	loadChatList();
+	// ★ 联系人列表：断线时 clearSessionState() 已把好友项 removeFriendItems() 清掉，
+	//   重连成功后 TcpMgr 的登录 RSP 已经重新 AppendFriendList 填好 _friend_map，
+	//   但本函数原来只重载会话列表/气泡，漏了联系人 —— 导致重连后联系人空白。
+	//   （首次登录与主动重登走 applyLoginSession 会调 reloadFriendItems，这里补对称逻辑）
+	ui->con_user_list->reloadFriendItems();
+}
+
+// 发起群聊：发 ID_CREATE_GROUP_CHAT_REQ(1033)。members 先传空数组，
+//   服务端会把 owner（uid 自己）自动加为第一个成员。
+void ChatDialog::sendCreateGroupReq(const QString& groupName)
+{
+	if (!TcpMgr::GetInstance()->IsConnected()) {
+		QMessageBox::warning(this, tr("发起群聊"), tr("未连接到服务器，请稍候重试。"));
+		return;
+	}
+	QJsonObject jsonObj;
+	jsonObj["uid"] = UserMgr::GetInstance()->GetUid();
+	jsonObj["name"] = groupName;
+	jsonObj["members"] = QJsonArray();   // 先只建群，加人后续再做
+	QJsonDocument doc(jsonObj);
+	QByteArray jsonData = doc.toJson(QJsonDocument::Compact);
+	emit TcpMgr::GetInstance()->sig_send_data(ReqId::ID_CREATE_GROUP_CHAT_REQ, jsonData);
+	qCDebug(lcChat) << "send create group req, name =" << groupName;
+}
+
+// 建群回包（1034）。成功：直接把新群加进会话列表（复用服务端推送群会话时那套构建，
+//   见 slot_load_chat_thread 的 group 分支），不做全量重载，避免动 UserMgr 分页游标。
+void ChatDialog::slot_create_group_rsp(int error, int thread_id, const QString& name)
+{
+	if (error != ErrorCodes::SUCCESS) {
+		qCDebug(lcChat) << "create group failed, error =" << error;
+		QMessageBox::warning(this, tr("发起群聊"),
+			tr("建群失败（错误码 %1）。").arg(error));
+		return;
+	}
+	qCDebug(lcChat) << "create group ok, thread_id =" << thread_id << ", name =" << name;
+	if (_chat_thread_items.contains(thread_id)) {
+		return;   // 已在列表里，防重复添加
+	}
+	auto group_data = std::make_shared<ChatThreadData>(0, thread_id, 0);
+	group_data->SetGroupInfo(name, {});
+	UserMgr::GetInstance()->AddChatThreadData(group_data, 0);
+	auto* group_wid = new ChatUserWid();
+	group_wid->SetChatData(group_data);
+	QListWidgetItem* group_item = new QListWidgetItem;
+	group_item->setSizeHint(group_wid->sizeHint());
+	ui->chat_user_list->addItem(group_item);
+	ui->chat_user_list->setItemWidget(group_item, group_wid);
+	_chat_thread_items.insert(thread_id, group_item);
 }
 
 void ChatDialog::AddLBGroup(StateWidget* lb)

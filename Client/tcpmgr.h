@@ -81,6 +81,9 @@ signals:
     void sig_load_apply_list(QJsonArray json_array);
     void sig_login_failed(int);
     void sig_user_search(std::shared_ptr<SearchInfo>);
+    // 建群回包（ID_CREATE_GROUP_CHAT_RSP=1034）：error=0 成功并带 thread_id/name，
+    // 失败带错误码（1011 uid 无效 / 1015 建群失败），thread_id 为 0。
+    void sig_create_group_rsp(int error, int thread_id, QString name);
     void sig_friend_apply(std::shared_ptr<AddFriendApply>);
     void sig_add_auth_friend(std::shared_ptr<AuthInfo>);
     void sig_auth_rsp(std::shared_ptr<AuthRsp>);

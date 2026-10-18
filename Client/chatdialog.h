@@ -26,6 +26,9 @@ public:
     ~ChatDialog();
     void loadChatList();
     void loadChatMsg();
+    // 发起群聊：组装 {uid, name, members:[]} 发 ID_CREATE_GROUP_CHAT_REQ(1033)。
+    //   members 先留空（owner 自动成为首成员），加人后续再做。
+    void sendCreateGroupReq(const QString& groupName);
     // ★ 退出登录 / 连接断开时由 MainWindow 调用：把加载计数归零并关掉可能残留的
     //   模态 LoadingDlg。否则被中断的加载会把 count 留在 >0、把 dlg 挂在屏幕上，
     //   下次登录 loadChatList 再 +1 就永远减不到 0 -> 无限阻塞。
@@ -72,7 +75,7 @@ private:
     QWidget* _last_widget;
     //todo...
     //QMap<int, QListWidgetItem*> _chat_items_added;
-    //chat_thred_id�Ͷ�Ӧ��item��ӳ���ϵ��
+    // chat_thread_id 和对应 item 的映射关系
     QMap<int, QListWidgetItem*>  _chat_thread_items;
     int _cur_chat_thread_id;
     QTimer * _timer;
@@ -82,7 +85,7 @@ private:
     std::shared_ptr<ChatThreadData> _cur_load_chat;
  
 signals:
-    // �� ת�����˳���¼�����ڲ�ҳ�� -> MainWindow
+    // 退出登录：通知 MainWindow 切回登录内部页
     void sig_logout();
 
 public slots:
@@ -96,7 +99,7 @@ public slots:
     void slot_switch_apply_friend_page();
     void slot_friend_info_page(std::shared_ptr<UserInfo> user_info);
     void slot_show_search(bool show);
-    // �� �յ����˳���¼����ת���� MainWindow
+    // 收到退出登录请求，转交 MainWindow
     void slot_logout();
     void slot_apply_friend(std::shared_ptr<AddFriendApply> apply);
     void slot_add_auth_friend(std::shared_ptr<AuthInfo> auth_info);
@@ -107,6 +110,9 @@ public slots:
     void slot_text_chat_msg(std::vector<std::shared_ptr<TextChatData>> msglists);
     void slot_load_chat_thread(bool load_more, int last_thread_id,
         std::vector<std::shared_ptr<ChatThreadInfo>> chat_threads);
+
+    // 建群回包（1034）：error==0 时把新群加进会话列表，否则提示失败
+    void slot_create_group_rsp(int error, int thread_id, const QString& name);
 
     void slot_create_private_chat(int uid, int other_id, int thread_id);
 

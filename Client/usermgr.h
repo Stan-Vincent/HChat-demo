@@ -25,8 +25,9 @@ public:
     QString GetNick();
     QString GetIcon();
     QString GetDesc();
-     std::shared_ptr<UserInfo> GetUserInfo();
-    // �ύ�������ϳɹ��󣬰���ֵͬ�����ڴ棨����Ҫ���µ�¼����Ч��
+    std::shared_ptr<UserInfo> GetUserInfo();
+    // 提交资料成功后调用：把改动同步到内存里的 UserInfo。
+    // 空串表示该字段这次没改，保留原值；不同步则头像/昵称要重新登录才刷新。
     void UpdateLocalUserInfo(const QString& nick, const QString& desc,
                               int sex, const QString& icon);
     void AppendApplyList(QJsonArray array);
@@ -39,6 +40,10 @@ public:
     void UpdateChatLoadedCount();
     std::vector<std::shared_ptr<UserInfo>> GetConListPerPage();
     void UpdateContactLoadedCount();
+    // 联系人分页游标复位为 0：reloadFriendItems() 会先清空 UI 再从第 0 页重读，
+    // 若不复位，构造时 addContactUserList() 可能已把游标推进到满页，
+    // 重读时 begin>=_friend_list.size() 直接返回空 → 联系人列表空白（首次登录必现）。
+    void ResetContactLoadedCount();
     bool IsLoadConFin();
     bool CheckFriendById(int uid);
     void AddFriend(std::shared_ptr<AuthRsp> auth_rsp);
@@ -49,9 +54,9 @@ public:
     void AddChatThreadData(std::shared_ptr<ChatThreadData> chat_thread_data, int other_uid);
     int GetThreadIdByUid(int uid);
     std::shared_ptr<ChatThreadData> GetChatThreadByThreadId(int thread_id);
-    std::shared_ptr<ChatThreadData> GetChatThreadByUid(int uid);
+    std::shared_ptr<ChatThreadData> GetChatThreadByUid(int thread_id);
 
-    //��ȡ��ǰ���ڼ��ص��������ݡ�
+    // 获取当前正在加载的会话数据
     std::shared_ptr<ChatThreadData> GetCurLoadData();
     std::shared_ptr<ChatThreadData> GetNextLoadData();
 private:
@@ -63,20 +68,20 @@ private:
     QString _token;
     int _chat_loaded;
     int _contact_loaded;
-    //�����Ựid�����ݵ�ӳ���ϵ
+    // 建立会话id到数据的映射关系
     QMap<int, std::shared_ptr<ChatThreadData>> _chat_map;
-    //����Ựid�б�
+    // 存储会话id列表
     std::vector<int> _chat_thread_ids;
-    //��¼�Ѿ����������б��ĻỰ����
+    // 记录已经加载了多少列表的会话
     int _cur_load_chat_index;
-    //�ϴλỰ��id
+    // 上一个会话id
     int _last_chat_thread_id;
-    //���������û�uid�������thread_id��ӳ���ϵ��
+    // 建立对方用户uid和thread_id的映射关系
     QMap<int, int> _uid_to_thread_id;
 
 public slots:
     void SlotAddFriendRsp(std::shared_ptr<AuthRsp> rsp);
-    void SlotAddFriendAuth(std::shared_ptr<AuthInfo> auth);
+    void SlotAddFriendAuth(std::shared_ptr<AuthInfo> auth_info);
 };
 
 #endif // USERMGR_H

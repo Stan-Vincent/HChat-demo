@@ -247,6 +247,14 @@ void UserMgr::UpdateContactLoadedCount() {
     _contact_loaded = end;
 }
 
+void UserMgr::ResetContactLoadedCount() {
+    // ★ 联系人分页游标复位为 0。reloadFriendItems() 先 removeFriendItems() 清空 UI
+    //   再从第 0 页重读；构造时 addContactUserList() 在首次登录时 _friend_list 已填好，
+    //   会把 _contact_loaded 推进到满页，若不复位则 GetConListPerPage() 的
+    //   begin>=_friend_list.size() 直接返回空 → 联系人列表空白（首次登录必现）。
+    _contact_loaded = 0;
+}
+
 bool UserMgr::IsLoadConFin()
 {
     if (_contact_loaded >= _friend_list.size()) {

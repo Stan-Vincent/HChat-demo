@@ -371,6 +371,24 @@ void TcpMgr::initHandlers()
         emit sig_swich_chatdlg();
     });
 
+    // 建群回包（ID_CREATE_GROUP_CHAT_RSP=1034）：把 error/thread_id/name 透传给 ChatDialog。
+    _handlers.insert(ID_CREATE_GROUP_CHAT_RSP, [this](ReqId id, int len, QByteArray data) {
+        Q_UNUSED(id);
+        Q_UNUSED(len);
+        QJsonDocument jsonDoc = QJsonDocument::fromJson(data);
+        if (jsonDoc.isNull()) {
+            qCDebug(lcNetwork) << "CreateGroupChat rsp: json parse failed";
+            emit sig_create_group_rsp(ErrorCodes::ERR_JSON, 0, QString());
+            return;
+        }
+        QJsonObject jsonObj = jsonDoc.object();
+        int err = jsonObj.contains("error") ? jsonObj["error"].toInt() : ErrorCodes::ERR_JSON;
+        int thread_id = jsonObj["thread_id"].toInt();
+        QString name = jsonObj["name"].toString();
+        qCDebug(lcNetwork) << "CreateGroupChat rsp: err =" << err << ", thread_id =" << thread_id;
+        emit sig_create_group_rsp(err, thread_id, name);
+    });
+
 
 	_handlers.insert(ID_SEARCH_USER_RSP, [this](ReqId id, int len, QByteArray data) {
 		Q_UNUSED(len);

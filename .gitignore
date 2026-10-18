@@ -1,8 +1,6 @@
 # ============================================================
 # HChat 项目 .gitignore
 # 覆盖：Qt/MinGW 构建产物、MSVC 构建产物、IDE 用户文件、运行时日志与上传、Node 依赖
-# 注意：根目录 .workbuddy/ 是项目记忆（MEMORY.md / 每日 worklog），保留不忽略；
-#       仅忽略各子模块下的嵌套 .workbuddy/ 数据目录。
 # ============================================================
 
 # ---------- Qt / MinGW 构建产物（Client 主构建目录，约 275M） ----------
@@ -62,3 +60,4 @@ test/beast_proto/curl_resp.txt
 # ---------- test/run_all.sh 每次跑留下的日志与服务端 stdout ----------
 test/_logs/
 test/_db_backup/*.sql
+.workbuddy/

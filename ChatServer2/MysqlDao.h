@@ -201,6 +201,18 @@ public:
 		if (b_stop_) {
 			return;
 		}
+		// Reset autocommit before pooling back. Transactional DAOs call
+		// setAutoCommit(false) but never restore it; a pooled connection left
+		// in autocommit=false makes the next borrower start an implicit
+		// REPEATABLE READ transaction (stale snapshots -> freshly-committed
+		// rows missed by reads) or skip the implicit commit on writes.
+		try {
+			if (con && con->_con) {
+				con->_con->setAutoCommit(true);
+			}
+		}
+		catch (...) {
+		}
 		pool_.push(std::move(con));
 		cond_.notify_one();
 	}

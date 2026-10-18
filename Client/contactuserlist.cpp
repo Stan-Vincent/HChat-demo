@@ -116,7 +116,14 @@ void ContactUserList::reloadFriendItems()
 {
     removeFriendItems();
 
+    // ★ 分页游标必须先复位为 0：构造时 addContactUserList() 在首次登录时 _friend_list
+    //   已由登录回包填好，会把 _contact_loaded 推进到满页；若不复位，下面
+    //   GetConListPerPage() 从 begin>=size 处读，直接返回空 → 联系人列表空白。
+    //   （重登/重连路径因 UserMgr::Clear() 已复位才没暴露，唯首次登录必现。）
+    UserMgr::GetInstance()->ResetContactLoadedCount();
+
     auto con_list = UserMgr::GetInstance()->GetConListPerPage();
+    qCDebug(lcUser) << "reloadFriendItems: con_list size =" << con_list.size();
     for (auto& con_ele : con_list) {
         auto *con_user_wid = new ConUserItem();
         con_user_wid->SetInfo(con_ele->_uid, con_ele->_nick, con_ele->_icon, con_ele->_back);
