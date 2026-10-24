@@ -1,4 +1,4 @@
-#ifndef TCPMGR_H
+﻿#ifndef TCPMGR_H
 #define TCPMGR_H
 #include <QTcpSocket>
 #include <QTimer>
@@ -13,6 +13,7 @@
 // ★ 自定义 TCP 协议：2 字节大端 msg_id + 2 字节大端 msg_len + body
 //   与服务端 MsgNode.cpp 的 SendNode 保持一致（host_to_network_short = 大端）。
 static const int HEAD_TOTAL_LEN = 4;
+
 // 消息体长度上限。服务端 CSession 的 _data 是 MAX_LENGTH(2048)，
 // 但历史消息一页 10 条很容易超过 2048 字节，这里放宽到 64KB
 // （正好是 2 字节长度字段能表示的最大值 65535）。
@@ -20,16 +21,17 @@ static const int MAX_MSG_BODY_LEN = 65535;
 
 // ---- 断线自动重连参数 ----
 // 网络抖动 / 服务端重启时用户不该被踢回登录页。被动断开后自动重连，
-// 指数退避（1s/2s/4s/8s/8s）最多试 kMaxReconnectAttempts 次，
+// 指数退避（1s/2s/4s/8s/8s）最多试 kMaxReconnectAttempts 次，4s 连接看门狗
 // 全失败才让界面回登录页。单次 connectToHost 若 kConnectWatchdogMs 内
 // 没有 connected 也没有报错，就放弃这次重试（防 Connecting 卡死）。
 static const int kMaxReconnectAttempts = 5;
 static const int kConnectWatchdogMs  = 4000;
 
 class TcpMgr:public QObject, public Singleton<TcpMgr>,
-        public std::enable_shared_from_this<TcpMgr>
+               public std::enable_shared_from_this<TcpMgr>
 {
     Q_OBJECT
+
 public:
    ~ TcpMgr();
     void CloseConnection();
@@ -41,6 +43,7 @@ public:
     bool IsReconnecting() const;
     // 供 UI 判断"现在能不能发消息"（断线期间发送只会静默丢失）
     bool IsConnected() const;
+
 private:
     friend class Singleton<TcpMgr>;
     TcpMgr();
@@ -67,6 +70,7 @@ private:
     int  _reconnect_attempt;
     QTimer *_reconnect_timer;    // 退避计时器（单次）
     QTimer *_connect_watchdog;   // 单次 connectToHost 的超时看门狗
+
 public slots:
     void slot_tcp_connect(ServerInfo);
     void slot_send_data(ReqId reqId, QByteArray data);
@@ -74,6 +78,7 @@ public slots:
     void slot_reconnect_timeout();
     // 看门狗超时：这次连接卡死了，放弃并排下一次
     void slot_connect_watchdog_timeout();
+
 signals:
     void sig_con_success(bool bsuccess);
     void sig_send_data(ReqId reqId, QByteArray data);

@@ -1,0 +1,12 @@
+{
+  "name": "hchat-backend",
+  "version": "0.1.0",
+  "dependencies": [
+    "protobuf",
+    "grpc",
+    "hiredis",
+    "mysql-connector-cpp",
+    "jsoncpp",
+    "spdlog"
+  ]
+}
