@@ -20,10 +20,12 @@ std::mutex mutex_quit;
 
 int main()
 {
-    hcat::log::init("chat1");
 
 	auto& cfg = ConfigMgr::Inst();
 	auto server_name = cfg["SelfServer"]["Name"];
+	// 日志实例名跟随 config.ini 的 [SelfServer]Name（chatserver1 / chatserver2），
+	// 两台 ChatServer 共用同一份源码，靠配置区分，不再各存一份只差一个字符的副本
+	hcat::log::init(server_name);
 	try {
 		auto pool = AsioIOServicePool::GetInstance();
 		//将登录数设置为0
@@ -79,7 +81,7 @@ int main()
 		//将Cserver注册给逻辑类方便以后清除连接
 		LogicSystem::GetInstance()->SetServer(pointer_server);
 		io_context.run();
-		LOG_INFO("聊天服务正常退出");
+		LOG_INFO("聊天服务{} 正常退出", server_name);
 		hcat::log::shutdown();
 
 		grpc_server_thread.join();

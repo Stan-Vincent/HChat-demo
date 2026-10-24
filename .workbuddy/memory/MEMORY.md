@@ -1,188 +1,86 @@
-# Hcat 项目长期备忘（原名 HChat，2026-10-12 改名）
+# Hcat 项目长期备忘（精简索引）
 
-## 0. 铁律
-1. **Edit/Write 会毁 GBK 文件**（按 UTF-8 读写 → 中文变 U+FFFD）。GBK 源文件只准用
-   **Python 字节补丁**（`decode('gbk')`→改→`encode('gbk')`，注释写 ASCII）。
-   GBK：`GateServer/*`、`ChatServer*/{LogicSystem.cpp,const.h}`、`Client/` 下
-   `applyfriend.h`、`userdata.h`（Client 只剩这两个还是 GBK）。**ChatServer* 是 CRLF**：
-   补丁前 `\r\n`→`\n`，写完还原；自检 `open(f,'rb').read().decode('gbk')` 成功。
-   ★ **编码会漂移**：`usermgr.h`/`chatdialog.h` 曾被早前 Edit 按 UTF-8 腐蚀成 UTF-8+`�`，
-   10-18 已把两者注释全部还原（usermgr.h 重写、chatdialog.h 还原 3 行，均 U+FFFD=0、编译通过）；
-   这俩现在是 UTF-8，可正常 Edit，**别再当 GBK 字节补丁**。改源码前先跑编码体检：
-   python 分别试 `decode('utf-8')`/`decode('gbk')` 并数 `�`，按实际编码选工具。
-2. **补丁脚本铁律**：① 行级吞行自检（old 剥注释后每个代码行必须原样出现在 new 里）；
-   ② 幂等——**先查 new 再查 old**（避免重复插入）；③ 整段替换函数体时 END marker 含 `}`
-   新文本必须补回，括号深度自检=0。参考 `test/patch_upload_limits.py`/`patch_autocommit_reset.py`。
-3. 改完**自验证**再交付；不留后台进程锁 exe。
+> **完整踩坑全集见 `docs/工程备忘.md`**（18KB，随项目走，改代码前先翻对应章节）。
+> 配套：`docs/源码地图.md`（模块→文件:类→职责）。一次性的 patch/fix 脚本已归档 `test/archive/`。
 
-## 1. 架构 / 端口
-- `Client/` Qt6 → `GateServer/` Boost.Beast HTTP :8080 → MySQL 3308 / Redis 6380；
-  `VarifyServer/` Node gRPC :50051（只写 Redis+发信）；`StatusServer/` :50052 分聊天服；
-  `ChatServer/` :8990(50055)、`ChatServer2/` :8991(50056)，共享 Redis 分布式。
-- GateServer 工作目录必须是 `GateServer/`（ConfigMgr 从 cwd 读 config.ini）。
-- 库名小写 `hcat`。表：`user`、`user_id`(手工自增)、`private_chat`、`chat_thread`、
-  `chat_message`、`group_chat`(thread_id,name,owner_id,created_at)、`group_chat_member`(thread_id,user_id)。
-- 回包两级分发：`sig_http_finish` → 按 `Modules` 分流 → Dialog 内按 `ReqId` 查 `_handlers`。
-  **Modules 决定发给谁，ReqId 决定用哪个函数。**
-- `/reset_pwd` 只有 error/email/user/varifycode（无 uuid/uid）；`CheckEmail` 只返回 bool。
-- `RegPost/RegGet` 用 `map::insert` → 同 URL 注册两次注册者静默失效，改前 grep。
-- 错误码：`Error_Json=1001`、`UidInvalid=1011`、`Error_MySql=1014`(仅 ChatServer/const.h)、
-  `CREATE_GROUP_FAILED=1015`、`ADD_GROUP_MEMBER_FAILED=1016`（1015 在客户端是 NotifyAddFriend 号，别混）。
+## 铁律（三条，违反必炸）
+1. **改源码前先跑编码体检**：`python test/encoding_audit.py`（UTF-8 390 / GBK 64 / ASCII 138 /
+   腐蚀 0）。GBK 文件只准 Python 字节补丁，UTF-8 文件才可 Edit。**编码会漂移**
+   （`usermgr.h`/`chatdialog.h` 已被腐蚀后于 10-18 还原为 UTF-8，别再当 GBK 处理）。
+   ★ **分模块：Client 全 UTF-8**（Qt QString 按 UTF-8 解析，GBK 会乱码，10-18 已把最后 2 个转完）；
+   **后端保持 GBK**（MSVC 按 936 解析本就正确，转 UTF-8 要加 /utf-8 且踩 spdlog/fmt）。
+   ChatServer* 是 GBK+CRLF，补丁前后要 `\r\n`↔`\n`。详见 `docs/编码现状.md`。
+2. 补丁脚本：行级吞行自检 + 幂等（先查 new 再查 old）+ 括号深度自检=0。
+3. 改完自验证再交付；不留后台进程锁 exe（编译前可 `taskkill //F //IM Hcat.exe`）。
 
-## 2. 构建
-- **Client**：Qt 6.5.3 + **Qt 自带 MinGW 11.2**（`export PATH=/d/QT6/Tools/mingw1120_64/bin:$PATH`，
-  **禁用 MSYS2 gcc**，混编出 `__emutls_v._ZSt11__once_call`）。构建目录
-  `Client/build/Desktop_Qt_6_5_3_MinGW_64_bit-Debug`，`mingw32-make -j4`。
-  结尾 `bin/Hcat.exe Error 127` **无害**（post-link `copy` 在 bash 下找不到，链接已成功）
-  → 判据是 `bin/Hcat.exe` 时间戳刷新。重生成 Makefile：`qmake -config debug -o Makefile Hcat.pro`
-  （**不要手删 `.qmake.stash`/`Makefile*`**）。`rc.qrc` 引不存在文件 → 整构建挂。
-  教程复制文件时间戳旧 → make 跳过 → undefined reference，`touch` 全量重编。
-  exe 同级需 MinGW 3 DLL + Qt6 4 DLL + `platforms/ styles/ imageformats/ config.ini`。
-- **GateServer/ChatServer（VS2022）**：必须 **Debug|x64**；`start.bat` 起 `x64\Debug\*.exe`。
-  exe 同级需 `plugin\`（拷自连接器 `lib64\plugin`），否则 `mysql_native_password` 加载失败。
-  **本环境 MSBuild 被安全策略拦截 → 只能用户自己生成。** 两台 ChatServer 的 `Name` 自洽勿对调。
-- **服务端语法自查**（编不了也能查类型）：`bash test/syntax_check.sh` 过 8 个文件。需
-  `-include condition_variable -include thread -include mutex -include chrono` 及
-  vcpkg/include、vcpkg/include/hiredis、`mysql-connector-c++-26.7.0-winx64/include`、
-  `boost_1_92_0`、`../common`、`../common/third_party/spdlog/include`。
+## 架构速查
+`Client/` Qt6 → `GateServer/` Beast HTTP :8080 → MySQL 3308 / Redis 6380；`VarifyServer/` Node gRPC :50051；
+`StatusServer/` :50052 分服；`ChatServer/` :8990(50055)、`ChatServer2/` :8991(50056) 共享 Redis。
+**两台共用同一份源码**：`ChatServer2/` 无源码副本，靠 `..\ChatServer\SharedSources.props` 引用；
+差异**只剩 config.ini**（Name/Port/RPCPort）+ 日志实例名由 `cfg["SelfServer"]["Name"]` 决定。
+**新增源文件只改 SharedSources.props**；`syntax_check.sh` 只查 ChatServer 一份。
+库 `hcat`。回包两级分发：**Modules 决定发给谁，ReqId 决定用哪个函数**。
 
-## 3. Client 运行时坑
-- **`_handlers[id](...)` 前必须 `contains(id)`**：`QMap::operator[]` 插空 function → `bad_function_call` 崩。
-- **成员先使用后初始化**：`ChatUserWid` 构造 `ShowRedPoint(false)`→`_unread_lb->hide()` 早于 new → 必崩。
-- 换账号/登出三层：**清数据 + 清 UI + 登录重灌**：`UserMgr::Clear()`、`ChatDialog::
-  clearSessionState()/applyLoginSession()`、`ContactUserList::removeFriendItems()`、
-  `ChatPage::resetForLogout()`、`ApplyFriendPage::clearAll()`、`UserInfoPage::refreshUserInfo()`。
-  常驻单例只首次登录构造，换号必须显式重赋值。
-- **崩溃定位**：gdb `D:\QT6\Tools\mingw1120_64\bin\gdb.exe`；`-ex "a b"` 在 bash 被拆词 → 写
-  `gdbcmd.txt` 用 `-x` 传 + Windows 终端跑。自动复现 `bin/login.ini auto_login=true`（用完改 false）。
-  判据 `bin/crash.log` 新增 + 存活 20s（后台进程随 bash 结束被杀，"进程没了"≠崩溃）。
+## 目录结构（2026-10-18 重构）
+`Client/` 源码按职责分目录：`ui/`(34h+34cpp+21ui) `widgets/`(12h+11cpp) `network/`(4+4) `model/`(2+2)
+`common/`(4h+3cpp)，根留 `main.cpp`。`.pro` 用 `INCLUDEPATH` 铺平 → 源码 `#include "xxx.h"`
+**不带目录前缀**、一行没改（GBK 零风险）。新增目录要同步加 INCLUDEPATH。
 
-## 4. UI 规则（要点）
-- .ui 收尾顺序：`</layout>`→`</widget>`→`<customwidgets>`→`<resources/>`→`<connections/>`→`</ui>`
-  （顶层 `</widget>` 放 customwidgets 后 → "Unexpected element customwidgets"）。`uic x.ui -o /tmp/t.h` 校验。
-- 各页 `QStackedWidget`，尺寸改在 `MainWindow`；进聊天页前 `setMaximumSize(QWIDGETSIZE_MAX,...)` 清
-  登录页 360 宽上限；每个切页入口按目标对话框 `min/maxSize()` 重设窗口。
-- 无边框：`MainWindow`(Frameless+WA_TranslucentBackground)→留白→`main_widget`(圆角白底+阴影)→
-  [标题栏][stacked]。最大化去圆角/阴影/留白；拖动跳过交互控件。尺寸=内容+`2*kShadowMargin`(+标题栏时
-  `kTitleBarHeight`)。小窗浮"最小化+关闭"（`QTimer::singleShot(0)` 定位+`resizeEvent` 跟随）。
-  切页/退出登录**先更新 `_ui_status` 再 `updateWindowControls()`**。
-- 按钮：`role` 属性→`primary`/`ghost`/`link`；`ui->x->setProperty("role",...); reload_qss(ui->x);`。
-  `send_btn`/`receive_btn` 走 `[state=...]` 自绘不纳入。★ `reg_btn` 只能由 §9 `QPushButton#reg_btn` 管控。
+- **★ 服务端自验必须用 MSVC（10-21 解锁）**：`python test/msvc_syntax_check.py GateServer/RedisMgr.cpp ...`
+  （内部走 vcvars64 + cl /c）。**别再只用 MinGW g++ -fsyntax-only 代替**——两者严格度不同，
+  典型案例：`common/RedisConPool.h` 用 `std::this_thread::sleep_for` 但漏 `#include <chrono>`，
+  GCC 通过 `<thread>` 间接带入不报错，MSVC 直接报 C2672 并级联出一片
+  "不是 RedisConPool 的成员"，用户 VS 一编译全红。**给用户的版本必须先过 MSVC 检查。**
+- **Git Bash 调 Windows 编译器的坑**：MSYS 会把 `/ID:\...` 参数当路径转换掉 → 走 python
+  subprocess 最稳（`msvc_syntax_check.py` 已封装）。
+## 构建
+- Client：Qt 6.5.3 + **Qt 自带 MinGW 11.2**（`/d/QT6/Tools/mingw1120_64/bin`，禁用 MSYS2 gcc），
+  `mingw32-make -j4`；结尾 `Error 127` 无害（`copy` 是 cmd 内建命令，bash 下找不到），判据是 `bin/Hcat.exe` 时间戳刷新。
+- ★★ **`.pro` 里中文注释会吞掉紧随其后的一行**（qmake 解析 bug，静默无报错）：曾让
+  `win32:LIBS += -ldbghelp/-lcrypt32` 一直失效，直到重新 qmake 才暴露成链接期 undefined reference。
+  纪律：**中文注释与下一条语句之间必须空一行**（10-18 已给全文件加隔离空行，7 处）。
+  同理：注释里别写 `#include "xxx.h"`（会报 Extra characters after test expression）。
+  改完 `.pro` 后务必 `grep` Makefile 确认新设置真的进去了（LIBS/INCLUDEPATH 都查过）。
+- 服务端：VS2022 Debug|x64，**本环境 MSBuild 被安全策略拦截 → 只能用户自己生成**；
+  语法自查用 `bash test/syntax_check.sh`。
+- 客户端：源码按职责物理分目录（见下）。**后端不做物理分目录**（文件少、MSVC include 苛刻、本环境编不了），
+  改用 **`.vcxproj.filters` 虚拟分组**（VS 里按 入口/网络层/业务逻辑/gRPC/数据访问/会话与状态/配置与公共/数据模型/协议 显示），
+  零风险；规则见 `test/archive/_make_backend_filters.py`，新增文件后重跑它。
 
-## 5. 断线自动重连（2026-10-16）
-- TcpMgr：`_last_server_info` 复用首 host/port；退避 1/2/4/8/8s×5；单次 connect 4s 看门狗；
-  成功后**自己重放 CHAT_LOGIN** 并发 `sig_recon_success`（**不能**发 `sig_swich_chatdlg`，否则重放动画+重复加载）。
-- ★ token 唯一来源 = **GateServer HTTP 登录回包**（LoginDialog 里 `SetToken`）。CHAT_LOGIN_RSP **不下发 token**，别再读。
-- ★ disconnected 里**先 `StartReconnect()` 再 `emit sig_connection_closed()`**（emit 同步，顺序反了 `IsReconnect()` 永远 false）。
-- ★ 心跳定时器（ChatDialog 构造的 `_timer`）**必须判空 `user_info`**：`offlineLogin()` 会 `Clear()` 而 ChatDialog 常驻 → 回登录页 10s 内必崩。
-- 断线期间 `ChatPage::on_send_btn_clicked` 查 `TcpMgr::IsConnected()`，否则 write 静默成功。
-- **★ 联系人空白真因 = 分页游标未复位**（不是"漏刷"）：`reloadFriendItems()` 先
-  `removeFriendItems()` 清 UI，再从 `GetConListPerPage()` 按游标 `_contact_loaded` 重读。
-  但**首次登录**时 `new ChatDialog`→`ContactUserList` 构造里的 `addContactUserList()` 在
-  `_friend_list` 已填好时（AppendFriendList 先于 emit sig_swich_chatdlg）就已加载并
-  `UpdateContactLoadedCount()` 把游标推进到满页；随后 `applyLoginSession()`→`reloadFriendItems()`
-  从 `begin>=size` 读 → **返回空** → 联系人空白。重登/重连因 `UserMgr::Clear()` 复位了游标才没暴露，
-  所以只有"全新启动+首次登录"必现。修复：`reloadFriendItems()` 读分页前先
-  `UserMgr::ResetContactLoadedCount()`（`_contact_loaded=0`）。实测首次登录
-  `reloadFriendItems: con_list size = 5`（uid=5 有 5 好友）。
-- 测试：`test/test_reconnect_e2e.sh`（成功）/ `test_reconnect_fail.sh`（重试耗尽）。
+- **错误码分段（10-21 定）**：1012~1016 归 GateServer 段（DbErr=1012）；
+  ChatServer 专用码从 **1017** 起（CREATE_CHAT_FAILED/LOAD_CHAT_FAILED/Error_MySql/
+  CREATE_GROUP_FAILED/ADD_GROUP_MEMBER_FAILED）。曾因 ChatServer 占用 1012 导致
+  客户端把"创建会话失败"提示成"数据库错误"。4 份 ErrorCodes 定义**不合并**，
+  靠 ============================================================
+配置一致性校验
+============================================================
+  [OK] 上传上限一致: 314572800 bytes (300 MB)
+  [OK] 12 个错误码在各模块数值一致
+  [OK] 6 个监听端口无冲突
+  [OK] [Mysql] 各服务一致: 127.0.0.1/3308/Hcat
+  [OK] [Redis] 各服务一致: 127.0.0.1/6380
+------------------------------------------------------------
+全部通过 校验数值一致（已进 run_all.sh）。
+  配置一致性（上传上限/端口/MySQL/Redis）也由该脚本一并校验。
+- **Redis 连接池已共享（10-21）**：`common/RedisConPool.h`（header-only）是唯一实现，ChatServer/GateServer
+  的 RedisMgr 都 include 它。特性：巡检默认 5s、命令超时 2s、补齐指数退避 1s→30s、坏连接丢弃由巡检补齐。
+  **新增文件只改这里**（别再把实现复制回各服务）。GateServer 有 `GET /health`（探 Redis+MySQL，失败 503），
+  测试 `test/redis_reconnect_test.py`（CLIENT PAUSE 模拟抖动）。⚠️ 需 VS 重编后才生效。
+## 高频坑（详见工程备忘对应章节）
+- Client：`_handlers[id]` 前必须 `contains(id)`（否则 `bad_function_call`）；换账号/登出要**清数据+清UI+登录重灌**三层。
+- **联系人空白真因 = 分页游标 `_contact_loaded` 未复位**（`reloadFriendItems()` 前调 `ResetContactLoadedCount()`）。
+- 重连：disconnected 里**先 `StartReconnect()` 再 emit**；token 唯一来源=GateServer 登录回包；心跳定时器必须判空 user_info。
+- 上传：流式原始字节（非 base64）；三层上限 1GB/1MB/300MB；**上限挡不住慢速** → 加最低速率+总时长；
+  拒绝上传先排空 body（drain）再响应；Beast `body_limit` 必须在 `async_read` 前设。
+- **连接池 autocommit 泄漏**（群聊 9/9↔4/9 漂移真因）：修在 `MysqlDao.h::returnConnection` 还池前 `setAutoCommit(true)`。
+- 群聊：1033/1034 建群、1035/1036 加人；建群 UI 已补（右键会话列表→发起群聊，**群里不显示此项**）；
+  **群成员已能看（10-21）**：不加新协议，靠 1018 回包的 `members` 字段（`MysqlDao::GetUserThreads`
+  批量 `IN(...)` 查 group_chat_member），客户端 `ui/groupmemberdlg.{h,cpp}` 弹窗展示。
+  **加成员 UI(1035)也已做（10-21）**：右键群会话 → 查看群成员 → 邀请好友入群
+  （`ui/selectfrienddlg.{h,cpp}` 多选、过滤群内成员；1036 回包不回"加了谁"，
+  客户端用 `_pending_added` 记发送的 uid 直接并列表，**不重发 1018**——老服务端没 members 会冲掉列表）。
+  群头像用**字母头像**（`common/avatarutil.{h,cpp}`：首字+8 色板+seed 选色，零资源文件）。
+  ⚠️ 1018 的 members 字段仍需 VS 重编 ChatServer 后才生效（不加成员的路径已可用）。
 
-## 6. 文件上传 = 流式方案 B（2026-10-17）
-历史 base64 塞 JSON 整包 POST **已废弃**（300MB⇒客户端峰值 1.5–2.7GB OOM）。放大链：原文件→base64×4/3
-→`QString::fromLatin1` UTF-16→QJsonValue 深拷贝→toJson。
-- **新协议**：`POST /upload_image|/upload_file?uid=&file_name=` + **请求体就是原始字节**（无 base64/JSON 信封）。
-  响应形状不变 `{error,url,unique_name,size,md5}` → 客户端不改解析。
-- 服务端（GBK+LF）：`HttpConnection.h/.cpp`（`buffer_body`+64KB scratch+排空+巡检）、
-  `LogicSystem.h/.cpp`（`PrepareUpload`/`FinishUpload`）。补丁 `test/patch_logicsystem_cpp.py`、
-  `patch_httpconn_{h,cpp}.py`、`patch_httpconn_cn.py`（幂等）。
-- 三层上限：`kMaxHttpBodyBytes=1GB`（解析器兜底、故意放宽）、`kMaxJsonBodyBytes=1MB`（非上传真实上限）、
-  `kMaxUploadBytes=300MB`（上传真实上限，声明+流式双校验）。
-- ★ **Beast body_limit** 解析头时和**声明 Content-Length** 比，是**递减预算**；必须 `async_read` 前设；默认仅 1MB。
-- ★ **deadline 周期巡检**（5s 一次，空闲≥60s 才关）：只读回调刷新不够——卡死对端不产生读完成事件。
-- ★ **拒绝上传先排空 body 再响应**（`_drain_mode`）：立刻回会和还在传的客户端赛跑 → 只读到 RST 拿不到 JSON。
-- 失败统一 `WriteJsonError()`=**HTTP 200 + JSON 里 error 码**。
-- 落盘：`<stamp>_<seq>.part`→FNV-1a 边收边算→定名`<stamp>_<hash><ext>`→rename；可执行/脚本中和成 `.bin`；
-  断连析构删 `.part`。`std::ofstream ofs(path.wstring(),...)` 构造形式 MSVC 可用；MinGW 只接受
-  `std::filesystem::path` 重载。
-- 客户端：`httpmgr` `PostHttpReqRawBody(QUrl,QIODevice*,size,...)`；`uploadmanager` 从 `QFile` 直发
-  （不 `readAll()`）；`MessageTextEdit` 硬编码 20MB 改常量。★ `QNAM::post(req,QIODevice*)` **不接管设备**
-  → `connect(reply,&QObject::destroyed,body,&QObject::deleteLater)` 否则漏 QFile。
-- ★★ **Qt uploadProgress 收尾脉冲** `(0,0)`：透传让 `refreshUploadBar` 退化为走马灯、并发百分比不升反降
-  → 已在 `PostHttpReqRawBody` 过滤 `sent==0&&total==0`。
-
-## 7. 上传限制运行时可配 + 防慢速
-- `config.ini` `[Upload]`：`MaxBytes`/`MinBytesPerSec`/`MaxDurationSec`。服务端 `InitUploadLimits()`
-  （main 里 ConfigMgr 后）读；客户端 `main.cpp` QSettings 读 `Upload/MaxBytes`→`UploadManager::setMaxBytes()`。
-  `MAX_IMAGE_SIZE`/`MAX_FILE_SIZE` 改运行时 static+setter。
-- ★ `InitUploadLimits` 对 `max_bytes<=kMaxHttpBodyBytes` 硬约束：超了 Beast 解析头掐断、body 不排空 → 旧病复发。
-- ★ 客户端和服务端**各一份 config.ini，必须同一值**。
-- ★ `ConfigMgr::operator[](section)` **按值**返回：`auto cfg=...`（非 `auto&`），section 不存在返回空对象。
-- ★★ **"上限"挡不住"慢慢传"**：稳 20KB/s 每 5s 有数据永不 idle 超时 → 加 ②最低速率
-  `kMinUploadBytesPerSec=64KB/s`（连续 3 次巡检低于才掐）③总时长 `kMaxUploadDurationSec=600s`。
-- ★ config.ini 一律 **ASCII 注释**（走 property_tree::read_ini，本环境起不了 GateServer 验证中文注释）。
-
-## 8. 测试与验证台
-- **一键 `bash test/run_all.sh`**：[1]protocol_test(28)+[2]gate_e2e(22)+[3]upload_big(4)+[4]group_chat(9)。
-  `--start` 缺啥起啥、结束关掉；`SKIP_XXX=1` 跳；`GATE_URL=...` 把[3]打 mock；`RUN_MOCK=1` 加跑 beast_proto。
-  日志 `test/_logs/`。**勿用 run_test.bat**（pause 挂住、只跑[1]）。
-- ★ protocol_test 不只依赖 ChatServer：先 GateServer `/user_login` 换 token（内 gRPC 调 StatusServer 分服）。
-  缺 StatusServer/GateServer → 登录失败(1009/1002)、28 用例一行跑不到，易误判 ChatServer 崩。
-- `test/dbconf.py` 从 `GateServer/config.ini` `[Mysql]` 读。**真实口令 `Hcat@2026Secure`**（非 123456）。
-  ★ 写死口令→静默降级（pick_uid 退回 2、备份失败）。`protocol_test` 原写死 `test@test.com`，库里 uid=2 是 `0@1.com`→全挂。
-  账号口令一律问库要。（`HCHAT_PORT=8991` 打 ChatServer2；`HCAT_TEST_EMAIL` 可覆盖。）
-- `test/protocol_test.py`：默认 8990；uid=2（邮箱 `test_email()` 查库），thread 1=(2,3)，peer=3，局外人 uid=6。
-  ★ "只发不收"用例回包排队，`wait_rsp` 必须带字段匹配否则错位一条。
-- `test/beast_proto/mock_gate.cpp`：PrepareUpload/FinishUpload 的 1:1 MinGW 移植（drain、扩展名中和、
-  FNV-1a、`GET /upload/<file>` 与 `..` 穿越防护、巡检 deadline）。编译
-  `g++ -std=c++17 -O2 -I/d/software/boost_1_92_0 mock_gate.cpp -o mock_gate.exe -lws2_32 -lmswsock -lpsapi`
-  （缺 `-lmswsock` 报 AcceptEx undefined）。`mock_smoke.py` 8 条；`upload_probe/` 链真实 `uploadmanager.cpp`+
-  `httpmgr.cpp` 7 条；`slow_guard_test.py` 3 条。全过。实测 50MB 客户端峰值 22MB/服务端 10.6MB；301MB 拿可读 JSON(2.9s)。
-
-## 8.5 群聊支持（2026-10-17，待服务端重编）
-**用户口径**：先打通收发；群元数据新开 `group_chat` 表；群消息 `recv_id` 存 0。
-**DB**：`group_chat`(thread_id PK,name,owner_id,created_at)+`group_chat_member`(thread_id,user_id)。
-测试群 thread_id=17「Hcat 测试群」成员 2/3/6。
-**服务端**（两 ChatServer **逐字节一致**）：`MysqlDao/Mgr` 加 `GetThreadType`/`GetGroupMembers`/
-`CreateGroupChat`（一事务写 chat_thread+group_chat+group_chat_member，owner 排第一去重）/`AddGroupMembers`
-（先查 type='group' 才允许，`INSERT IGNORE` 跳过已存在）。`LogicSystem::DealChatTextMsg` 重写：先
-`GetThreadType` 分支；group 走成员校验、排除 sender 收集 `recipients`、`touid=0`、`rtvalue["thread_type"]`、
-`for(ruid:recipients)` 每人一份 notify。★ 顺手填跨服 gRPC 的 `msg_type/total_size/md5`（原不传→图片跨服当文本）。
-`data.h ChatThreadInfo` 加 `_name`；`GetUserThreads` group 分支 `LEFT JOIN group_chat` 取群名。
-新 ID：`CREATE_GROUP_CHAT=1033/1034`、`ADD_GROUP_MEMBER=1035/1036`；错误码 1015/1016。建群上限 200；
-加人仅现有成员可发起。
-**客户端**：`userdata.h/.cpp` 加 `_name`/`_is_group`/`SetGroupInfo()`/`IsGroup()`/`GetGroupMembers()`；
-`chatdialog.cpp` 群会话 `ChatThreadData(0,thread_id,0)`+`SetGroupInfo`；`chatuserwid.cpp` 群名分支；
-`chatpage.cpp` 切群会话不再提前 return；`tcpmgr.cpp` 两收消息链路按 `IsGroup()` 决定 `ChatFormType`（原写死 PRIVATE）。
-★ **建群 UI 已补（10-18）**：右键会话列表 →「发起群聊」→ 输群名 → 发 1033
-（`{uid,name,members:[]}`，owner 自动成首成员，空 members 服务端 OK）→ 收 1034 成功后直接把新群
-插进 `chat_user_list`（复用群推送那套构建，不做全量重载，避免动分页游标）。改动：
-`tcpmgr.{h,cpp}`（`sig_create_group_rsp` 信号 + 1034 handler）、`chatdialog.{h,cpp}`
-（`sendCreateGroupReq`/`slot_create_group_rsp`/构造函数里 `chat_user_list` 右键菜单）。
-**加成员 UI(1035)仍未做**——往群里加人还得靠 `group_chat_test.py` 或插库。
-★ **协议未动 proto**：群/私聊由客户端按 thread_id 查本地会话列表区分；notify `touid`=各接收者自己 uid（发送者 RSP 才是 0）。
-**测试** `test/group_chat_test.py`（9 条）`run_all.sh` [4]，`SKIP_GROUP=1` 跳过。需两台 ChatServer 都活（覆盖跨服扇出）。
-**踩坑**：① `patch_group_logic.py` 第一版吞了 `DealChatTextMsg` 结尾 `}` → 花括号配平破。② `userdata.h` 的
-`int _user2_id;` 后跟行尾中文注释，不能用 `"int _user2_id;\n"` 当锚点，改 `insert_after_line()`。
-
-## 8.6 连接池 autocommit 泄漏（群聊偶发失败真因）
-- **症状**：群聊 9 条用例时好时坏（9/9 与 4/9 交替），错误码 1014/1016/1011 漂移；同二进制同库同代码，纯看借到哪条连接。
-- **根因**：事务 DAO（`CreateGroupChat`/`AddGroupMembers`/`AddFriend`/`AddChatMsg`）`setAutoCommit(false)` 后只
-  commit/rollback，**不还 true 就还池** → 非事务读借到"中毒"连接开 REPEATABLE READ 隐式事务、读不到刚提交行。
-- **修复（一处）**：`MysqlDao.h` `returnConnection` 在 `pool_.push` 前 `try{if(con&&con->_con)con->_con->setAutoCommit(true);}catch(...){}`。
-  这是唯一借/还出口，覆盖全部方法。补丁 `test/patch_autocommit_reset.py`（幂等，两 server 逐字节一致）。
-- ★ 全局隐患：所有走 `AddChatMsg`/`AddFriend`/`CreatePrivateChat` 的路径偶发受影响，修一处全局受益。
-- **待用户**：VS2022 重编 `ChatServer`+`ChatServer2`(Debug|x64) 并重启，连跑 `group_chat_test.py` 2~3 次确认稳定 9/9。
-
-## 9. 客户端日志
-- `bin/client.log`：`main.cpp` 装 `qInstallMessageHandler` 全落盘（GUI stdout 重定向无效）。超 2MB 自动重开。
-- ★ `qCDebug` 分类默认被过滤，需 `QT_LOGGING_RULES='*.debug=true'`；`qDebug()` 不受影响。
-- 实验前 `taskkill //F //IM Hcat.exe`：多实例让 client.log 被后启动者 rm 重建、旧实例写已删 inode → "日志只有 2 行"假象。
-
-## 10. 协作约定（用户授权）
-- 编译前可直接 `taskkill //F //IM Hcat.exe`（用户常忘关客户端锁 exe）。
-- 后端 `MSB3073 xcopy 退出码 4` = 生成后事件要拷 `config.ini`/`plugin\` 而旧实例在跑锁 DLL；链接已成功，taskkill 后重启。
-- 用户 C++ 后端方向、中文交流、要直接结论+证据；反感反复编译失败循环，改完自验证再交付。
-
-## 11. 编译前自查（客户端）
-1. 查杀 Hcat.exe；2. Qt 自带 MinGW 的 PATH；3. `mingw32-make -j4` 只看 `error:`/`undefined reference`；
-4. 确认 `bin/Hcat.exe` 时间戳刷新（Error 127 可忽略）。
+## 协作约定
+用户 C++ 后端方向、中文交流；要**直接结论 + 证据**、结构化表格；反感反复编译失败循环。

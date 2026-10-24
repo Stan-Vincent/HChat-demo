@@ -7,25 +7,7 @@
 #include <condition_variable>
 #include "ConfigMgr.h"
 
-class RedisConPool {
-public:
-    RedisConPool(size_t poolSize, const std::string& host, int port, const char* pwd);
-    ~RedisConPool();
-
-    redisContext* getConnection();           // 从池里借一个
-    void returnConnection(redisContext* context);  // 归还
-    void Close();                            // 关闭整个池
-
-private:
-    std::atomic<bool> b_stop_;               // 是否已关闭
-    size_t poolSize_;                        // 池大小（5）
-    std::string host_;
-    int port_;
-    std::queue<redisContext*> connections_;  // 装连接的队列
-    std::mutex mutex_;                       // 保护队列的锁
-    std::condition_variable cond_;           // 队列空时用来等待
-};
-
+#include "RedisConPool.h"   // 共享连接池（common/，替代原本地实现）
 class RedisMgr : public Singleton<RedisMgr>
 {
     friend class Singleton<RedisMgr>;
@@ -43,6 +25,8 @@ public:
     std::string HGet(const std::string& key, const std::string& hkey);
     bool Del(const std::string& key);
     bool ExistsKey(const std::string& key);
+	// 探活：PING 一下 Redis。失败时坏连接会被丢弃（不还池），交给后台巡检补齐。
+	bool Ping();
     void Close();
 
 private:

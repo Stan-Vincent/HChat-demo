@@ -788,6 +788,38 @@ bool MysqlDao::GetUserThreads(
 
 		// 移入输出向量
 		threads = std::move(tmp);
+
+		// Group members: one batched query instead of a query per group (N+1).
+		// Collect the group thread ids first, then load all their members in one go.
+		std::vector<long long> group_ids;
+		for (auto& t : threads) {
+			if (t->_type == "group") {
+				group_ids.push_back(t->_thread_id);
+			}
+		}
+		if (!group_ids.empty()) {
+			std::string m_sql =
+				"SELECT thread_id, user_id FROM group_chat_member WHERE thread_id IN (";
+			for (size_t i = 0; i < group_ids.size(); ++i) {
+				m_sql += std::to_string(group_ids[i]);
+				if (i + 1 < group_ids.size()) {
+					m_sql += ",";
+				}
+			}
+			m_sql += ");";
+			std::unique_ptr<sql::Statement> m_stmt(conn->createStatement());
+			std::unique_ptr<sql::ResultSet> m_res(m_stmt->executeQuery(m_sql));
+			while (m_res->next()) {
+				long long tid = m_res->getInt64("thread_id");
+				int uid_m = m_res->getInt("user_id");
+				for (auto& t : threads) {
+					if (t->_thread_id == tid) {
+						t->_members.push_back(uid_m);
+						break;
+					}
+				}
+			}
+		}
 	}
 	catch (sql::SQLException& e) {
 		std::cerr << "SQLException: " << e.what()

@@ -113,7 +113,7 @@ start "ChatServer 1   :8990" /D "%ROOT%\ChatServer" "%CHAT_EXE%"
 ping -n 2 127.0.0.1 >nul
 
 if /i "%~1"=="chat2"   goto :s_chat2
-if /i "%~1"=="backend" goto :done
+if /i "%~1"=="backend" goto :s_chat2
 
 rem ---------- 5. Client ----------
 echo  [5/5] Qt ¿Í»§¶Ë ...

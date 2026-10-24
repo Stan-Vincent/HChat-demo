@@ -22,6 +22,12 @@ int MysqlMgr::RegUser(const std::string& name, const std::string& email, const s
 
 
 
+bool MysqlMgr::Ping() {
+
+	return _dao.Ping();
+
+}
+
 bool MysqlMgr::CheckEmail(const std::string& name, const std::string& email) {
 
 	return _dao.CheckEmail(name, email);

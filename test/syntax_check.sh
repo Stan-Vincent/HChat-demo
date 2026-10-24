@@ -24,7 +24,9 @@ else
 fi
 
 fail=0
-for srv in ChatServer ChatServer2; do
+# 只检查 ChatServer：ChatServer2 自 2026-10-18 起不再持有源码副本，
+# 它通过 ..\ChatServer\SharedSources.props 引用同一份源码，所以查一份就够。
+for srv in ChatServer; do
     for f in "${FILES[@]}"; do
         cd "$ROOT/$srv" || continue
         out=$(g++ -fsyntax-only -std=c++17 -w "${PRE[@]}" "${INC[@]}" \

@@ -624,6 +624,23 @@ void LogicSystem::FinishUpload(std::shared_ptr<HttpConnection> con) {
 }
 
 bool LogicSystem::HandleGet(std::string path, std::shared_ptr<HttpConnection> con) {
+    // 健康检查：GET /health，不需要登录/token。
+    // 任一依赖不可用就返回 503，运维可据此直接告警（fail-fast 语义）。
+    if (path == "/health") {
+        const bool redis_ok = RedisMgr::GetInstance()->Ping();
+        const bool mysql_ok = MysqlMgr::GetInstance()->Ping();
+        Json::Value root;
+        root["status"] = (redis_ok && mysql_ok) ? "ok" : "degraded";
+        root["redis"] = redis_ok ? "ok" : "fail";
+        root["mysql"] = mysql_ok ? "ok" : "fail";
+        con->_response.result((redis_ok && mysql_ok)
+            ? http::status::ok : http::status::service_unavailable);
+        con->_response.set(http::field::content_type, "application/json");
+        beast::ostream(con->_response.body()) << root.toStyledString();
+        LOG_INFO("health check: redis={} mysql={}", redis_ok, mysql_ok);
+        return true;
+    }
+
     // ?? ?????????????GET /upload/<file_name>
     //   ?? ?????????? ".."?????? /upload/../../config.ini ?????????????????
     if (path.rfind(UPLOAD_PREFIX, 0) == 0) {

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -167,51 +167,55 @@ xcopy /Y /I /E "D:\Program Files\mysql-connector-c++-26.7.0-winx64\lib64\plugin"
       <Message>Copy config.ini and MySQL auth plugins to output dir</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
+  <!-- BEGIN SharedSources (由 ChatServer\SharedSources.props 生成，勿手改) -->
   <ItemGroup>
-    <ClCompile Include="AsioIOServicePool.cpp" />
-    <ClCompile Include="ChatGrpcClient.cpp" />
-    <ClCompile Include="ChatServer.cpp" />
-    <ClCompile Include="ChatServiceImpl.cpp" />
-    <ClCompile Include="ConfigMgr.cpp" />
-    <ClCompile Include="CServer.cpp" />
-    <ClCompile Include="CSession.cpp" />
-    <ClCompile Include="DistLock.cpp" />
-    <ClCompile Include="LogicSystem.cpp" />
-    <ClCompile Include="message.grpc.pb.cc" />
-    <ClCompile Include="message.pb.cc" />
-    <ClCompile Include="MsgNode.cpp" />
-    <ClCompile Include="MysqlDao.cpp" />
-    <ClCompile Include="MysqlMgr.cpp" />
-    <ClCompile Include="RedisMgr.cpp" />
-    <ClCompile Include="StatusGrpcClient.cpp" />
-    <ClCompile Include="UserMgr.cpp" />
-    <ClCompile Include="utils.cpp" />
+    <ClCompile Include="..\ChatServer\AsioIOServicePool.cpp" />
+    <ClCompile Include="..\ChatServer\ChatGrpcClient.cpp" />
+    <ClCompile Include="..\ChatServer\ChatServer.cpp" />
+    <ClCompile Include="..\ChatServer\ChatServiceImpl.cpp" />
+    <ClCompile Include="..\ChatServer\ConfigMgr.cpp" />
+    <ClCompile Include="..\ChatServer\CServer.cpp" />
+    <ClCompile Include="..\ChatServer\CSession.cpp" />
+    <ClCompile Include="..\ChatServer\DistLock.cpp" />
+    <ClCompile Include="..\ChatServer\LogicSystem.cpp" />
+    <ClCompile Include="..\ChatServer\message.grpc.pb.cc" />
+    <ClCompile Include="..\ChatServer\message.pb.cc" />
+    <ClCompile Include="..\ChatServer\MsgNode.cpp" />
+    <ClCompile Include="..\ChatServer\MysqlDao.cpp" />
+    <ClCompile Include="..\ChatServer\MysqlMgr.cpp" />
+    <ClCompile Include="..\ChatServer\RedisMgr.cpp" />
+    <ClCompile Include="..\ChatServer\StatusGrpcClient.cpp" />
+    <ClCompile Include="..\ChatServer\UserMgr.cpp" />
+    <ClCompile Include="..\ChatServer\utils.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AsioIOServicePool.h" />
-    <ClInclude Include="ChatGrpcClient.h" />
-    <ClInclude Include="ChatServiceImpl.h" />
-    <ClInclude Include="ConfigMgr.h" />
-    <ClInclude Include="const.h" />
-    <ClInclude Include="CServer.h" />
-    <ClInclude Include="CSession.h" />
-    <ClInclude Include="data.h" />
-    <ClInclude Include="DistLock.h" />
-    <ClInclude Include="LogicSystem.h" />
-    <ClInclude Include="message.grpc.pb.h" />
-    <ClInclude Include="message.pb.h" />
-    <ClInclude Include="MsgNode.h" />
-    <ClInclude Include="MysqlDao.h" />
-    <ClInclude Include="MysqlMgr.h" />
-    <ClInclude Include="RedisMgr.h" />
-    <ClInclude Include="Singleton.h" />
-    <ClInclude Include="StatusGrpcClient.h" />
-    <ClInclude Include="UserMgr.h" />
-    <ClInclude Include="utils.h" />
+    <ClInclude Include="..\ChatServer\AsioIOServicePool.h" />
+    <ClInclude Include="..\ChatServer\ChatGrpcClient.h" />
+    <ClInclude Include="..\ChatServer\ChatServiceImpl.h" />
+    <ClInclude Include="..\ChatServer\ConfigMgr.h" />
+    <ClInclude Include="..\ChatServer\const.h" />
+    <ClInclude Include="..\ChatServer\CServer.h" />
+    <ClInclude Include="..\ChatServer\CSession.h" />
+    <ClInclude Include="..\ChatServer\data.h" />
+    <ClInclude Include="..\ChatServer\DistLock.h" />
+    <ClInclude Include="..\ChatServer\LogicSystem.h" />
+    <ClInclude Include="..\ChatServer\message.grpc.pb.h" />
+    <ClInclude Include="..\ChatServer\message.pb.h" />
+    <ClInclude Include="..\ChatServer\MsgNode.h" />
+    <ClInclude Include="..\ChatServer\MysqlDao.h" />
+    <ClInclude Include="..\ChatServer\MysqlMgr.h" />
+    <ClInclude Include="..\ChatServer\RedisMgr.h" />
+    <ClInclude Include="..\ChatServer\Singleton.h" />
+    <ClInclude Include="..\ChatServer\StatusGrpcClient.h" />
+    <ClInclude Include="..\ChatServer\UserMgr.h" />
+    <ClInclude Include="..\ChatServer\utils.h" />
   </ItemGroup>
   <ItemGroup>
+    <Clne Include="..\ChatServer\message.proto" />
+  </ItemGroup>
+  <!-- END SharedSources -->
+<ItemGroup>
     <None Include="config.ini" />
-    <None Include="message.proto" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

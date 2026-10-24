@@ -2,6 +2,14 @@ QT += widgets network
 
 CONFIG += c++17
 
+# 崩溃日志的符号解析库（SymFromAddrW / CaptureStackBackTrace）
+
+win32:LIBS += -ldbghelp
+# DPAPI 的 CryptProtectData / CryptUnprotectData 在 crypt32.dll 里
+#（注意不是 advapi32 —— 链 advapi32 会报 undefined reference to __imp_CryptProtectData）
+
+win32:LIBS += -lcrypt32
+
 RC_ICONS = icon.ico
 DESTDIR = ./bin
 
@@ -10,142 +18,160 @@ DESTDIR = ./bin
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-    BubbleFrame.cpp \
-    ChatItemBase.cpp \
-    ChatView.cpp \
-    MessageTextEdit.cpp \
-    FileBubble.cpp \
-    PictureBubble.cpp \
-    TextBubble.cpp \
-    adduseritem.cpp \
-    applyfriend.cpp \
-    applyfrienditem.cpp \
-    applyfriendlist.cpp \
-    applyfriendpage.cpp \
-    authenfriend.cpp \
-    chatdialog.cpp \
-    chatpage.cpp \
-    chatuserlist.cpp \
-    emojipanel.cpp \
-    chatuserwid.cpp \
-    clickedbtn.cpp \
-    clickedlabel.cpp \
-    clickedoncelabel.cpp \
-    contactuserlist.cpp \
-    conuseritem.cpp \
-    customizeedit.cpp \
-    customizetextedit.cpp \
-    findfaildlg.cpp \
-    findsuccessdlg.cpp \
-    friendinfopage.cpp \
-    friendlabel.cpp \
-    global.cpp \
-    grouptipitem.cpp \
-    httpmgr.cpp \
-    imagecropperlabel.cpp \
-    invaliditem.cpp \
-    lineitem.cpp \
-    listitembase.cpp \
-    loadingdlg.cpp \
-    logindialog.cpp \
     main.cpp \
-    mainwindow.cpp \
-    registerdialog.cpp \
-    resetdialog.cpp \
-    searchlist.cpp \
-    statelabel.cpp \
-    statewidget.cpp \
-    tcpmgr.cpp \
-    timerbtn.cpp \
-    userdata.cpp \
-    userinfopage.cpp \
-    usermgr.cpp \
-    uploadmanager.cpp \
-    imagemanager.cpp \
-    logcategory.cpp \
-    animutil.cpp \
-    toast.cpp
+    ui/BubbleFrame.cpp \
+    ui/ChatItemBase.cpp \
+    ui/ChatView.cpp \
+    ui/FileBubble.cpp \
+    ui/MessageTextEdit.cpp \
+    ui/PictureBubble.cpp \
+    ui/TextBubble.cpp \
+    ui/adduseritem.cpp \
+    ui/applyfriend.cpp \
+    ui/applyfrienditem.cpp \
+    ui/applyfriendlist.cpp \
+    ui/applyfriendpage.cpp \
+    ui/authenfriend.cpp \
+    ui/chatdialog.cpp \
+    ui/chatpage.cpp \
+    ui/chatuserlist.cpp \
+    ui/chatuserwid.cpp \
+    ui/contactuserlist.cpp \
+    ui/conuseritem.cpp \
+    ui/findfaildlg.cpp \
+    ui/findsuccessdlg.cpp \
+    ui/friendinfopage.cpp \
+    ui/friendlabel.cpp \
+    ui/grouptipitem.cpp \
+    ui/groupmemberdlg.cpp \
+    ui/selectfrienddlg.cpp \
+    ui/invaliditem.cpp \
+    ui/lineitem.cpp \
+    ui/listitembase.cpp \
+    ui/loadingdlg.cpp \
+    ui/logindialog.cpp \
+    ui/mainwindow.cpp \
+    ui/registerdialog.cpp \
+    ui/resetdialog.cpp \
+    ui/searchlist.cpp \
+    ui/userinfopage.cpp \
+    widgets/clickedbtn.cpp \
+    widgets/clickedlabel.cpp \
+    widgets/clickedoncelabel.cpp \
+    widgets/customizeedit.cpp \
+    widgets/customizetextedit.cpp \
+    widgets/emojipanel.cpp \
+    widgets/imagecropperlabel.cpp \
+    widgets/statelabel.cpp \
+    widgets/statewidget.cpp \
+    widgets/timerbtn.cpp \
+    widgets/toast.cpp \
+    network/httpmgr.cpp \
+    network/imagemanager.cpp \
+    network/tcpmgr.cpp \
+    network/uploadmanager.cpp \
+    model/userdata.cpp \
+    model/usermgr.cpp \
+    common/animutil.cpp \
+    common/avatarutil.cpp \
+    common/global.cpp \
+    common/logcategory.cpp
 
 HEADERS += \
-    logcategory.h \
-    BubbleFrame.h \
-    ChatItemBase.h \
-    ChatView.h \
-    MessageTextEdit.h \
-    FileBubble.h \
-    PictureBubble.h \
-    TextBubble.h \
-    adduseritem.h \
-    applyfriend.h \
-    applyfrienditem.h \
-    applyfriendlist.h \
-    applyfriendpage.h \
-    authenfriend.h \
-    chatdialog.h \
-    chatpage.h \
-    chatuserlist.h \
-    emojipanel.h \
-    chatuserwid.h \
-    clickedbtn.h \
-    clickedlabel.h \
-    clickedoncelabel.h \
-    contactuserlist.h \
-    conuseritem.h \
-    customizeedit.h \
-    customizetextedit.h \
-    findfaildlg.h \
-    findsuccessdlg.h \
-    friendinfopage.h \
-    friendlabel.h \
-    global.h \
-    grouptipitem.h \
-    httpmgr.h \
-    imagecropperdialog.h \
-    imagecropperlabel.h \
-    invaliditem.h \
-    lineitem.h \
-    listitembase.h \
-    loadingdlg.h \
-    logindialog.h \
-    mainwindow.h \
-    registerdialog.h \
-    resetdialog.h \
-    searchlist.h \
-    singleton.h \
-    statelabel.h \
-    statewidget.h \
-    tcpmgr.h \
-    timerbtn.h \
-    userdata.h \
-    userinfopage.h \
-    usermgr.h \
-    uploadmanager.h \
-    imagemanager.h \
-    animutil.h \
-    toast.h
+    ui/BubbleFrame.h \
+    ui/ChatItemBase.h \
+    ui/ChatView.h \
+    ui/FileBubble.h \
+    ui/MessageTextEdit.h \
+    ui/PictureBubble.h \
+    ui/TextBubble.h \
+    ui/adduseritem.h \
+    ui/applyfriend.h \
+    ui/applyfrienditem.h \
+    ui/applyfriendlist.h \
+    ui/applyfriendpage.h \
+    ui/authenfriend.h \
+    ui/chatdialog.h \
+    ui/chatpage.h \
+    ui/chatuserlist.h \
+    ui/chatuserwid.h \
+    ui/contactuserlist.h \
+    ui/conuseritem.h \
+    ui/findfaildlg.h \
+    ui/findsuccessdlg.h \
+    ui/friendinfopage.h \
+    ui/friendlabel.h \
+    ui/grouptipitem.h \
+    ui/groupmemberdlg.h \
+    ui/selectfrienddlg.h \
+    ui/invaliditem.h \
+    ui/lineitem.h \
+    ui/listitembase.h \
+    ui/loadingdlg.h \
+    ui/logindialog.h \
+    ui/mainwindow.h \
+    ui/registerdialog.h \
+    ui/resetdialog.h \
+    ui/searchlist.h \
+    ui/userinfopage.h \
+    widgets/clickedbtn.h \
+    widgets/clickedlabel.h \
+    widgets/clickedoncelabel.h \
+    widgets/customizeedit.h \
+    widgets/customizetextedit.h \
+    widgets/emojipanel.h \
+    widgets/imagecropperdialog.h \
+    widgets/imagecropperlabel.h \
+    widgets/statelabel.h \
+    widgets/statewidget.h \
+    widgets/timerbtn.h \
+    widgets/toast.h \
+    network/httpmgr.h \
+    network/imagemanager.h \
+    network/tcpmgr.h \
+    network/uploadmanager.h \
+    model/userdata.h \
+    model/usermgr.h \
+    common/animutil.h \
+    common/avatarutil.h \
+    common/global.h \
+    common/logcategory.h \
+    common/singleton.h
 
 FORMS += \
-    adduseritem.ui \
-    applyfriend.ui \
-    applyfrienditem.ui \
-    applyfriendpage.ui \
-    authenfriend.ui \
-    chatdialog.ui \
-    chatpage.ui \
-    chatuserwid.ui \
-    conuseritem.ui \
-    findfaildlg.ui \
-    findsuccessdlg.ui \
-    friendinfopage.ui \
-    friendlabel.ui \
-    grouptipitem.ui \
-    lineitem.ui \
-    loadingdlg.ui \
-    logindialog.ui \
-    mainwindow.ui \
-    registerdialog.ui \
-    resetdialog.ui \
-    userinfopage.ui
+    ui/adduseritem.ui \
+    ui/applyfriend.ui \
+    ui/applyfrienditem.ui \
+    ui/applyfriendpage.ui \
+    ui/authenfriend.ui \
+    ui/chatdialog.ui \
+    ui/chatpage.ui \
+    ui/chatuserwid.ui \
+    ui/conuseritem.ui \
+    ui/findfaildlg.ui \
+    ui/findsuccessdlg.ui \
+    ui/friendinfopage.ui \
+    ui/friendlabel.ui \
+    ui/grouptipitem.ui \
+    ui/lineitem.ui \
+    ui/loadingdlg.ui \
+    ui/logindialog.ui \
+    ui/mainwindow.ui \
+    ui/registerdialog.ui \
+    ui/resetdialog.ui \
+    ui/userinfopage.ui
+
+# 源码按职责分目录：ui/ widgets/ network/ model/ common/
+# 把各目录铺进头文件搜索路径，源码里的 include 一行都不用改，
+# .ui 里 customwidgets 的 header 裸文件名也照样能解析。
+# （注释里不要写带井号的 include 指令，qmake 解析会报错）
+
+INCLUDEPATH += \
+    $$PWD/ui \
+    $$PWD/widgets \
+    $$PWD/network \
+    $$PWD/model \
+    $$PWD/common
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
@@ -160,22 +186,22 @@ DISTFILES += \
     icon.ico
 
 
-# 崩溃日志的符号解析库（SymFromAddrW / CaptureStackBackTrace）
-win32:LIBS += -ldbghelp
-# DPAPI 的 CryptProtectData / CryptUnprotectData 在 crypt32.dll 里
-#（注意不是 advapi32 —— 链 advapi32 会报 undefined reference to __imp_CryptProtectData）
-win32:LIBS += -lcrypt32
+# 注：-ldbghelp / -lcrypt32 放在文件顶部的顶层，不能写进下面的 win32:CONFIG(debug) 块，
+# 块内带 win32: 前缀的赋值不会进 Makefile 的 LIBS，链接时会报 undefined reference。
 
 win32:CONFIG(debug, debug | release)
 {
     #指定要拷贝的文件目录为工程目录下release目录下的所有dll、lib文件，例如工程目录在D:\QT\Test
     #PWD就为D:/QT/Test，DllFile = D:/QT/Test/release/*.dll
+
     TargetConfig = $${PWD}/config.ini
 
     #将输入目录中的"/"替换为"\\"
+
     TargetConfig = $$replace(TargetConfig, /, \\)
 
     #将输出目录中的"/"替换为"\\"
+
     OutputDir =  $${OUT_PWD}/$${DESTDIR}
     OutputDir = $$replace(OutputDir, /, \\)
 
@@ -200,6 +226,7 @@ win32:CONFIG(debug, debug | release)
     #      a) 用 cmd 跑同一个 make：  cmd //c "mingw32-make -j4"
     #      b) 或加环境变量：         MSYS2_ARG_CONV_EXCL="*" mingw32-make -j4
     #    推荐 a，和 Qt Creator 行为一致。
+
     MinGWBin = D:\\QT6\\Tools\\mingw1120_64\\bin
     QtBin    = D:\\QT6\\6.5.3\\mingw_64\\bin
 

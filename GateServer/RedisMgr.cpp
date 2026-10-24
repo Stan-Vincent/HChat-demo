@@ -274,8 +274,28 @@ bool RedisMgr::Del(const std::string& key)
     return true;
 }
 
-bool RedisMgr::ExistsKey(const std::string& key)
-{
+bool RedisMgr::Ping() {
+	auto* context = _con_pool->getConnection();
+	if (context == nullptr) {
+		return false;
+	}
+
+	auto* reply = (redisReply*)redisCommand(context, "PING");
+	const bool ok = (reply != nullptr) && !context->err
+		&& (reply->type == REDIS_REPLY_STATUS);
+	if (reply != nullptr) {
+		freeReplyObject(reply);
+	}
+	if (ok) {
+		_con_pool->returnConnection(context);
+	} else {
+		// 坏连接直接销毁：池里少一条，后台巡检会按 fail_count 补齐
+		redisFree(context);
+	}
+	return ok;
+}
+
+bool RedisMgr::ExistsKey(const std::string& key) {
     auto connect = _con_pool->getConnection();
     if (connect == nullptr) return false;
     ConnGuard guard(_con_pool.get(), connect);
@@ -294,90 +314,6 @@ bool RedisMgr::ExistsKey(const std::string& key)
 
 // ==================== RedisConPool ====================
 
-RedisConPool::RedisConPool(size_t poolSize, const std::string& host, int port, const char* pwd)
-    : poolSize_(poolSize),
-    host_(host),
-    port_(port),
-    b_stop_(false)
-{
-    for (size_t i = 0; i < poolSize_; ++i) {
-        // 建立 TCP 连接
-        auto* context = redisConnect(host_.c_str(), port_);
 
-        if (context == nullptr || context->err != 0) {
-            if (context != nullptr) {
-                LOG_INFO("连接 Redis 失败:  {}", context->errstr);
-                redisFree(context);
-            }
-            continue;
-        }
 
-        auto reply = RunCommand(context, { "AUTH", std::string(pwd) });
-        if (reply == nullptr) {
-            LOG_INFO("认证失败（reply 为空）");
-            redisFree(context);
-            continue;
-        }
-        if (reply->type == REDIS_REPLY_ERROR) {
-            LOG_INFO("认证失败:  {}", reply->str);
-            freeReplyObject(reply);
-            redisFree(context);
-            continue;
-        }
 
-        freeReplyObject(reply);
-        LOG_INFO("认证成功");
-        connections_.push(context);
-    }
-
-    LOG_INFO("连接池初始化完成，成功连接数:  {}", connections_.size());
-}
-
-RedisConPool::~RedisConPool() 
-{
-    Close();   // 先唤醒所有等待的线程
-    std::lock_guard<std::mutex> lock(mutex_);
-    while (!connections_.empty()) {
-        redisFree(connections_.front());
-        connections_.pop();
-    }
-}
-
-redisContext* RedisConPool::getConnection()
-{
-    //加锁，防止多个线程同时操作队列
-    std::unique_lock<std::mutex> lock(mutex_);
-    //条件等待：如果队列为空（没连接可借），就挂起当前线程，并释放锁让别人用。
-    //等别人归还连接并调用 notify_one()，才唤醒
-    bool got = cond_.wait_for(lock, std::chrono::seconds(POOL_WAIT_TIMEOUT_SEC), [this] {
-        return b_stop_ || !connections_.empty();
-        });
-
-    if (!got) {
-        LOG_ERROR("Redis 连接池耗尽，等待连接超时（{}s）", POOL_WAIT_TIMEOUT_SEC);
-        return nullptr;
-    }
-
-    if (b_stop_) return nullptr;
-
-    auto* context = connections_.front();
-    connections_.pop();
-    return context;
-}
-
-void RedisConPool::returnConnection(redisContext* context)
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (b_stop_) {
-        redisFree(context);   // 池已关闭，直接释放，避免泄漏
-        return;
-    }
-    connections_.push(context);
-    cond_.notify_one();
-}
-
-void RedisConPool::Close()
-{
-    b_stop_ = true;
-    cond_.notify_all();
-}

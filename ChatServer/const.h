@@ -4,6 +4,10 @@
 
 enum ErrorCodes {
 	Success = 0,
+	// NOTE: 1012~1016 are reserved by GateServer (DbErr = 1012 etc.);
+	// ChatServer-specific codes start at 1017 so the same numeric value
+	// never means two different things across services.
+
 	Error_Json = 1001,  //Json解析错误
 	RPCFailed = 1002,  //RPC请求错误
 	VarifyExpired = 1003, //验证码过期
@@ -15,11 +19,11 @@ enum ErrorCodes {
 	PasswdInvalid = 1009,   //密码更新失败
 	TokenInvalid = 1010,   //Token失效
 	UidInvalid = 1011,  //uid无效
-	CREATE_CHAT_FAILED = 1012, //创建聊天失败
-	LOAD_CHAT_FAILED = 1013,
-	Error_MySql = 1014, //database error //加载聊天失败
-	CREATE_GROUP_FAILED = 1015,      //创建群聊失败
-	ADD_GROUP_MEMBER_FAILED = 1016,  //添加群成员失败
+	CREATE_CHAT_FAILED = 1017, //创建聊天失败
+	LOAD_CHAT_FAILED = 1018,
+	Error_MySql = 1019, //database error //加载聊天失败
+	CREATE_GROUP_FAILED = 1020,      //创建群聊失败
+	ADD_GROUP_MEMBER_FAILED = 1021,  //添加群成员失败
 };
 
 

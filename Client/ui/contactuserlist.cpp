@@ -1,0 +1,303 @@
+#include "contactuserlist.h"
+#include "listitembase.h"
+#include "grouptipitem.h"
+#include "conuseritem.h"
+#include <QRandomGenerator>
+#include "tcpmgr.h"
+#include "usermgr.h"
+#include <QTimer>
+#include <QCoreApplication>
+#include "usermgr.h"
+#include "logcategory.h"
+
+ContactUserList::ContactUserList(QWidget *parent): _add_friend_item(nullptr)
+  ,_load_pending(false)
+{
+    Q_UNUSED(parent);
+     this->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+     this->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    // 安装事件过滤器
+     this->viewport()->installEventFilter(this);
+
+    //模拟从数据库或者后端传输过来的数据,进行列表加载
+    addContactUserList();
+    //连接点击的信号和槽
+    connect(this, &QListWidget::itemClicked, this, &ContactUserList::slot_item_clicked);
+    //链接对端同意认证后通知的信号
+    connect(TcpMgr::GetInstance().get(), &TcpMgr::sig_add_auth_friend,this,
+            &ContactUserList::slot_add_auth_firend);
+
+    //链接自己点击同意认证后界面刷新
+    connect(TcpMgr::GetInstance().get(), &TcpMgr::sig_auth_rsp,this,
+            &ContactUserList::slot_auth_rsp);
+}
+
+
+void ContactUserList::ShowRedPoint(bool bshow /*= true*/)
+{
+    _add_friend_item->ShowRedPoint(bshow);
+}
+
+void ContactUserList::addContactUserList()
+{
+    //获取好友列表
+
+    auto * groupTip = new GroupTipItem();
+    QListWidgetItem *item = new QListWidgetItem;
+    item->setSizeHint(groupTip->sizeHint());
+    this->addItem(item);
+    this->setItemWidget(item, groupTip);
+    item->setFlags(item->flags() & ~Qt::ItemIsSelectable);
+
+    _add_friend_item = new ConUserItem();
+    _add_friend_item->setObjectName("new_friend_item");
+    _add_friend_item->SetInfo(0,tr("新的朋友"),":/res/add_friend.png");
+    _add_friend_item->SetItemType(ListItemType::APPLY_FRIEND_ITEM);
+    QListWidgetItem *add_item = new QListWidgetItem;
+    //qCDebug(lcUser) <<"chat_user_wid sizeHint is " << chat_user_wid->sizeHint();
+    add_item->setSizeHint(_add_friend_item->sizeHint());
+    this->addItem(add_item);
+    this->setItemWidget(add_item, _add_friend_item);
+    //默认设置新的朋友申请条目被选中
+    this->setCurrentItem(add_item);
+
+    auto * groupCon = new GroupTipItem();
+    groupCon->SetGroupTip(tr("联系人"));
+    _groupitem = new QListWidgetItem;
+    _groupitem->setSizeHint(groupCon->sizeHint());
+    this->addItem(_groupitem);
+    this->setItemWidget(_groupitem, groupCon);
+    _groupitem->setFlags(_groupitem->flags() & ~Qt::ItemIsSelectable);
+
+    //加载后端发送过来的好友列表
+    auto con_list = UserMgr::GetInstance()->GetConListPerPage();
+    for(auto & con_ele : con_list){
+        auto *con_user_wid = new ConUserItem();
+        con_user_wid->SetInfo(con_ele->_uid,con_ele->_nick, con_ele->_icon, con_ele->_back);
+        QListWidgetItem *item = new QListWidgetItem;
+        //qCDebug(lcUser) <<"chat_user_wid sizeHint is " << chat_user_wid->sizeHint();
+        item->setSizeHint(con_user_wid->sizeHint());
+        this->addItem(item);
+        this->setItemWidget(item, con_user_wid);
+    }
+
+    UserMgr::GetInstance()->UpdateContactLoadedCount();
+
+}
+
+// ★ 登出清理：只删"联系人"分组之后的好友项。
+//   列表顶部有三样【固定结构】——顶部提示条、"新的朋友"入口、"联系人"分组条，
+//   都在构造函数里创建一次（_add_friend_item/_groupitem 是成员指针），
+//   不能无脑 clear()，否则入口和分组一起消失，下次登录界面就残了。
+//   删掉 QListWidgetItem 即可，setItemWidget 设置的 widget 由视图一并回收。
+void ContactUserList::removeFriendItems()
+{
+    int group_row = this->row(_groupitem);
+    if (group_row < 0) {
+        return;   // 固定结构尚未建立（异常情况），不动
+    }
+    while (this->count() > group_row + 1) {
+        QListWidgetItem *it = this->item(this->count() - 1);
+        delete it;   // 从列表移除该行，对应的 itemWidget 由视图自动删除
+    }
+    // 选中态回到"新的朋友"，避免停在已被删除的行上
+    for (int i = 0; i < this->count(); ++i) {
+        if (this->itemWidget(this->item(i)) == _add_friend_item) {
+            this->setCurrentRow(i);
+            break;
+        }
+    }
+}
+
+// ★ 重新加载"联系人"分组下的好友项。
+//   用于退出重登后 applyLoginSession() 刷新，也用于构造时避免与 addContactUserList 重复。
+//   UserMgr::Clear() 已经把 _contact_loaded 复位为 0，所以这里直接复用分页读取。
+void ContactUserList::reloadFriendItems()
+{
+    removeFriendItems();
+
+    // ★ 分页游标必须先复位为 0：构造时 addContactUserList() 在首次登录时 _friend_list
+    //   已由登录回包填好，会把 _contact_loaded 推进到满页；若不复位，下面
+    //   GetConListPerPage() 从 begin>=size 处读，直接返回空 → 联系人列表空白。
+    //   （重登/重连路径因 UserMgr::Clear() 已复位才没暴露，唯首次登录必现。）
+    UserMgr::GetInstance()->ResetContactLoadedCount();
+
+    auto con_list = UserMgr::GetInstance()->GetConListPerPage();
+    qCDebug(lcUser) << "reloadFriendItems: con_list size =" << con_list.size();
+    for (auto& con_ele : con_list) {
+        auto *con_user_wid = new ConUserItem();
+        con_user_wid->SetInfo(con_ele->_uid, con_ele->_nick, con_ele->_icon, con_ele->_back);
+        QListWidgetItem *item = new QListWidgetItem;
+        item->setSizeHint(con_user_wid->sizeHint());
+        this->addItem(item);
+        this->setItemWidget(item, con_user_wid);
+    }
+
+    UserMgr::GetInstance()->UpdateContactLoadedCount();
+}
+
+bool ContactUserList::eventFilter(QObject *watched, QEvent *event)
+{
+    // 检查事件是否是鼠标悬浮进入或离开
+    if (watched == this->viewport()) {
+        if (event->type() == QEvent::Enter) {
+            // 鼠标悬浮，显示滚动条
+            this->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+        } else if (event->type() == QEvent::Leave) {
+            // 鼠标离开，隐藏滚动条
+            this->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        }
+    }
+
+    // 检查事件是否是鼠标滚轮事件
+    if (watched == this->viewport() && event->type() == QEvent::Wheel) {
+        QWheelEvent *wheelEvent = static_cast<QWheelEvent*>(event);
+        int numDegrees = wheelEvent->angleDelta().y() / 8;
+        int numSteps = numDegrees / 15; // 计算滚动步数
+
+        // 设置滚动幅度
+        this->verticalScrollBar()->setValue(this->verticalScrollBar()->value() - numSteps);
+
+        // 检查是否滚动到底部
+        QScrollBar *scrollBar = this->verticalScrollBar();
+        int maxScrollValue = scrollBar->maximum();
+        int currentValue = scrollBar->value();
+        //int pageSize = 10; // 每页加载的联系人数量
+
+        if (maxScrollValue - currentValue <= 0) {
+
+            auto b_loaded = UserMgr::GetInstance()->IsLoadChatFin();
+            if(b_loaded){
+                return true;
+            }
+
+            if(_load_pending){
+                return true;
+            }
+
+            _load_pending = true;
+
+            QTimer::singleShot(100, [this]() {
+
+                _load_pending = false;
+             });
+
+            // 滚动到底部，加载新的联系人
+            qCDebug(lcUser) <<"load more contact user";
+            //发送信号通知聊天界面加载更多聊天内容
+            emit sig_loading_contact_user();
+         }
+
+        return true; // 停止事件传递
+    }
+
+    return QListWidget::eventFilter(watched, event);
+
+}
+
+void ContactUserList::slot_item_clicked(QListWidgetItem *item)
+{
+    QWidget *widget = this->itemWidget(item); // 获取自定义widget对象
+    if(!widget){
+        qCDebug(lcUser) << "slot item clicked widget is nullptr";
+        return;
+    }
+
+    // 对自定义widget进行操作， 将item 转化为基类ListItemBase
+    ListItemBase *customItem = qobject_cast<ListItemBase*>(widget);
+    if(!customItem){
+        qCDebug(lcUser) << "slot item clicked widget is nullptr";
+        return;
+    }
+
+    auto itemType = customItem->GetItemType();
+    if(itemType == ListItemType::INVALID_ITEM
+            || itemType == ListItemType::GROUP_TIP_ITEM){
+        qCDebug(lcUser) << "slot invalid item clicked ";
+        return;
+    }
+
+   if(itemType == ListItemType::APPLY_FRIEND_ITEM){
+
+       // 创建对话框，提示用户
+       qCDebug(lcUser) << "apply friend item clicked ";
+       //跳转到好友申请界面
+       emit sig_switch_apply_friend_page();
+       return;
+    }
+
+   // ★ 点击联系人条目 → 跳好友详情页。
+   //   ChatDialog 早就 connect 了 sig_switch_friend_info_page → slot_friend_info_page
+   //   （切 stackedWidget + FriendInfoPage::SetInfo），但这里从来没 emit 过 ——
+   //   教程原版就缺这个分支，导致点联系人毫无反应、详情页"消失"。
+   if(itemType == ListItemType::CONTACT_USER_ITEM){
+       auto *con_item = qobject_cast<ConUserItem*>(customItem);
+       if(!con_item){
+           qCDebug(lcUser) << "slot item clicked cast ConUserItem failed";
+           return;
+       }
+       auto user_info = con_item->GetInfo();
+       if(!user_info){
+           qCDebug(lcUser) << "slot item clicked GetInfo is nullptr";
+           return;
+       }
+       emit sig_switch_friend_info_page(user_info);
+       return;
+    }
+}
+
+void ContactUserList::slot_add_auth_firend(std::shared_ptr<AuthInfo> auth_info)
+{
+    qCDebug(lcUser) << "slot add auth friend ";
+    bool isFriend = UserMgr::GetInstance()->CheckFriendById(auth_info->_uid);
+    if(isFriend){
+        return;
+    }
+    // 在 groupitem 之后插入新项
+    int randomValue = QRandomGenerator::global()->bounded(100); // 生成0到99之间的随机整数
+    int str_i = randomValue%strs.size();
+    int head_i = randomValue%heads.size();
+
+    auto *con_user_wid = new ConUserItem();
+    con_user_wid->SetInfo(auth_info);
+    QListWidgetItem *item = new QListWidgetItem;
+    //qCDebug(lcUser) <<"chat_user_wid sizeHint is " << chat_user_wid->sizeHint();
+    item->setSizeHint(con_user_wid->sizeHint());
+
+    // 获取 groupitem 的索引
+    int index = this->row(_groupitem);
+    // 在 groupitem 之后插入新项
+    this->insertItem(index + 1, item);
+
+    this->setItemWidget(item, con_user_wid);
+
+}
+
+void ContactUserList::slot_auth_rsp(std::shared_ptr<AuthRsp> auth_rsp)
+{
+    qCDebug(lcUser) << "slot auth rsp called";
+    bool isFriend = UserMgr::GetInstance()->CheckFriendById(auth_rsp->_uid);
+    if(isFriend){
+        return;
+    }
+    // 在 groupitem 之后插入新项
+    int randomValue = QRandomGenerator::global()->bounded(100); // 生成0到99之间的随机整数
+    int str_i = randomValue%strs.size();
+    int head_i = randomValue%heads.size();
+
+    auto *con_user_wid = new ConUserItem();
+    con_user_wid->SetInfo(auth_rsp->_uid ,auth_rsp->_nick, auth_rsp->_icon);
+    QListWidgetItem *item = new QListWidgetItem;
+    //qCDebug(lcUser) <<"chat_user_wid sizeHint is " << chat_user_wid->sizeHint();
+    item->setSizeHint(con_user_wid->sizeHint());
+
+    // 获取 groupitem 的索引
+    int index = this->row(_groupitem);
+    // 在 groupitem 之后插入新项
+    this->insertItem(index + 1, item);
+
+    this->setItemWidget(item, con_user_wid);
+
+}
+
+

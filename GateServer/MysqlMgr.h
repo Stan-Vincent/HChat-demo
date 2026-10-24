@@ -8,7 +8,9 @@ public:
 	~MysqlMgr();
 
 	int RegUser(const std::string& name, const std::string& email, const std::string& pwd, const std::string& icon);
-	bool CheckEmail(const std::string& name, const std::string& email);
+	bool CheckEmail(const std::string& name, const std::string& email);
+	// 探活：MySQL 是否可用，用于 /health
+	bool Ping();
 	bool UpdatePwd(const std::string& name, const std::string& pwd);
 	bool UpdateUserInfo(int uid, const std::string& nick, const std::string& desc,
 		int sex, const std::string& icon);

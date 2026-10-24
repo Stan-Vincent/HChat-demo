@@ -1,0 +1,130 @@
+[2026-10-17 18:38:07.802] [chat2] [info] 配置文件路径: D:\QTcode\HChat\ChatServer2\config.ini
+[2026-10-17 18:38:07.802] [chat2] [info] [配置节 GateServer]
+[2026-10-17 18:38:07.802] [chat2] [info] 配置项 Port = 8080
+[2026-10-17 18:38:07.802] [chat2] [info] [配置节 Mysql]
+[2026-10-17 18:38:07.802] [chat2] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 18:38:07.802] [chat2] [info] 配置项 Passwd = Hcat@2026Secure
+[2026-10-17 18:38:07.802] [chat2] [info] 配置项 Port = 3308
+[2026-10-17 18:38:07.802] [chat2] [info] 配置项 Schema = Hcat
+[2026-10-17 18:38:07.802] [chat2] [info] 配置项 User = root
+[2026-10-17 18:38:07.802] [chat2] [info] [配置节 PeerServer]
+[2026-10-17 18:38:07.802] [chat2] [info] 配置项 Servers = chatserver1
+[2026-10-17 18:38:07.802] [chat2] [info] [配置节 Redis]
+[2026-10-17 18:38:07.802] [chat2] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 18:38:07.802] [chat2] [info] 配置项 Passwd = Hcat@2026Secure
+[2026-10-17 18:38:07.802] [chat2] [info] 配置项 Port = 6380
+[2026-10-17 18:38:07.802] [chat2] [info] [配置节 SelfServer]
+[2026-10-17 18:38:07.802] [chat2] [info] 配置项 Host = 0.0.0.0
+[2026-10-17 18:38:07.802] [chat2] [info] 配置项 Name = chatserver2
+[2026-10-17 18:38:07.802] [chat2] [info] 配置项 Port = 8991
+[2026-10-17 18:38:07.802] [chat2] [info] 配置项 RPCPort = 50056
+[2026-10-17 18:38:07.802] [chat2] [info] [配置节 StatusServer]
+[2026-10-17 18:38:07.802] [chat2] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 18:38:07.802] [chat2] [info] 配置项 Port = 50052
+[2026-10-17 18:38:07.802] [chat2] [info] [配置节 VarifyServer]
+[2026-10-17 18:38:07.802] [chat2] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 18:38:07.802] [chat2] [info] 配置项 Port = 50051
+[2026-10-17 18:38:07.802] [chat2] [info] [配置节 chatserver1]
+[2026-10-17 18:38:07.802] [chat2] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 18:38:07.802] [chat2] [info] 配置项 Name = chatserver1
+[2026-10-17 18:38:07.802] [chat2] [info] 配置项 Port = 50055
+认证成功
+认证成功
+认证成功
+认证成功
+认证成功
+认证成功
+认证成功
+认证成功
+认证成功
+认证成功
+[2026-10-17 18:38:07.810] [chat2] [info] Redis HSET logincount chatserver2 0 成功
+Server start success, listen on port : 8991
+[2026-10-17 18:38:07.824] [chat2] [info] RPC 服务已监听: 0.0.0.0:50056
+[2026-10-17 18:39:07.811] [chat2] [info] Redis HSET logincount chatserver2 0 成功
+[2026-10-17 18:40:24.881] [chat2] [info] 配置文件路径: D:\QTcode\HChat\ChatServer2\config.ini
+[2026-10-17 18:40:24.881] [chat2] [info] [配置节 GateServer]
+[2026-10-17 18:40:24.881] [chat2] [info] 配置项 Port = 8080
+[2026-10-17 18:40:24.881] [chat2] [info] [配置节 Mysql]
+[2026-10-17 18:40:24.881] [chat2] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 18:40:24.881] [chat2] [info] 配置项 Passwd = Hcat@2026Secure
+[2026-10-17 18:40:24.881] [chat2] [info] 配置项 Port = 3308
+[2026-10-17 18:40:24.881] [chat2] [info] 配置项 Schema = Hcat
+[2026-10-17 18:40:24.881] [chat2] [info] 配置项 User = root
+[2026-10-17 18:40:24.881] [chat2] [info] [配置节 PeerServer]
+[2026-10-17 18:40:24.881] [chat2] [info] 配置项 Servers = chatserver1
+[2026-10-17 18:40:24.881] [chat2] [info] [配置节 Redis]
+[2026-10-17 18:40:24.881] [chat2] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 18:40:24.881] [chat2] [info] 配置项 Passwd = Hcat@2026Secure
+[2026-10-17 18:40:24.881] [chat2] [info] 配置项 Port = 6380
+[2026-10-17 18:40:24.881] [chat2] [info] [配置节 SelfServer]
+[2026-10-17 18:40:24.881] [chat2] [info] 配置项 Host = 0.0.0.0
+[2026-10-17 18:40:24.881] [chat2] [info] 配置项 Name = chatserver2
+[2026-10-17 18:40:24.881] [chat2] [info] 配置项 Port = 8991
+[2026-10-17 18:40:24.881] [chat2] [info] 配置项 RPCPort = 50056
+[2026-10-17 18:40:24.881] [chat2] [info] [配置节 StatusServer]
+[2026-10-17 18:40:24.881] [chat2] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 18:40:24.881] [chat2] [info] 配置项 Port = 50052
+[2026-10-17 18:40:24.881] [chat2] [info] [配置节 VarifyServer]
+[2026-10-17 18:40:24.881] [chat2] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 18:40:24.881] [chat2] [info] 配置项 Port = 50051
+[2026-10-17 18:40:24.881] [chat2] [info] [配置节 chatserver1]
+[2026-10-17 18:40:24.881] [chat2] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 18:40:24.881] [chat2] [info] 配置项 Name = chatserver1
+[2026-10-17 18:40:24.881] [chat2] [info] 配置项 Port = 50055
+认证成功
+认证成功
+认证成功
+认证成功
+认证成功
+认证成功
+认证成功
+认证成功
+认证成功
+认证成功
+[2026-10-17 18:40:24.889] [chat2] [info] Redis HSET logincount chatserver2 0 成功
+Server start success, listen on port : 8991
+[2026-10-17 18:40:24.908] [chat2] [info] RPC 服务已监听: 0.0.0.0:50056
+[2026-10-17 18:42:40.823] [chat2] [info] 配置文件路径: D:\QTcode\HChat\ChatServer2\config.ini
+[2026-10-17 18:42:40.823] [chat2] [info] [配置节 GateServer]
+[2026-10-17 18:42:40.823] [chat2] [info] 配置项 Port = 8080
+[2026-10-17 18:42:40.823] [chat2] [info] [配置节 Mysql]
+[2026-10-17 18:42:40.823] [chat2] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 18:42:40.823] [chat2] [info] 配置项 Passwd = Hcat@2026Secure
+[2026-10-17 18:42:40.823] [chat2] [info] 配置项 Port = 3308
+[2026-10-17 18:42:40.823] [chat2] [info] 配置项 Schema = Hcat
+[2026-10-17 18:42:40.823] [chat2] [info] 配置项 User = root
+[2026-10-17 18:42:40.823] [chat2] [info] [配置节 PeerServer]
+[2026-10-17 18:42:40.823] [chat2] [info] 配置项 Servers = chatserver1
+[2026-10-17 18:42:40.823] [chat2] [info] [配置节 Redis]
+[2026-10-17 18:42:40.823] [chat2] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 18:42:40.823] [chat2] [info] 配置项 Passwd = Hcat@2026Secure
+[2026-10-17 18:42:40.823] [chat2] [info] 配置项 Port = 6380
+[2026-10-17 18:42:40.823] [chat2] [info] [配置节 SelfServer]
+[2026-10-17 18:42:40.823] [chat2] [info] 配置项 Host = 0.0.0.0
+[2026-10-17 18:42:40.823] [chat2] [info] 配置项 Name = chatserver2
+[2026-10-17 18:42:40.823] [chat2] [info] 配置项 Port = 8991
+[2026-10-17 18:42:40.823] [chat2] [info] 配置项 RPCPort = 50056
+[2026-10-17 18:42:40.823] [chat2] [info] [配置节 StatusServer]
+[2026-10-17 18:42:40.823] [chat2] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 18:42:40.823] [chat2] [info] 配置项 Port = 50052
+[2026-10-17 18:42:40.823] [chat2] [info] [配置节 VarifyServer]
+[2026-10-17 18:42:40.823] [chat2] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 18:42:40.823] [chat2] [info] 配置项 Port = 50051
+[2026-10-17 18:42:40.823] [chat2] [info] [配置节 chatserver1]
+[2026-10-17 18:42:40.823] [chat2] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 18:42:40.823] [chat2] [info] 配置项 Name = chatserver1
+[2026-10-17 18:42:40.823] [chat2] [info] 配置项 Port = 50055
+认证成功
+认证成功
+认证成功
+认证成功
+认证成功
+认证成功
+认证成功
+认证成功
+认证成功
+认证成功
+[2026-10-17 18:42:40.831] [chat2] [info] Redis HSET logincount chatserver2 0 成功
+Server start success, listen on port : 8991
+[2026-10-17 18:42:40.845] [chat2] [info] RPC 服务已监听: 0.0.0.0:50056

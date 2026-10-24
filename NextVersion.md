@@ -12,12 +12,12 @@
 
 | 优先级 | 模块 | 事项 | 状态 |
 |---|---|---|---|
-| P0 | 客户端 | 聊天链路错误无用户提示 | `[ ]` |
-| P0 | 客户端 | Enter 发送快捷键 | `[ ]` |
-| P0 | 客户端 | 槽函数无 try/catch 兜底 | `[ ]` |
+| P0 | 客户端 | 聊天链路错误无用户提示 | `[x]` 已完成 |
+| P0 | 客户端 | Enter 发送快捷键 | `[x]` 已完成 |
+| P0 | 客户端 | 槽函数无 try/catch 兜底 | `[x]` 已完成 |
 | P1 | 后端 | 结构化日志 | `[x]` 已完成 |
-| P1 | 后端 | Redis 重连 + 健康检查 | `[ ]` |
-| P1 | 客户端 | 断线自动重连 | `[ ]` |
+| P1 | 后端 | Redis 重连 + 健康检查 | `[~]` 代码已改，待重编验证 |
+| P1 | 客户端 | 断线自动重连 | `[x]` 已完成 |
 | P2 | 后端 | token 生命周期 | `[ ]` |
 | P2 | 后端 | HTTP 连接复用（keep-alive） | `[ ]` |
 | P2 | 客户端 | 图片上传前校验 | `[ ]` |
@@ -71,13 +71,22 @@ $env:HCHAT_LOG_LEVEL="debug"                        # 后端打开调试
 
 ---
 
-### 2. Redis 重连 + 健康检查（P1）
+### 2. Redis 重连 + 健康检查（P1）~~🔧 代码已完成，待重编验证~~
 
-**现状**：`RedisMgr` 提供 Get/Set/LPush/HSet 等封装并返回 bool，但**没有任何重连逻辑**。Redis 抖动一次，登录 / 验证码 / 聊天直接失败且不自愈。
+**原现状**：GateServer 的 `RedisMgr` 只有 Get/Set/HSet 等封装，**完全没有重连逻辑**；
+ChatServer 版有 PING 巡检但无退避、间隔 60 秒，且 `reconnect()` 里 `reply->type` 未判 NULL（会崩）。
 
-- [ ] 连接失败自动重连（指数退避）
-- [ ] 提供 `/health` 健康检查接口（探活 MySQL + Redis + gRPC 依赖）
-- [ ] 依赖不可用时快速失败（fail-fast），而不是卡住等超时
+**已做（2026-10-21）**：
+- [x] 连接池抽成共享一份 `common/RedisConPool.h`（原来是 ChatServer/GateServer 两份不同实现）
+- [x] 巡检间隔 60s → **可配置，默认 5s**；命令超时 2s（避免 PING 永久阻塞巡检线程）
+- [x] 补齐连接改**指数退避** 1s→2s→4s…上限 30s（Redis 重启时别高频重连把它再打爆）
+- [x] 修 `reconnect()` 空指针（`reply` 先判空再判类型）、`host_/pwd_` 传 `std::string` 给 hiredis 的问题
+- [x] GateServer 新增 `GET /health`：探 Redis + MySQL，任一不可用返回 **503**（fail-fast）
+- [x] `RedisMgr::Ping()` / `MysqlDao::Ping()` / `MysqlMgr::Ping()` 探活原语
+- [x] 测试 `test/redis_reconnect_test.py`：用 `CLIENT PAUSE` 模拟抖动，验证 degraded→自愈
+
+- [ ] gRPC 下游（StatusServer/VarifyServer）探活未纳入 /health
+- [ ] **待用户 VS 重编 GateServer + ChatServer 后跑测试验证**
 
 **代码位置**：`ChatServer/RedisMgr.cpp`（全文件只有业务封装，无 Reconnect）；`GateServer/RedisMgr.cpp` 同理
 
@@ -145,14 +154,17 @@ $env:HCHAT_LOG_LEVEL="debug"                        # 后端打开调试
 
 ## 🖼 Qt 客户端
 
-### 7. 聊天链路错误无用户提示（P0）⭐
+### 7. 聊天链路错误无用户提示（P0）~~✅ 已完成~~
 
-**现状**：头像加载失败、图片上传失败、消息发送失败等**全部只进控制台**，用户界面毫无感知。相比登录链路（`showTip` 完整提示）差距明显。
+**现状（已完成时）**：头像加载失败、图片上传失败、消息发送失败等全部只进控制台，用户界面毫无感知。
 
-- [ ] 复用 `LoginDialog::showTip` 的提示组件（建议抽成公共 `Tip` 工具类）
-- [ ] 图片上传失败 → 气泡显示失败态 + 提示
-- [ ] 消息发送失败 → 已有"发送失败"图标，补一个点击重发
+- [x] 复用右上角轻量 Toast（`Client/widgets/toast.h`，Info/Success/Warning/Error 四态、自动消失、不阻塞）
+- [x] 图片上传失败（`chatpage.cpp` 发送 / 重发两条路径）→ Toast 报错 + 气泡保持失败态
+- [x] 文件上传失败 → Toast 报错 + 气泡标失败态
+- [x] ~~消息发送失败 → 补一个点击重发~~ **早已实现**（`ChatPage::slot_resend`：点失败图标重发，
+  文本直接发 / 图片重新上传；`armResendTimer` 8 秒无回包自动标失败；`_resend_ctx` 切会话清理）
 - [ ] 聊天记录加载失败 → 提示 + 重试入口
+- [ ] 头像/图片**下载**失败不弹 Toast（避免噪音，符合“只提示用户主动操作的结果”原则）
 
 **代码位置**：`chatpage.cpp`（`qDebug() << "load bubble image failed"`、`"upload image failed"`）、`imagemanager.cpp`（`qDebug() << "download image failed"`）
 
@@ -175,12 +187,15 @@ $env:HCHAT_LOG_LEVEL="debug"                        # 后端打开调试
 
 ---
 
-### 9. 槽函数 try/catch 兜底（P0）
+### 9. 槽函数 try/catch 兜底（P0）~~✅ 已完成~~
 
-**现状**：全项目 **0 个 try/catch**。Qt 槽里抛异常会 `std::terminate` 直接崩。此前 `_handlers[id]` 的 `std::bad_function_call` 就是典型案例（已修根因，但无兜底）。
+**现状（已完成时）**：全项目 0 个 try/catch。Qt 槽里抛异常会 `std::terminate` 直接崩。此前 `_handlers[id]` 的 `std::bad_function_call` 就是典型案例（已修根因，但无兜底）。
 
-- [ ] 关键槽函数（网络回包处理）包 try/catch
-- [ ] 异常时记录日志 + 友好提示，不崩溃
+- [x] **在 `TcpMgr::handleMsg` 统一兜底**：包住所有网络回包 handler 的调用，
+  异常时打 `qCWarning` 并吞掉，不再穿透 Qt 事件循环导致 terminate。
+  选这一处是因为它是**全部回包的必经之路**，一处覆盖所有 handler，不必逐个槽撒网。
+- [ ] 其余 UI 槽（按钮点击等）暂未包——它们不处理外部输入，抛异常概率低，
+  且真抛了也有 handleMsg 这层保险兜底大部分场景。
 
 **代码位置**：`chatdialog.cpp` 各 `slot_*`、`tcpmgr.cpp` 的 `_handlers`、`httpmgr.cpp` 回包
 

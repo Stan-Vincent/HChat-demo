@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- ChatServer 与 ChatServer2 共享的源码清单（唯一一份，改一处两台同时生效）。
+       路径基于本文件所在目录，所以两个工程可以用完全相同的一行 Import 引用它。
+       新增源文件：只改这里（不要把文件再复制一份到 ChatServer2）。 -->
+  <ItemGroup>
+    <ClCompile Include="..\ChatServer\AsioIOServicePool.cpp" />
+    <ClCompile Include="..\ChatServer\ChatGrpcClient.cpp" />
+    <ClCompile Include="..\ChatServer\ChatServer.cpp" />
+    <ClCompile Include="..\ChatServer\ChatServiceImpl.cpp" />
+    <ClCompile Include="..\ChatServer\ConfigMgr.cpp" />
+    <ClCompile Include="..\ChatServer\CServer.cpp" />
+    <ClCompile Include="..\ChatServer\CSession.cpp" />
+    <ClCompile Include="..\ChatServer\DistLock.cpp" />
+    <ClCompile Include="..\ChatServer\LogicSystem.cpp" />
+    <ClCompile Include="..\ChatServer\message.grpc.pb.cc" />
+    <ClCompile Include="..\ChatServer\message.pb.cc" />
+    <ClCompile Include="..\ChatServer\MsgNode.cpp" />
+    <ClCompile Include="..\ChatServer\MysqlDao.cpp" />
+    <ClCompile Include="..\ChatServer\MysqlMgr.cpp" />
+    <ClCompile Include="..\ChatServer\RedisMgr.cpp" />
+    <ClCompile Include="..\ChatServer\StatusGrpcClient.cpp" />
+    <ClCompile Include="..\ChatServer\UserMgr.cpp" />
+    <ClCompile Include="..\ChatServer\utils.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\ChatServer\AsioIOServicePool.h" />
+    <ClInclude Include="..\ChatServer\ChatGrpcClient.h" />
+    <ClInclude Include="..\ChatServer\ChatServiceImpl.h" />
+    <ClInclude Include="..\ChatServer\ConfigMgr.h" />
+    <ClInclude Include="..\ChatServer\const.h" />
+    <ClInclude Include="..\ChatServer\CServer.h" />
+    <ClInclude Include="..\ChatServer\CSession.h" />
+    <ClInclude Include="..\ChatServer\data.h" />
+    <ClInclude Include="..\ChatServer\DistLock.h" />
+    <ClInclude Include="..\ChatServer\LogicSystem.h" />
+    <ClInclude Include="..\ChatServer\message.grpc.pb.h" />
+    <ClInclude Include="..\ChatServer\message.pb.h" />
+    <ClInclude Include="..\ChatServer\MsgNode.h" />
+    <ClInclude Include="..\ChatServer\MysqlDao.h" />
+    <ClInclude Include="..\ChatServer\MysqlMgr.h" />
+    <ClInclude Include="..\ChatServer\RedisMgr.h" />
+    <ClInclude Include="..\ChatServer\Singleton.h" />
+    <ClInclude Include="..\ChatServer\StatusGrpcClient.h" />
+    <ClInclude Include="..\ChatServer\UserMgr.h" />
+    <ClInclude Include="..\ChatServer\utils.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\ChatServer\message.proto" />
+  </ItemGroup>
+</Project>

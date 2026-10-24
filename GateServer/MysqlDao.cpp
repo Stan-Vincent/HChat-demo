@@ -390,6 +390,26 @@ int MysqlDao::RegUserTransaction(const std::string& name, const std::string& ema
 }
 
 // ¼ì²é email
+bool MysqlDao::Ping() {
+	auto con = pool_->getConnection();
+	if (con == nullptr) {
+		return false;
+	}
+	Defer defer([this, &con]() {
+		pool_->returnConnection(std::move(con));
+		});
+
+	try {
+		std::unique_ptr<sql::Statement> stmt(con->_con->createStatement());
+		std::unique_ptr<sql::ResultSet> res(stmt->executeQuery("SELECT 1"));
+		return res->next();
+	}
+	catch (sql::SQLException& e) {
+		LOG_ERROR("mysql ping failed: {} (code {})", e.what(), e.getErrorCode());
+		return false;
+	}
+}
+
 bool MysqlDao::CheckEmail(const std::string& name, const std::string& email)
 {
     auto con = pool_->getConnection();

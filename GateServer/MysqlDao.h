@@ -70,7 +70,9 @@ public:
     ~MysqlDao();
     int RegUser(const std::string& name, const std::string& email, const std::string& pwd);
     int RegUserTransaction(const std::string& name, const std::string& email, const std::string& pwd, const std::string& icon);
-    bool CheckEmail(const std::string& name, const std::string& email);
+    bool CheckEmail(const std::string& name, const std::string& email);
+    // 探活：执行 SELECT 1，用于 /health
+    bool Ping();
     bool UpdatePwd(const std::string& name, const std::string& newpwd);
     //★ 更新用户资料。name 是登录标识不可改，所以只按 uid 更新。
     bool UpdateUserInfo(int uid, const std::string& nick, const std::string& desc,

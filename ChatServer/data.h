@@ -36,6 +36,10 @@ struct ChatThreadInfo {
 	int _user1_id;    // 私聊时对应 private_chat.user1_id；群聊时设为 0
 	int _user2_id;    // 私聊时对应 private_chat.user2_id；群聊时设为 0
 	std::string _name;     // group display name (group_chat.name); empty for private
+    // group members (user_id list); empty for private threads.
+    // 1018 loads them together with the thread list so the client can
+    // show the member list without a separate query.
+    std::vector<int> _members;
 };
 
 //聊天消息信息

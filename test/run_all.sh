@@ -229,6 +229,11 @@ if [ "${SKIP_GROUP:-0}" != 1 ]; then
         "$PY" "$ROOT/test/group_chat_test.py"
 fi
 
+# 配置一致性（不需要起服务）：上传上限两边同值、错误码数值不冲突、端口不撞车
+IDX=$((IDX + 1))
+run_suite "$IDX" config "配置一致性 (config_consistency_check.py)" \
+    "$PY" "$ROOT/test/config_consistency_check.py"
+
 # 可选：mock 套件（不需要真实 GateServer，验证的是同一份服务端逻辑的移植版）
 if [ "${RUN_MOCK:-0}" = 1 ] && [ -x "$ROOT/test/beast_proto/mock_gate.exe" ]; then
     IDX=$((IDX + 1))

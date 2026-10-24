@@ -1,0 +1,29 @@
+  (使用 uid=2)
+  (已备份原资料: nick='河南神' sex=1)
+  [PASS] upload_image 返回 200 status=200
+  [PASS] upload_image error==0 
+  [PASS] upload_image 返回 url upload/1792233781871_a753e4d3da6cacc1.png
+  [PASS] 上传的 .png 扩展名保留 upload/1792233781871_a753e4d3da6cacc1.png
+  [PASS] 下载图片 status==200 status=200 len=70
+  [PASS] 下载内容是同一张PNG expect=70 got=70
+  [PASS] 重复下载结果一致 
+  [PASS] update_userinfo 200 status=200
+  [PASS] update_userinfo error==0 
+  [PASS] 回包带回 nick e2e_nick_test
+  [PASS] update_userinfo 幂等重试 
+  [PASS] 超长 nick 被截断到 21 len=21
+  [PASS] 超长 desc 被截断到 200 len=200
+  [PASS] uid=0 被拒绝 error=1011
+  [PASS] 空文件返回错误而非崩溃 error=1001 msg=empty file
+  [PASS] exe 扩展名被中和成 .bin upload/1792233781968_6c32ef131e304b60.bin
+  [PASS] 老 base64/JSON 协议被拒 error=1001 msg=expected a raw binary body, not application/json
+  [PASS] 非法 JSON 返回错误而非崩溃 
+  [PASS] 路径穿越被挡住: /upload/../../config.ini status=200 len=13
+  [PASS] 路径穿越被挡住: /upload/../config.ini status=200 len=13
+  [PASS] 路径穿越被挡住: /upload/..%2f..%2fconfig.ini status=200 len=13
+  [PASS] 路径穿越被挡住: /upload/ status=200 len=13
+
+  ----
+  e2e: 22 通过, 0 失败
+  [还原] 已把 uid=2 的资料改回原值
+  [清理] 服务端测试文件 2 个

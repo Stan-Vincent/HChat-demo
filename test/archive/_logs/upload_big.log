@@ -1,0 +1,7 @@
+[32m  [PASS] 19MB 上传成功                      0.6s size=19922944 url=upload/1792233784914_3c0c1b0cff2d0383.bin[0m
+[32m  [PASS] 301MB 被明确拒绝                    9.4s status=200 error=1001 msg=file too large (max 300MB)[0m
+[32m  [PASS] 老 JSON 信封被拒                    status=200 msg=expected a raw binary body, not application/json[0m
+[32m  [PASS] 缺 file_name 被拒                 status=200 msg=missing file_name[0m
+    已删除服务端测试文件: GateServer\upload\1792233784914_3c0c1b0cff2d0383.bin
+--------------------------------------------------------------
+[32m全部通过[0m

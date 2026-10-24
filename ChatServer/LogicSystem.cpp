@@ -1032,6 +1032,11 @@ void LogicSystem::GetUserThreadsHandler(std::shared_ptr<CSession> session,
 		thread_value["user2_id"] = thread->_user2_id;
 		// Group threads carry a display name; private ones send an empty string.
 		thread_value["name"] = thread->_name;
+		// Group threads also carry their member list (empty array for private).
+		// Older clients ignore unknown fields, so this stays compatible.
+		for (int m_uid : thread->_members) {
+			thread_value["members"].append(m_uid);
+		}
 		rtvalue["threads"].append(thread_value);
 	}
 }

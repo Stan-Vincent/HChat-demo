@@ -1,0 +1,194 @@
+[2026-10-17 15:37:26.732] [status] [info] 配置文件路径: D:\QTcode\HChat\StatusServer\config.ini
+[2026-10-17 15:37:26.732] [status] [info] [配置节 Mysql]
+[2026-10-17 15:37:26.732] [status] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 15:37:26.732] [status] [info] 配置项 Passwd = Hcat@2026Secure
+[2026-10-17 15:37:26.732] [status] [info] 配置项 Port = 3308
+[2026-10-17 15:37:26.732] [status] [info] 配置项 Schema = Hcat
+[2026-10-17 15:37:26.732] [status] [info] 配置项 User = root
+[2026-10-17 15:37:26.732] [status] [info] [配置节 Redis]
+[2026-10-17 15:37:26.732] [status] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 15:37:26.732] [status] [info] 配置项 Passwd = Hcat@2026Secure
+[2026-10-17 15:37:26.732] [status] [info] 配置项 Port = 6380
+[2026-10-17 15:37:26.732] [status] [info] [配置节 StatusServer]
+[2026-10-17 15:37:26.732] [status] [info] 配置项 Host = 0.0.0.0
+[2026-10-17 15:37:26.732] [status] [info] 配置项 Port = 50052
+[2026-10-17 15:37:26.732] [status] [info] [配置节 chatserver1]
+[2026-10-17 15:37:26.732] [status] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 15:37:26.732] [status] [info] 配置项 Name = chatserver1
+[2026-10-17 15:37:26.732] [status] [info] 配置项 Port = 8990
+[2026-10-17 15:37:26.732] [status] [info] [配置节 chatserver2]
+[2026-10-17 15:37:26.732] [status] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 15:37:26.732] [status] [info] 配置项 Name = chatserver2
+[2026-10-17 15:37:26.732] [status] [info] 配置项 Port = 8991
+[2026-10-17 15:37:26.732] [status] [info] [配置节 chatservers]
+[2026-10-17 15:37:26.732] [status] [info] 配置项 Name = chatserver1,chatserver2
+[2026-10-17 15:37:26.745] [status] [info] 服务已监听: 0.0.0.0:50052
+认证成功
+认证成功
+认证成功
+认证成功
+认证成功
+[2026-10-17 15:37:33.303] [status] [info] Redis SET utoken_2 dc720031-084e-48f5-82be-1c85bcc93824 成功
+[2026-10-17 15:38:44.340] [status] [info] 配置文件路径: D:\QTcode\HChat\StatusServer\config.ini
+[2026-10-17 15:38:44.340] [status] [info] [配置节 Mysql]
+[2026-10-17 15:38:44.340] [status] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 15:38:44.340] [status] [info] 配置项 Passwd = Hcat@2026Secure
+[2026-10-17 15:38:44.340] [status] [info] 配置项 Port = 3308
+[2026-10-17 15:38:44.340] [status] [info] 配置项 Schema = Hcat
+[2026-10-17 15:38:44.340] [status] [info] 配置项 User = root
+[2026-10-17 15:38:44.340] [status] [info] [配置节 Redis]
+[2026-10-17 15:38:44.340] [status] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 15:38:44.340] [status] [info] 配置项 Passwd = Hcat@2026Secure
+[2026-10-17 15:38:44.340] [status] [info] 配置项 Port = 6380
+[2026-10-17 15:38:44.340] [status] [info] [配置节 StatusServer]
+[2026-10-17 15:38:44.340] [status] [info] 配置项 Host = 0.0.0.0
+[2026-10-17 15:38:44.340] [status] [info] 配置项 Port = 50052
+[2026-10-17 15:38:44.340] [status] [info] [配置节 chatserver1]
+[2026-10-17 15:38:44.340] [status] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 15:38:44.340] [status] [info] 配置项 Name = chatserver1
+[2026-10-17 15:38:44.340] [status] [info] 配置项 Port = 8990
+[2026-10-17 15:38:44.340] [status] [info] [配置节 chatserver2]
+[2026-10-17 15:38:44.340] [status] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 15:38:44.340] [status] [info] 配置项 Name = chatserver2
+[2026-10-17 15:38:44.340] [status] [info] 配置项 Port = 8991
+[2026-10-17 15:38:44.340] [status] [info] [配置节 chatservers]
+[2026-10-17 15:38:44.340] [status] [info] 配置项 Name = chatserver1,chatserver2
+[2026-10-17 15:38:44.363] [status] [info] 服务已监听: 0.0.0.0:50052
+认证成功
+认证成功
+认证成功
+认证成功
+认证成功
+[2026-10-17 15:38:53.693] [status] [info] Redis SET utoken_2 2426de29-915b-41ef-9634-3af42c30c487 成功
+[2026-10-17 16:36:16.414] [status] [info] 配置文件路径: D:\QTcode\HChat\StatusServer\config.ini
+[2026-10-17 16:36:16.414] [status] [info] [配置节 Mysql]
+[2026-10-17 16:36:16.414] [status] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 16:36:16.414] [status] [info] 配置项 Passwd = Hcat@2026Secure
+[2026-10-17 16:36:16.414] [status] [info] 配置项 Port = 3308
+[2026-10-17 16:36:16.414] [status] [info] 配置项 Schema = Hcat
+[2026-10-17 16:36:16.414] [status] [info] 配置项 User = root
+[2026-10-17 16:36:16.414] [status] [info] [配置节 Redis]
+[2026-10-17 16:36:16.414] [status] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 16:36:16.414] [status] [info] 配置项 Passwd = Hcat@2026Secure
+[2026-10-17 16:36:16.414] [status] [info] 配置项 Port = 6380
+[2026-10-17 16:36:16.414] [status] [info] [配置节 StatusServer]
+[2026-10-17 16:36:16.414] [status] [info] 配置项 Host = 0.0.0.0
+[2026-10-17 16:36:16.414] [status] [info] 配置项 Port = 50052
+[2026-10-17 16:36:16.414] [status] [info] [配置节 chatserver1]
+[2026-10-17 16:36:16.414] [status] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 16:36:16.414] [status] [info] 配置项 Name = chatserver1
+[2026-10-17 16:36:16.414] [status] [info] 配置项 Port = 8990
+[2026-10-17 16:36:16.414] [status] [info] [配置节 chatserver2]
+[2026-10-17 16:36:16.414] [status] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 16:36:16.414] [status] [info] 配置项 Name = chatserver2
+[2026-10-17 16:36:16.414] [status] [info] 配置项 Port = 8991
+[2026-10-17 16:36:16.414] [status] [info] [配置节 chatservers]
+[2026-10-17 16:36:16.414] [status] [info] 配置项 Name = chatserver1,chatserver2
+[2026-10-17 16:36:16.427] [status] [info] 服务已监听: 0.0.0.0:50052
+认证成功
+认证成功
+认证成功
+认证成功
+认证成功
+[2026-10-17 16:36:22.047] [status] [info] Redis SET utoken_2 de4f4d93-1130-48ed-991f-d183f14c64d5 成功
+[2026-10-17 18:38:06.256] [status] [info] 配置文件路径: D:\QTcode\HChat\StatusServer\config.ini
+[2026-10-17 18:38:06.256] [status] [info] [配置节 Mysql]
+[2026-10-17 18:38:06.256] [status] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 18:38:06.256] [status] [info] 配置项 Passwd = Hcat@2026Secure
+[2026-10-17 18:38:06.256] [status] [info] 配置项 Port = 3308
+[2026-10-17 18:38:06.256] [status] [info] 配置项 Schema = Hcat
+[2026-10-17 18:38:06.256] [status] [info] 配置项 User = root
+[2026-10-17 18:38:06.256] [status] [info] [配置节 Redis]
+[2026-10-17 18:38:06.256] [status] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 18:38:06.256] [status] [info] 配置项 Passwd = Hcat@2026Secure
+[2026-10-17 18:38:06.256] [status] [info] 配置项 Port = 6380
+[2026-10-17 18:38:06.256] [status] [info] [配置节 StatusServer]
+[2026-10-17 18:38:06.256] [status] [info] 配置项 Host = 0.0.0.0
+[2026-10-17 18:38:06.256] [status] [info] 配置项 Port = 50052
+[2026-10-17 18:38:06.256] [status] [info] [配置节 chatserver1]
+[2026-10-17 18:38:06.256] [status] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 18:38:06.256] [status] [info] 配置项 Name = chatserver1
+[2026-10-17 18:38:06.256] [status] [info] 配置项 Port = 8990
+[2026-10-17 18:38:06.256] [status] [info] [配置节 chatserver2]
+[2026-10-17 18:38:06.256] [status] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 18:38:06.256] [status] [info] 配置项 Name = chatserver2
+[2026-10-17 18:38:06.256] [status] [info] 配置项 Port = 8991
+[2026-10-17 18:38:06.256] [status] [info] [配置节 chatservers]
+[2026-10-17 18:38:06.256] [status] [info] 配置项 Name = chatserver1,chatserver2
+[2026-10-17 18:38:06.273] [status] [info] 服务已监听: 0.0.0.0:50052
+认证成功
+认证成功
+认证成功
+认证成功
+认证成功
+[2026-10-17 18:38:14.663] [status] [info] Redis SET utoken_2 d2087b0c-75ba-49c6-9b1c-5e3112561fb9 成功
+[2026-10-17 18:38:45.374] [status] [info] Redis SET utoken_2 7fa9098a-136c-4579-9b99-f9ede65f0ce6 成功
+[2026-10-17 18:38:45.419] [status] [info] Redis SET utoken_3 b557f775-fd35-41bd-abc2-80bdd24dd684 成功
+[2026-10-17 18:38:45.465] [status] [info] Redis SET utoken_5 9fc10524-7b4b-4eda-9691-c5fe0cb0cd41 成功
+[2026-10-17 18:40:23.450] [status] [info] 配置文件路径: D:\QTcode\HChat\StatusServer\config.ini
+[2026-10-17 18:40:23.450] [status] [info] [配置节 Mysql]
+[2026-10-17 18:40:23.450] [status] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 18:40:23.450] [status] [info] 配置项 Passwd = Hcat@2026Secure
+[2026-10-17 18:40:23.450] [status] [info] 配置项 Port = 3308
+[2026-10-17 18:40:23.450] [status] [info] 配置项 Schema = Hcat
+[2026-10-17 18:40:23.450] [status] [info] 配置项 User = root
+[2026-10-17 18:40:23.450] [status] [info] [配置节 Redis]
+[2026-10-17 18:40:23.450] [status] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 18:40:23.450] [status] [info] 配置项 Passwd = Hcat@2026Secure
+[2026-10-17 18:40:23.450] [status] [info] 配置项 Port = 6380
+[2026-10-17 18:40:23.450] [status] [info] [配置节 StatusServer]
+[2026-10-17 18:40:23.450] [status] [info] 配置项 Host = 0.0.0.0
+[2026-10-17 18:40:23.450] [status] [info] 配置项 Port = 50052
+[2026-10-17 18:40:23.450] [status] [info] [配置节 chatserver1]
+[2026-10-17 18:40:23.450] [status] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 18:40:23.450] [status] [info] 配置项 Name = chatserver1
+[2026-10-17 18:40:23.450] [status] [info] 配置项 Port = 8990
+[2026-10-17 18:40:23.450] [status] [info] [配置节 chatserver2]
+[2026-10-17 18:40:23.450] [status] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 18:40:23.450] [status] [info] 配置项 Name = chatserver2
+[2026-10-17 18:40:23.450] [status] [info] 配置项 Port = 8991
+[2026-10-17 18:40:23.450] [status] [info] [配置节 chatservers]
+[2026-10-17 18:40:23.450] [status] [info] 配置项 Name = chatserver1,chatserver2
+[2026-10-17 18:40:23.471] [status] [info] 服务已监听: 0.0.0.0:50052
+认证成功
+认证成功
+认证成功
+认证成功
+认证成功
+[2026-10-17 18:40:29.251] [status] [info] Redis SET utoken_2 a7d225db-9453-4de7-8830-fceab59f084e 成功
+[2026-10-17 18:40:31.458] [status] [info] Redis SET utoken_2 863ff351-0c12-4e04-a5c0-5a9506094955 成功
+[2026-10-17 18:42:39.376] [status] [info] 配置文件路径: D:\QTcode\HChat\StatusServer\config.ini
+[2026-10-17 18:42:39.376] [status] [info] [配置节 Mysql]
+[2026-10-17 18:42:39.376] [status] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 18:42:39.376] [status] [info] 配置项 Passwd = Hcat@2026Secure
+[2026-10-17 18:42:39.376] [status] [info] 配置项 Port = 3308
+[2026-10-17 18:42:39.376] [status] [info] 配置项 Schema = Hcat
+[2026-10-17 18:42:39.376] [status] [info] 配置项 User = root
+[2026-10-17 18:42:39.376] [status] [info] [配置节 Redis]
+[2026-10-17 18:42:39.376] [status] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 18:42:39.376] [status] [info] 配置项 Passwd = Hcat@2026Secure
+[2026-10-17 18:42:39.376] [status] [info] 配置项 Port = 6380
+[2026-10-17 18:42:39.376] [status] [info] [配置节 StatusServer]
+[2026-10-17 18:42:39.376] [status] [info] 配置项 Host = 0.0.0.0
+[2026-10-17 18:42:39.376] [status] [info] 配置项 Port = 50052
+[2026-10-17 18:42:39.376] [status] [info] [配置节 chatserver1]
+[2026-10-17 18:42:39.376] [status] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 18:42:39.376] [status] [info] 配置项 Name = chatserver1
+[2026-10-17 18:42:39.376] [status] [info] 配置项 Port = 8990
+[2026-10-17 18:42:39.376] [status] [info] [配置节 chatserver2]
+[2026-10-17 18:42:39.376] [status] [info] 配置项 Host = 127.0.0.1
+[2026-10-17 18:42:39.376] [status] [info] 配置项 Name = chatserver2
+[2026-10-17 18:42:39.376] [status] [info] 配置项 Port = 8991
+[2026-10-17 18:42:39.376] [status] [info] [配置节 chatservers]
+[2026-10-17 18:42:39.376] [status] [info] 配置项 Name = chatserver1,chatserver2
+[2026-10-17 18:42:39.392] [status] [info] 服务已监听: 0.0.0.0:50052
+认证成功
+认证成功
+认证成功
+认证成功
+认证成功
+[2026-10-17 18:42:47.510] [status] [info] Redis SET utoken_2 b5fe7345-47cf-49a7-ab01-e60828674b30 成功
+[2026-10-17 18:43:17.872] [status] [info] Redis SET utoken_2 eba72c52-bc45-4b4c-ba9f-ad8d1111125f 成功
+[2026-10-17 18:43:18.000] [status] [info] Redis SET utoken_2 6264483c-60ff-4998-a80b-ff173f5bbec5 成功
+[2026-10-17 18:43:18.043] [status] [info] Redis SET utoken_3 2b119e75-863a-4148-92cb-305bd3d6a127 成功
+[2026-10-17 18:43:18.095] [status] [info] Redis SET utoken_5 ab70ca2b-bbfe-4ed2-b0ba-433d7fb41949 成功

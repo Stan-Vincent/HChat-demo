@@ -1,95 +1,103 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="源文件">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    <Filter Include="入口">
+      <UniqueIdentifier>{E2122D9C-17B5-596C-A9CF-661A71ABE6ED}</UniqueIdentifier>
     </Filter>
-    <Filter Include="头文件">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    <Filter Include="网络层">
+      <UniqueIdentifier>{3B9BB54B-3796-5AC9-9378-B3CF4D3AFFA5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="资源文件">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    <Filter Include="gRPC">
+      <UniqueIdentifier>{7F9A00AC-5E20-54C7-BC86-B1F600956447}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="数据访问">
+      <UniqueIdentifier>{D5EAB72B-B8F0-57F2-B7D9-6D3A1224A143}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="配置与公共">
+      <UniqueIdentifier>{6FA86AF4-C6B0-59B7-AC6C-7F82F2C05773}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="协议(protobuf)">
+      <UniqueIdentifier>{660F9F0F-D00E-5684-AB45-E450D2F1A78A}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StatusServer.cpp">
-      <Filter>源文件</Filter>
+      <Filter>入口</Filter>
     </ClCompile>
     <ClCompile Include="AsioIOServicePool.cpp">
-      <Filter>源文件</Filter>
+      <Filter>网络层</Filter>
     </ClCompile>
+    <ClInclude Include="AsioIOServicePool.h">
+      <Filter>网络层</Filter>
+    </ClInclude>
     <ClCompile Include="ChatGrpcClient.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="ConfigMgr.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="DistLock.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="message.grpc.pb.cc">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="message.pb.cc">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="MysqlDao.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="MysqlMgr.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="RedisMgr.cpp">
-      <Filter>源文件</Filter>
+      <Filter>gRPC</Filter>
     </ClCompile>
     <ClCompile Include="StatusServiceImpl.cpp">
-      <Filter>源文件</Filter>
+      <Filter>gRPC</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="AsioIOServicePool.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="ChatGrpcClient.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="ConfigMgr.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="const.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="DistLock.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="message.grpc.pb.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="message.pb.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="MysqlDao.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="MysqlMgr.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="RedisMgr.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Singleton.h">
-      <Filter>头文件</Filter>
+      <Filter>gRPC</Filter>
     </ClInclude>
     <ClInclude Include="StatusServiceImpl.h">
-      <Filter>头文件</Filter>
+      <Filter>gRPC</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="config.ini" />
-    <None Include="message.proto" />
-    <None Include="PropertySheet.props" />
+    <ClCompile Include="DistLock.cpp">
+      <Filter>数据访问</Filter>
+    </ClCompile>
+    <ClCompile Include="MysqlDao.cpp">
+      <Filter>数据访问</Filter>
+    </ClCompile>
+    <ClCompile Include="MysqlMgr.cpp">
+      <Filter>数据访问</Filter>
+    </ClCompile>
+    <ClCompile Include="RedisMgr.cpp">
+      <Filter>数据访问</Filter>
+    </ClCompile>
+    <ClInclude Include="DistLock.h">
+      <Filter>数据访问</Filter>
+    </ClInclude>
+    <ClInclude Include="MysqlDao.h">
+      <Filter>数据访问</Filter>
+    </ClInclude>
+    <ClInclude Include="MysqlMgr.h">
+      <Filter>数据访问</Filter>
+    </ClInclude>
+    <ClInclude Include="RedisMgr.h">
+      <Filter>数据访问</Filter>
+    </ClInclude>
+    <ClCompile Include="ConfigMgr.cpp">
+      <Filter>配置与公共</Filter>
+    </ClCompile>
+    <ClInclude Include="ConfigMgr.h">
+      <Filter>配置与公共</Filter>
+    </ClInclude>
+    <ClInclude Include="Singleton.h">
+      <Filter>配置与公共</Filter>
+    </ClInclude>
+    <ClInclude Include="const.h">
+      <Filter>配置与公共</Filter>
+    </ClInclude>
+    <None Include="PropertySheet.props">
+      <Filter>配置与公共</Filter>
+    </None>
+    <None Include="config.ini">
+      <Filter>配置与公共</Filter>
+    </None>
+    <ClCompile Include="message.grpc.pb.cc">
+      <Filter>协议(protobuf)</Filter>
+    </ClCompile>
+    <ClCompile Include="message.pb.cc">
+      <Filter>协议(protobuf)</Filter>
+    </ClCompile>
+    <ClInclude Include="message.grpc.pb.h">
+      <Filter>协议(protobuf)</Filter>
+    </ClInclude>
+    <ClInclude Include="message.pb.h">
+      <Filter>协议(protobuf)</Filter>
+    </ClInclude>
+    <None Include="message.proto">
+      <Filter>协议(protobuf)</Filter>
+    </None>
   </ItemGroup>
 </Project>
