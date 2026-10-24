@@ -18,6 +18,8 @@ using grpc::ClientContext;
 
 using message::AddFriendReq;
 using message::AddFriendRsp;
+using message::AddGroupNotifyReq;
+using message::AddGroupNotifyRsp;
 
 using message::AuthFriendReq;
 using message::AuthFriendRsp;
@@ -64,7 +66,7 @@ public:
 			}
 			return !connections_.empty();
 			});
-		//Èç¹ûÍ£Ö¹ÔòÖ±½Ó·µ»Ø¿ÕÖ¸Õë
+		//ï¿½ï¿½ï¿½Í£Ö¹ï¿½ï¿½Ö±ï¿½Ó·ï¿½ï¿½Ø¿ï¿½Ö¸ï¿½ï¿½
 		if (b_stop_) {
 			return  nullptr;
 		}
@@ -106,6 +108,7 @@ public:
 	}
 
 	AddFriendRsp NotifyAddFriend(std::string server_ip, const AddFriendReq& req);
+	AddGroupNotifyRsp NotifyAddGroup(std::string server_ip, const AddGroupNotifyReq& req);
 	AuthFriendRsp NotifyAuthFriend(std::string server_ip, const AuthFriendReq& req);
 	bool GetBaseInfo(std::string base_key, int uid, std::shared_ptr<UserInfo>& userinfo);
 	TextChatMsgRsp NotifyTextChatMsg(std::string server_ip, const TextChatMsgReq& req, const Json::Value& rtvalue);

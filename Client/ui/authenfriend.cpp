@@ -118,6 +118,10 @@ bool AuthenFriend::eventFilter(QObject *obj, QEvent *event)
 void AuthenFriend::SetApplyInfo(std::shared_ptr<ApplyInfo> apply_info)
 {
     _apply_info = apply_info;
+    if (!apply_info) {
+        qCWarning(lcUser) << "AuthenFriend::SetApplyInfo: apply_info is null";
+        return;
+    }
     ui->back_ed->setPlaceholderText(apply_info->_name);
 }
 
@@ -413,6 +417,13 @@ void AuthenFriend::SlotAddFirendLabelByClickTip(QString text)
 void AuthenFriend::SlotApplySure()
 {
     qCDebug(lcUser) << "Slot Apply Sure ";
+    if (!_apply_info) {
+        // 空 apply_info 直接解引用会段错误闪退；兜底关掉对话框。
+        qCWarning(lcUser) << "AuthenFriend::SlotApplySure: _apply_info is null, abort";
+        this->hide();
+        deleteLater();
+        return;
+    }
     //添加发送逻辑
     QJsonObject jsonObj;
     auto uid = UserMgr::GetInstance()->GetUid();

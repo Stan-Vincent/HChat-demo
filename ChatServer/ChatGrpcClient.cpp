@@ -61,9 +61,38 @@ AddFriendRsp ChatGrpcClient::NotifyAddFriend(std::string server_ip, const AddFri
 }
 
 
+AddGroupNotifyRsp ChatGrpcClient::NotifyAddGroup(std::string server_ip, const AddGroupNotifyReq& req)
+{
+	AddGroupNotifyRsp rsp;
+	Defer defer([&rsp, &req]() {
+		rsp.set_error(ErrorCodes::Success);
+		rsp.set_thread_id(req.thread_id());
+		});
+
+	auto find_iter = _pools.find(server_ip);
+	if (find_iter == _pools.end()) {
+		return rsp;
+	}
+
+	auto &pool = find_iter->second;
+	ClientContext context;
+	auto stub = pool->getConnection();
+	Status status = stub->NotifyAddGroup(&context, req, &rsp);
+	Defer defercon([&stub, this, &pool]() {
+		pool->returnConnection(std::move(stub));
+		});
+
+	if (!status.ok()) {
+		rsp.set_error(ErrorCodes::RPCFailed);
+		return rsp;
+	}
+
+	return rsp;
+}
+
 bool ChatGrpcClient::GetBaseInfo(std::string base_key, int uid, std::shared_ptr<UserInfo>& userinfo)
 {
-	//ÓÅÏÈ²éredisÖÐ²éÑ¯ÓÃ»§ÐÅÏ¢
+	//ï¿½ï¿½ï¿½È²ï¿½redisï¿½Ð²ï¿½Ñ¯ï¿½Ã»ï¿½ï¿½ï¿½Ï¢
 	std::string info_str = "";
 	bool b_base = RedisMgr::GetInstance()->Get(base_key, info_str);
 	if (b_base) {
@@ -78,11 +107,11 @@ bool ChatGrpcClient::GetBaseInfo(std::string base_key, int uid, std::shared_ptr<
 		userinfo->desc = root["desc"].asString();
 		userinfo->sex = root["sex"].asInt();
 		userinfo->icon = root["icon"].asString();
-		LOG_INFO("ÓÃ»§µÇÂ¼³É¹¦: uid={}, name={}, email={}", userinfo->uid, userinfo->name, userinfo->email);
+		LOG_INFO("ï¿½Ã»ï¿½ï¿½ï¿½Â¼ï¿½É¹ï¿½: uid={}, name={}, email={}", userinfo->uid, userinfo->name, userinfo->email);
 	}
 	else {
-		//redisÖÐÃ»ÓÐÔò²éÑ¯mysql
-		//²éÑ¯Êý¾Ý¿â
+		//redisï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¯mysql
+		//ï¿½ï¿½Ñ¯ï¿½ï¿½ï¿½Ý¿ï¿½
 		std::shared_ptr<UserInfo> user_info = nullptr;
 		user_info = MysqlMgr::GetInstance()->GetUser(uid);
 		if (user_info == nullptr) {
@@ -91,7 +120,7 @@ bool ChatGrpcClient::GetBaseInfo(std::string base_key, int uid, std::shared_ptr<
 
 		userinfo = user_info;
 
-		//½«Êý¾Ý¿âÄÚÈÝÐ´Èëredis»º´æ
+		//ï¿½ï¿½ï¿½ï¿½ï¿½Ý¿ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½redisï¿½ï¿½ï¿½ï¿½
 		Json::Value redis_root;
 		redis_root["uid"] = uid;
 		redis_root["pwd"] = userinfo->pwd;

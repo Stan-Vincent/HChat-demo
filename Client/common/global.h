@@ -54,6 +54,7 @@ enum ReqId{
     ID_CREATE_GROUP_CHAT_RSP = 1034,  //创建群聊回复
     ID_ADD_GROUP_MEMBER_REQ = 1035,   //添加群成员请求
     ID_ADD_GROUP_MEMBER_RSP = 1036,   //添加群成员回复
+    ID_NOTIFY_ADD_GROUP_REQ = 1037,   //群成员变更实时通知（被邀请后实时看到新群）
     // ---- 以下是 HTTP（GateServer）用的，不是 TCP 协议的消息号 ----
     ID_UPLOAD_IMAGE_REQ = 2001,   //上传图片（发HTTP）
     ID_UPLOAD_IMAGE_RSP = 2002,   //上传图片回包

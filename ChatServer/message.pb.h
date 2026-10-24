@@ -65,6 +65,14 @@ class AddFriendRsp;
 struct AddFriendRspDefaultTypeInternal;
 extern AddFriendRspDefaultTypeInternal _AddFriendRsp_default_instance_;
 extern const ::google::protobuf::internal::ClassDataFull AddFriendRsp_class_data_;
+class AddGroupNotifyReq;
+struct AddGroupNotifyReqDefaultTypeInternal;
+extern AddGroupNotifyReqDefaultTypeInternal _AddGroupNotifyReq_default_instance_;
+extern const ::google::protobuf::internal::ClassDataFull AddGroupNotifyReq_class_data_;
+class AddGroupNotifyRsp;
+struct AddGroupNotifyRspDefaultTypeInternal;
+extern AddGroupNotifyRspDefaultTypeInternal _AddGroupNotifyRsp_default_instance_;
+extern const ::google::protobuf::internal::ClassDataFull AddGroupNotifyRsp_class_data_;
 class AuthFriendReq;
 struct AuthFriendReqDefaultTypeInternal;
 extern AuthFriendReqDefaultTypeInternal _AuthFriendReq_default_instance_;
@@ -3169,6 +3177,472 @@ class AuthFriendRsp final : public ::google::protobuf::Message
 };
 
 extern const ::google::protobuf::internal::ClassDataFull AuthFriendRsp_class_data_;
+// -------------------------------------------------------------------
+
+class AddGroupNotifyRsp final : public ::google::protobuf::Message
+/* @@protoc_insertion_point(class_definition:message.AddGroupNotifyRsp) */ {
+ public:
+  inline AddGroupNotifyRsp() : AddGroupNotifyRsp(nullptr) {}
+  ~AddGroupNotifyRsp() PROTOBUF_FINAL;
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+  void operator delete(AddGroupNotifyRsp* PROTOBUF_NONNULL msg, ::std::destroying_delete_t) {
+    SharedDtor(*msg);
+    ::google::protobuf::internal::SizedDelete(msg, sizeof(AddGroupNotifyRsp));
+  }
+#endif
+
+  template <typename = void>
+  explicit PROTOBUF_CONSTEXPR AddGroupNotifyRsp(::google::protobuf::internal::ConstantInitialized);
+
+  inline AddGroupNotifyRsp(const AddGroupNotifyRsp& from) : AddGroupNotifyRsp(nullptr, from) {}
+  inline AddGroupNotifyRsp(AddGroupNotifyRsp&& from) noexcept
+      : AddGroupNotifyRsp(nullptr, ::std::move(from)) {}
+  inline AddGroupNotifyRsp& operator=(const AddGroupNotifyRsp& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline AddGroupNotifyRsp& operator=(AddGroupNotifyRsp&& from) noexcept {
+    if (this == &from) return *this;
+    if (::google::protobuf::internal::CanMoveWithInternalSwap(GetArena(), from.GetArena())) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance);
+  }
+  inline ::google::protobuf::UnknownFieldSet* PROTOBUF_NONNULL mutable_unknown_fields()
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return _internal_metadata_.mutable_unknown_fields<::google::protobuf::UnknownFieldSet>();
+  }
+
+  static const ::google::protobuf::Descriptor* PROTOBUF_NONNULL descriptor() {
+    return GetDescriptor();
+  }
+  static const ::google::protobuf::Descriptor* PROTOBUF_NONNULL GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::google::protobuf::Reflection* PROTOBUF_NONNULL GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const AddGroupNotifyRsp& default_instance() {
+    return *reinterpret_cast<const AddGroupNotifyRsp*>(
+        &_AddGroupNotifyRsp_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages = 21;
+  friend void swap(AddGroupNotifyRsp& a, AddGroupNotifyRsp& b) { a.Swap(&b); }
+  inline void Swap(AddGroupNotifyRsp* PROTOBUF_NONNULL other) {
+    if (other == this) return;
+    if (::google::protobuf::internal::CanUseInternalSwap(GetArena(), other->GetArena())) {
+      InternalSwap(other);
+    } else {
+      ::google::protobuf::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(AddGroupNotifyRsp* PROTOBUF_NONNULL other) {
+    if (other == this) return;
+    ABSL_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  AddGroupNotifyRsp* PROTOBUF_NONNULL New(::google::protobuf::Arena* PROTOBUF_NULLABLE arena = nullptr) const {
+    return ::google::protobuf::Message::DefaultConstruct<AddGroupNotifyRsp>(arena);
+  }
+  using ::google::protobuf::Message::CopyFrom;
+  void CopyFrom(const AddGroupNotifyRsp& from);
+  using ::google::protobuf::Message::MergeFrom;
+  void MergeFrom(const AddGroupNotifyRsp& from) { AddGroupNotifyRsp::MergeImpl(*this, from); }
+
+  private:
+  static void MergeImpl(::google::protobuf::MessageLite& to_msg,
+                        const ::google::protobuf::MessageLite& from_msg);
+
+  public:
+  bool IsInitialized() const {
+    return true;
+  }
+  ABSL_ATTRIBUTE_REINITIALIZES void Clear() PROTOBUF_FINAL;
+  #if defined(PROTOBUF_CUSTOM_VTABLE)
+  private:
+  static ::size_t ByteSizeLong(const ::google::protobuf::MessageLite& msg);
+  static ::uint8_t* PROTOBUF_NONNULL _InternalSerialize(
+      const ::google::protobuf::MessageLite& msg, ::uint8_t* PROTOBUF_NONNULL target,
+      ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream);
+
+  public:
+  ::size_t ByteSizeLong() const { return ByteSizeLong(*this); }
+  ::uint8_t* PROTOBUF_NONNULL _InternalSerialize(
+      ::uint8_t* PROTOBUF_NONNULL target,
+      ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream) const {
+    return _InternalSerialize(*this, target, stream);
+  }
+  #else   // PROTOBUF_CUSTOM_VTABLE
+  ::size_t ByteSizeLong() const final;
+  ::uint8_t* PROTOBUF_NONNULL _InternalSerialize(
+      ::uint8_t* PROTOBUF_NONNULL target,
+      ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream) const final;
+  #endif  // PROTOBUF_CUSTOM_VTABLE
+  int GetCachedSize() const { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::google::protobuf::Arena* PROTOBUF_NULLABLE arena);
+  static void SharedDtor(MessageLite& self);
+  void InternalSwap(AddGroupNotifyRsp* PROTOBUF_NONNULL other);
+ private:
+  template <typename T>
+  friend ::absl::string_view(::google::protobuf::internal::GetAnyMessageName)();
+  static ::absl::string_view FullMessageName() { return "message.AddGroupNotifyRsp"; }
+
+  explicit AddGroupNotifyRsp(::google::protobuf::Arena* PROTOBUF_NULLABLE arena);
+  AddGroupNotifyRsp(::google::protobuf::Arena* PROTOBUF_NULLABLE arena, const AddGroupNotifyRsp& from);
+  AddGroupNotifyRsp(
+      ::google::protobuf::Arena* PROTOBUF_NULLABLE arena, AddGroupNotifyRsp&& from) noexcept
+      : AddGroupNotifyRsp(arena) {
+    *this = ::std::move(from);
+  }
+  const ::google::protobuf::internal::ClassData* PROTOBUF_NONNULL GetClassData() const PROTOBUF_FINAL;
+  static void* PROTOBUF_NONNULL PlacementNew_(
+      const void* PROTOBUF_NONNULL, void* PROTOBUF_NONNULL mem,
+      ::google::protobuf::Arena* PROTOBUF_NULLABLE arena);
+  static constexpr auto InternalNewImpl_();
+
+ public:
+  static constexpr auto InternalGenerateClassData_();
+
+  ::google::protobuf::Metadata GetMetadata() const;
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+  enum : int {
+    kErrorFieldNumber = 1,
+    kThreadIdFieldNumber = 2,
+  };
+  // int32 error = 1;
+  void clear_error() ;
+  ::int32_t error() const;
+  void set_error(::int32_t value);
+
+  private:
+  ::int32_t _internal_error() const;
+  void _internal_set_error(::int32_t value);
+
+  public:
+  // int32 thread_id = 2;
+  void clear_thread_id() ;
+  ::int32_t thread_id() const;
+  void set_thread_id(::int32_t value);
+
+  private:
+  ::int32_t _internal_thread_id() const;
+  void _internal_set_thread_id(::int32_t value);
+
+  public:
+  // @@protoc_insertion_point(class_scope:message.AddGroupNotifyRsp)
+ private:
+  class _Internal;
+  friend class ::google::protobuf::internal::TcParser;
+  static const ::google::protobuf::internal::TcParseTable<1, 2,
+                                   0, 0,
+                                   2>
+      _table_;
+
+  friend class ::google::protobuf::MessageLite;
+  friend class ::google::protobuf::Arena;
+  template <typename T>
+  friend class ::google::protobuf::Arena::InternalHelper;
+  using InternalArenaConstructable_ = void;
+  using DestructorSkippable_ = void;
+  struct Impl_ {
+    inline explicit constexpr Impl_(::google::protobuf::internal::ConstantInitialized) noexcept;
+    inline explicit Impl_(
+        ::google::protobuf::internal::InternalVisibility visibility,
+        ::google::protobuf::Arena* PROTOBUF_NULLABLE arena);
+    inline explicit Impl_(
+        ::google::protobuf::internal::InternalVisibility visibility,
+        ::google::protobuf::Arena* PROTOBUF_NULLABLE arena, const Impl_& from,
+        const AddGroupNotifyRsp& from_msg);
+    ::google::protobuf::internal::HasBits<1> _has_bits_;
+    ::google::protobuf::internal::CachedSize _cached_size_;
+    ::int32_t error_;
+    ::int32_t thread_id_;
+    PROTOBUF_TSAN_DECLARE_MEMBER
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_message_2eproto;
+};
+
+extern const ::google::protobuf::internal::ClassDataFull AddGroupNotifyRsp_class_data_;
+// -------------------------------------------------------------------
+
+class AddGroupNotifyReq final : public ::google::protobuf::Message
+/* @@protoc_insertion_point(class_definition:message.AddGroupNotifyReq) */ {
+ public:
+  inline AddGroupNotifyReq() : AddGroupNotifyReq(nullptr) {}
+  ~AddGroupNotifyReq() PROTOBUF_FINAL;
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+  void operator delete(AddGroupNotifyReq* PROTOBUF_NONNULL msg, ::std::destroying_delete_t) {
+    SharedDtor(*msg);
+    ::google::protobuf::internal::SizedDelete(msg, sizeof(AddGroupNotifyReq));
+  }
+#endif
+
+  template <typename = void>
+  explicit PROTOBUF_CONSTEXPR AddGroupNotifyReq(::google::protobuf::internal::ConstantInitialized);
+
+  inline AddGroupNotifyReq(const AddGroupNotifyReq& from) : AddGroupNotifyReq(nullptr, from) {}
+  inline AddGroupNotifyReq(AddGroupNotifyReq&& from) noexcept
+      : AddGroupNotifyReq(nullptr, ::std::move(from)) {}
+  inline AddGroupNotifyReq& operator=(const AddGroupNotifyReq& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline AddGroupNotifyReq& operator=(AddGroupNotifyReq&& from) noexcept {
+    if (this == &from) return *this;
+    if (::google::protobuf::internal::CanMoveWithInternalSwap(GetArena(), from.GetArena())) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance);
+  }
+  inline ::google::protobuf::UnknownFieldSet* PROTOBUF_NONNULL mutable_unknown_fields()
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return _internal_metadata_.mutable_unknown_fields<::google::protobuf::UnknownFieldSet>();
+  }
+
+  static const ::google::protobuf::Descriptor* PROTOBUF_NONNULL descriptor() {
+    return GetDescriptor();
+  }
+  static const ::google::protobuf::Descriptor* PROTOBUF_NONNULL GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::google::protobuf::Reflection* PROTOBUF_NONNULL GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const AddGroupNotifyReq& default_instance() {
+    return *reinterpret_cast<const AddGroupNotifyReq*>(
+        &_AddGroupNotifyReq_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages = 20;
+  friend void swap(AddGroupNotifyReq& a, AddGroupNotifyReq& b) { a.Swap(&b); }
+  inline void Swap(AddGroupNotifyReq* PROTOBUF_NONNULL other) {
+    if (other == this) return;
+    if (::google::protobuf::internal::CanUseInternalSwap(GetArena(), other->GetArena())) {
+      InternalSwap(other);
+    } else {
+      ::google::protobuf::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(AddGroupNotifyReq* PROTOBUF_NONNULL other) {
+    if (other == this) return;
+    ABSL_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  AddGroupNotifyReq* PROTOBUF_NONNULL New(::google::protobuf::Arena* PROTOBUF_NULLABLE arena = nullptr) const {
+    return ::google::protobuf::Message::DefaultConstruct<AddGroupNotifyReq>(arena);
+  }
+  using ::google::protobuf::Message::CopyFrom;
+  void CopyFrom(const AddGroupNotifyReq& from);
+  using ::google::protobuf::Message::MergeFrom;
+  void MergeFrom(const AddGroupNotifyReq& from) { AddGroupNotifyReq::MergeImpl(*this, from); }
+
+  private:
+  static void MergeImpl(::google::protobuf::MessageLite& to_msg,
+                        const ::google::protobuf::MessageLite& from_msg);
+
+  public:
+  bool IsInitialized() const {
+    return true;
+  }
+  ABSL_ATTRIBUTE_REINITIALIZES void Clear() PROTOBUF_FINAL;
+  #if defined(PROTOBUF_CUSTOM_VTABLE)
+  private:
+  static ::size_t ByteSizeLong(const ::google::protobuf::MessageLite& msg);
+  static ::uint8_t* PROTOBUF_NONNULL _InternalSerialize(
+      const ::google::protobuf::MessageLite& msg, ::uint8_t* PROTOBUF_NONNULL target,
+      ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream);
+
+  public:
+  ::size_t ByteSizeLong() const { return ByteSizeLong(*this); }
+  ::uint8_t* PROTOBUF_NONNULL _InternalSerialize(
+      ::uint8_t* PROTOBUF_NONNULL target,
+      ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream) const {
+    return _InternalSerialize(*this, target, stream);
+  }
+  #else   // PROTOBUF_CUSTOM_VTABLE
+  ::size_t ByteSizeLong() const final;
+  ::uint8_t* PROTOBUF_NONNULL _InternalSerialize(
+      ::uint8_t* PROTOBUF_NONNULL target,
+      ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream) const final;
+  #endif  // PROTOBUF_CUSTOM_VTABLE
+  int GetCachedSize() const { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::google::protobuf::Arena* PROTOBUF_NULLABLE arena);
+  static void SharedDtor(MessageLite& self);
+  void InternalSwap(AddGroupNotifyReq* PROTOBUF_NONNULL other);
+ private:
+  template <typename T>
+  friend ::absl::string_view(::google::protobuf::internal::GetAnyMessageName)();
+  static ::absl::string_view FullMessageName() { return "message.AddGroupNotifyReq"; }
+
+  explicit AddGroupNotifyReq(::google::protobuf::Arena* PROTOBUF_NULLABLE arena);
+  AddGroupNotifyReq(::google::protobuf::Arena* PROTOBUF_NULLABLE arena, const AddGroupNotifyReq& from);
+  AddGroupNotifyReq(
+      ::google::protobuf::Arena* PROTOBUF_NULLABLE arena, AddGroupNotifyReq&& from) noexcept
+      : AddGroupNotifyReq(arena) {
+    *this = ::std::move(from);
+  }
+  const ::google::protobuf::internal::ClassData* PROTOBUF_NONNULL GetClassData() const PROTOBUF_FINAL;
+  static void* PROTOBUF_NONNULL PlacementNew_(
+      const void* PROTOBUF_NONNULL, void* PROTOBUF_NONNULL mem,
+      ::google::protobuf::Arena* PROTOBUF_NULLABLE arena);
+  static constexpr auto InternalNewImpl_();
+
+ public:
+  static constexpr auto InternalGenerateClassData_();
+
+  ::google::protobuf::Metadata GetMetadata() const;
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+  enum : int {
+    kMembersFieldNumber = 5,
+    kNameFieldNumber = 3,
+    kTouidFieldNumber = 1,
+    kThreadIdFieldNumber = 2,
+    kOwnerIdFieldNumber = 4,
+    kOperatorUidFieldNumber = 6,
+  };
+  // repeated int32 members = 5;
+  int members_size() const;
+  private:
+  int _internal_members_size() const;
+
+  public:
+  void clear_members() ;
+  ::int32_t members(int index) const;
+  void set_members(int index, ::int32_t value);
+  void add_members(::int32_t value);
+  const ::google::protobuf::RepeatedField<::int32_t>& members() const;
+  ::google::protobuf::RepeatedField<::int32_t>* PROTOBUF_NONNULL mutable_members();
+
+  private:
+  const ::google::protobuf::RepeatedField<::int32_t>& _internal_members() const;
+  ::google::protobuf::RepeatedField<::int32_t>* PROTOBUF_NONNULL _internal_mutable_members();
+
+  public:
+  // string name = 3;
+  void clear_name() ;
+  const ::std::string& name() const;
+  template <typename Arg_ = const ::std::string&, typename... Args_>
+  void set_name(Arg_&& arg, Args_... args);
+  ::std::string* PROTOBUF_NONNULL mutable_name();
+  [[nodiscard]] ::std::string* PROTOBUF_NULLABLE release_name();
+  void set_allocated_name(::std::string* PROTOBUF_NULLABLE value);
+
+  private:
+  const ::std::string& _internal_name() const;
+  PROTOBUF_ALWAYS_INLINE void _internal_set_name(const ::std::string& value);
+  ::std::string* PROTOBUF_NONNULL _internal_mutable_name();
+
+  public:
+  // int32 touid = 1;
+  void clear_touid() ;
+  ::int32_t touid() const;
+  void set_touid(::int32_t value);
+
+  private:
+  ::int32_t _internal_touid() const;
+  void _internal_set_touid(::int32_t value);
+
+  public:
+  // int32 thread_id = 2;
+  void clear_thread_id() ;
+  ::int32_t thread_id() const;
+  void set_thread_id(::int32_t value);
+
+  private:
+  ::int32_t _internal_thread_id() const;
+  void _internal_set_thread_id(::int32_t value);
+
+  public:
+  // int32 owner_id = 4;
+  void clear_owner_id() ;
+  ::int32_t owner_id() const;
+  void set_owner_id(::int32_t value);
+
+  private:
+  ::int32_t _internal_owner_id() const;
+  void _internal_set_owner_id(::int32_t value);
+
+  public:
+  // int32 operator_uid = 6;
+  void clear_operator_uid() ;
+  ::int32_t operator_uid() const;
+  void set_operator_uid(::int32_t value);
+
+  private:
+  ::int32_t _internal_operator_uid() const;
+  void _internal_set_operator_uid(::int32_t value);
+
+  public:
+  // @@protoc_insertion_point(class_scope:message.AddGroupNotifyReq)
+ private:
+  class _Internal;
+  friend class ::google::protobuf::internal::TcParser;
+  static const ::google::protobuf::internal::TcParseTable<3, 6,
+                                   0, 38,
+                                   2>
+      _table_;
+
+  friend class ::google::protobuf::MessageLite;
+  friend class ::google::protobuf::Arena;
+  template <typename T>
+  friend class ::google::protobuf::Arena::InternalHelper;
+  using InternalArenaConstructable_ = void;
+  using DestructorSkippable_ = void;
+  struct Impl_ {
+    inline explicit constexpr Impl_(::google::protobuf::internal::ConstantInitialized) noexcept;
+    inline explicit Impl_(
+        ::google::protobuf::internal::InternalVisibility visibility,
+        ::google::protobuf::Arena* PROTOBUF_NULLABLE arena);
+    inline explicit Impl_(
+        ::google::protobuf::internal::InternalVisibility visibility,
+        ::google::protobuf::Arena* PROTOBUF_NULLABLE arena, const Impl_& from,
+        const AddGroupNotifyReq& from_msg);
+    ::google::protobuf::internal::HasBits<1> _has_bits_;
+    ::google::protobuf::internal::CachedSize _cached_size_;
+    ::google::protobuf::RepeatedField<::int32_t> members_;
+    ::google::protobuf::internal::CachedSize _members_cached_byte_size_;
+    ::google::protobuf::internal::ArenaStringPtr name_;
+    ::int32_t touid_;
+    ::int32_t thread_id_;
+    ::int32_t owner_id_;
+    ::int32_t operator_uid_;
+    PROTOBUF_TSAN_DECLARE_MEMBER
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_message_2eproto;
+};
+
+extern const ::google::protobuf::internal::ClassDataFull AddGroupNotifyReq_class_data_;
 // -------------------------------------------------------------------
 
 class AddFriendRsp final : public ::google::protobuf::Message
@@ -7399,6 +7873,279 @@ inline ::int32_t KickUserRsp::_internal_uid() const {
 inline void KickUserRsp::_internal_set_uid(::int32_t value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.uid_ = value;
+}
+
+// -------------------------------------------------------------------
+
+// AddGroupNotifyReq
+
+// int32 touid = 1;
+inline void AddGroupNotifyReq::clear_touid() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.touid_ = 0;
+  ClearHasBit(_impl_._has_bits_[0],
+                  0x00000004U);
+}
+inline ::int32_t AddGroupNotifyReq::touid() const {
+  // @@protoc_insertion_point(field_get:message.AddGroupNotifyReq.touid)
+  return _internal_touid();
+}
+inline void AddGroupNotifyReq::set_touid(::int32_t value) {
+  _internal_set_touid(value);
+  SetHasBit(_impl_._has_bits_[0], 0x00000004U);
+  // @@protoc_insertion_point(field_set:message.AddGroupNotifyReq.touid)
+}
+inline ::int32_t AddGroupNotifyReq::_internal_touid() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.touid_;
+}
+inline void AddGroupNotifyReq::_internal_set_touid(::int32_t value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.touid_ = value;
+}
+
+// int32 thread_id = 2;
+inline void AddGroupNotifyReq::clear_thread_id() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.thread_id_ = 0;
+  ClearHasBit(_impl_._has_bits_[0],
+                  0x00000008U);
+}
+inline ::int32_t AddGroupNotifyReq::thread_id() const {
+  // @@protoc_insertion_point(field_get:message.AddGroupNotifyReq.thread_id)
+  return _internal_thread_id();
+}
+inline void AddGroupNotifyReq::set_thread_id(::int32_t value) {
+  _internal_set_thread_id(value);
+  SetHasBit(_impl_._has_bits_[0], 0x00000008U);
+  // @@protoc_insertion_point(field_set:message.AddGroupNotifyReq.thread_id)
+}
+inline ::int32_t AddGroupNotifyReq::_internal_thread_id() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.thread_id_;
+}
+inline void AddGroupNotifyReq::_internal_set_thread_id(::int32_t value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.thread_id_ = value;
+}
+
+// string name = 3;
+inline void AddGroupNotifyReq::clear_name() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.name_.ClearToEmpty();
+  ClearHasBit(_impl_._has_bits_[0],
+                  0x00000002U);
+}
+inline const ::std::string& AddGroupNotifyReq::name() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:message.AddGroupNotifyReq.name)
+  return _internal_name();
+}
+template <typename Arg_, typename... Args_>
+PROTOBUF_ALWAYS_INLINE void AddGroupNotifyReq::set_name(Arg_&& arg, Args_... args) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  SetHasBit(_impl_._has_bits_[0], 0x00000002U);
+  _impl_.name_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:message.AddGroupNotifyReq.name)
+}
+inline ::std::string* PROTOBUF_NONNULL AddGroupNotifyReq::mutable_name()
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  SetHasBit(_impl_._has_bits_[0], 0x00000002U);
+  ::std::string* _s = _internal_mutable_name();
+  // @@protoc_insertion_point(field_mutable:message.AddGroupNotifyReq.name)
+  return _s;
+}
+inline const ::std::string& AddGroupNotifyReq::_internal_name() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.name_.Get();
+}
+inline void AddGroupNotifyReq::_internal_set_name(const ::std::string& value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.name_.Set(value, GetArena());
+}
+inline ::std::string* PROTOBUF_NONNULL AddGroupNotifyReq::_internal_mutable_name() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _impl_.name_.Mutable( GetArena());
+}
+inline ::std::string* PROTOBUF_NULLABLE AddGroupNotifyReq::release_name() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:message.AddGroupNotifyReq.name)
+  if (!CheckHasBit(_impl_._has_bits_[0], 0x00000002U)) {
+    return nullptr;
+  }
+  ClearHasBit(_impl_._has_bits_[0], 0x00000002U);
+  auto* released = _impl_.name_.Release();
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString()) {
+    _impl_.name_.Set("", GetArena());
+  }
+  return released;
+}
+inline void AddGroupNotifyReq::set_allocated_name(::std::string* PROTOBUF_NULLABLE value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (value != nullptr) {
+    SetHasBit(_impl_._has_bits_[0], 0x00000002U);
+  } else {
+    ClearHasBit(_impl_._has_bits_[0], 0x00000002U);
+  }
+  _impl_.name_.SetAllocated(value, GetArena());
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.name_.IsDefault()) {
+    _impl_.name_.Set("", GetArena());
+  }
+  // @@protoc_insertion_point(field_set_allocated:message.AddGroupNotifyReq.name)
+}
+
+// int32 owner_id = 4;
+inline void AddGroupNotifyReq::clear_owner_id() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.owner_id_ = 0;
+  ClearHasBit(_impl_._has_bits_[0],
+                  0x00000010U);
+}
+inline ::int32_t AddGroupNotifyReq::owner_id() const {
+  // @@protoc_insertion_point(field_get:message.AddGroupNotifyReq.owner_id)
+  return _internal_owner_id();
+}
+inline void AddGroupNotifyReq::set_owner_id(::int32_t value) {
+  _internal_set_owner_id(value);
+  SetHasBit(_impl_._has_bits_[0], 0x00000010U);
+  // @@protoc_insertion_point(field_set:message.AddGroupNotifyReq.owner_id)
+}
+inline ::int32_t AddGroupNotifyReq::_internal_owner_id() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.owner_id_;
+}
+inline void AddGroupNotifyReq::_internal_set_owner_id(::int32_t value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.owner_id_ = value;
+}
+
+// repeated int32 members = 5;
+inline int AddGroupNotifyReq::_internal_members_size() const {
+  return _internal_members().size();
+}
+inline int AddGroupNotifyReq::members_size() const {
+  return _internal_members_size();
+}
+inline void AddGroupNotifyReq::clear_members() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.members_.Clear();
+  ClearHasBitForRepeated(_impl_._has_bits_[0],
+                  0x00000001U);
+}
+inline ::int32_t AddGroupNotifyReq::members(int index) const {
+  // @@protoc_insertion_point(field_get:message.AddGroupNotifyReq.members)
+  return _internal_members().Get(index);
+}
+inline void AddGroupNotifyReq::set_members(int index, ::int32_t value) {
+  _internal_mutable_members()->Set(index, value);
+  // @@protoc_insertion_point(field_set:message.AddGroupNotifyReq.members)
+}
+inline void AddGroupNotifyReq::add_members(::int32_t value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _internal_mutable_members()->Add(value);
+  SetHasBitForRepeated(_impl_._has_bits_[0], 0x00000001U);
+  // @@protoc_insertion_point(field_add:message.AddGroupNotifyReq.members)
+}
+inline const ::google::protobuf::RepeatedField<::int32_t>& AddGroupNotifyReq::members() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_list:message.AddGroupNotifyReq.members)
+  return _internal_members();
+}
+inline ::google::protobuf::RepeatedField<::int32_t>* PROTOBUF_NONNULL AddGroupNotifyReq::mutable_members()
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  SetHasBitForRepeated(_impl_._has_bits_[0], 0x00000001U);
+  // @@protoc_insertion_point(field_mutable_list:message.AddGroupNotifyReq.members)
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _internal_mutable_members();
+}
+inline const ::google::protobuf::RepeatedField<::int32_t>&
+AddGroupNotifyReq::_internal_members() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.members_;
+}
+inline ::google::protobuf::RepeatedField<::int32_t>* PROTOBUF_NONNULL
+AddGroupNotifyReq::_internal_mutable_members() {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return &_impl_.members_;
+}
+
+// int32 operator_uid = 6;
+inline void AddGroupNotifyReq::clear_operator_uid() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.operator_uid_ = 0;
+  ClearHasBit(_impl_._has_bits_[0],
+                  0x00000020U);
+}
+inline ::int32_t AddGroupNotifyReq::operator_uid() const {
+  // @@protoc_insertion_point(field_get:message.AddGroupNotifyReq.operator_uid)
+  return _internal_operator_uid();
+}
+inline void AddGroupNotifyReq::set_operator_uid(::int32_t value) {
+  _internal_set_operator_uid(value);
+  SetHasBit(_impl_._has_bits_[0], 0x00000020U);
+  // @@protoc_insertion_point(field_set:message.AddGroupNotifyReq.operator_uid)
+}
+inline ::int32_t AddGroupNotifyReq::_internal_operator_uid() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.operator_uid_;
+}
+inline void AddGroupNotifyReq::_internal_set_operator_uid(::int32_t value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.operator_uid_ = value;
+}
+
+// -------------------------------------------------------------------
+
+// AddGroupNotifyRsp
+
+// int32 error = 1;
+inline void AddGroupNotifyRsp::clear_error() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.error_ = 0;
+  ClearHasBit(_impl_._has_bits_[0],
+                  0x00000001U);
+}
+inline ::int32_t AddGroupNotifyRsp::error() const {
+  // @@protoc_insertion_point(field_get:message.AddGroupNotifyRsp.error)
+  return _internal_error();
+}
+inline void AddGroupNotifyRsp::set_error(::int32_t value) {
+  _internal_set_error(value);
+  SetHasBit(_impl_._has_bits_[0], 0x00000001U);
+  // @@protoc_insertion_point(field_set:message.AddGroupNotifyRsp.error)
+}
+inline ::int32_t AddGroupNotifyRsp::_internal_error() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.error_;
+}
+inline void AddGroupNotifyRsp::_internal_set_error(::int32_t value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.error_ = value;
+}
+
+// int32 thread_id = 2;
+inline void AddGroupNotifyRsp::clear_thread_id() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.thread_id_ = 0;
+  ClearHasBit(_impl_._has_bits_[0],
+                  0x00000002U);
+}
+inline ::int32_t AddGroupNotifyRsp::thread_id() const {
+  // @@protoc_insertion_point(field_get:message.AddGroupNotifyRsp.thread_id)
+  return _internal_thread_id();
+}
+inline void AddGroupNotifyRsp::set_thread_id(::int32_t value) {
+  _internal_set_thread_id(value);
+  SetHasBit(_impl_._has_bits_[0], 0x00000002U);
+  // @@protoc_insertion_point(field_set:message.AddGroupNotifyRsp.thread_id)
+}
+inline ::int32_t AddGroupNotifyRsp::_internal_thread_id() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.thread_id_;
+}
+inline void AddGroupNotifyRsp::_internal_set_thread_id(::int32_t value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.thread_id_ = value;
 }
 
 #ifdef __GNUC__

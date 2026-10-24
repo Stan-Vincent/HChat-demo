@@ -409,6 +409,28 @@ void TcpMgr::initHandlers()
         emit sig_add_group_member_rsp(err, thread_id);
     });
 
+    // 群成员变更实时通知（ID_NOTIFY_ADD_GROUP_REQ=1037）：建群/加人后，
+    // 服务端把新群推给被邀请的在线成员。解析后透传 thread_id/name/members。
+    _handlers.insert(ID_NOTIFY_ADD_GROUP_REQ, [this](ReqId id, int len, QByteArray data) {
+        Q_UNUSED(id);
+        Q_UNUSED(len);
+        QJsonDocument jsonDoc = QJsonDocument::fromJson(data);
+        if (jsonDoc.isNull()) {
+            qCDebug(lcNetwork) << "AddGroupNotify: json parse failed";
+            return;
+        }
+        QJsonObject jsonObj = jsonDoc.object();
+        int thread_id = jsonObj["thread_id"].toInt();
+        QString name = jsonObj["name"].toString();
+        std::vector<int> members;
+        for (const QJsonValue& v : jsonObj["members"].toArray()) {
+            members.push_back(v.toInt());
+        }
+        qCDebug(lcNetwork) << "AddGroupNotify: thread_id =" << thread_id
+                           << ", name =" << name << ", members =" << (int)members.size();
+        emit sig_add_group_notify(thread_id, name, members);
+    });
+
 
 	_handlers.insert(ID_SEARCH_USER_RSP, [this](ReqId id, int len, QByteArray data) {
 		Q_UNUSED(len);

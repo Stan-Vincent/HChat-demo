@@ -22,7 +22,7 @@
 
 GroupMemberDlg::GroupMemberDlg(int thread_id, const QString& group_name,
                                const std::vector<int>& members, QWidget* parent)
-    : QDialog(parent), _thread_id(thread_id), _members(members)
+    : QDialog(parent), _thread_id(thread_id), _group_name(group_name), _members(members)
 {
     setWindowTitle(tr("群成员"));
     setMinimumWidth(300);
@@ -49,6 +49,17 @@ GroupMemberDlg::GroupMemberDlg(int thread_id, const QString& group_name,
             }
         }
         _pending_added.clear();
+        fillMembers(_members);
+    });
+
+    // 群成员变更实时通知（1037）：本群有成员变动时，若本弹窗正好开着就即时刷新。
+    // 服务端给的是该群完整成员列表，直接覆盖本地缓存即可。
+    connect(TcpMgr::GetInstance().get(), &TcpMgr::sig_add_group_notify,
+            this, [this](int thread_id, const QString&, std::vector<int> members) {
+        if (thread_id != _thread_id) {
+            return;   // 别的群的回包
+        }
+        _members = members;
         fillMembers(_members);
     });
 }
@@ -139,6 +150,7 @@ void GroupMemberDlg::sendAddMembersReq(const std::vector<int>& uids)
     QJsonObject obj;
     obj["uid"] = UserMgr::GetInstance()->GetUid();
     obj["thread_id"] = _thread_id;
+    obj["name"] = _group_name;
     QJsonArray arr;
     for (int uid : uids) {
         arr.append(uid);

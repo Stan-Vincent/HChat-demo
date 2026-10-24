@@ -23,6 +23,8 @@ using message::TextChatMsgRsp;
 using message::TextChatData;
 using message::KickUserReq;
 using message::KickUserRsp;
+using message::AddGroupNotifyReq;
+using message::AddGroupNotifyRsp;
 
 
 class ChatServiceImpl final: public ChatService::Service
@@ -40,9 +42,13 @@ public:
 
 	bool GetBaseInfo(std::string base_key, int uid, std::shared_ptr<UserInfo>& userinfo);
 
-	//����rpc��������
+	//����rpc��������
 	Status NotifyKickUser(::grpc::ServerContext* context,
 		const KickUserReq* request, KickUserRsp* response) override;
+
+	// 群成员变更实时通知（建群/加人后，把新群推给被邀请的在线成员）
+	Status NotifyAddGroup(::grpc::ServerContext* context,
+		const AddGroupNotifyReq* request, AddGroupNotifyRsp* response) override;
 
 	void RegisterServer(std::shared_ptr<CServer> pServer);
 private:

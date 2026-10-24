@@ -8,6 +8,7 @@
 #include "global.h"
 #include "statewidget.h"
 #include <memory>
+#include <vector>
 #include "userdata.h"
 #include <QListWidgetItem>
 #include "loadingdlg.h"
@@ -113,6 +114,9 @@ public slots:
 
     // 建群回包（1034）：error==0 时把新群加进会话列表，否则提示失败
     void slot_create_group_rsp(int error, int thread_id, const QString& name);
+    // 群成员变更实时通知（1037）：被邀请的成员无需重登即可在会话列表看到新群；
+    //   已在该群的成员则刷新本地成员列表。payload 含群完整成员列表。
+    void slot_add_group_notify(int thread_id, QString name, std::vector<int> members);
 
     void slot_create_private_chat(int uid, int other_id, int thread_id);
 

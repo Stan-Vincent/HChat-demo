@@ -27,6 +27,7 @@ private:
     QPushButton* _invite_btn = nullptr;
     int _thread_id = 0;
     std::vector<int> _members;
+    QString _group_name;   // 群名缓存：发 1035 邀请请求时带上，供服务端回推群信息
     // 本次发出去的邀请 uid：服务端 1036 不回"加了谁"，成功后用它并进列表
     std::vector<int> _pending_added;
 };

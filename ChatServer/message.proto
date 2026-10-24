@@ -1,154 +1,325 @@
 syntax = "proto3";
 
+
+
 package message;
 
+
+
 service VarifyService {
+
   rpc GetVarifyCode (GetVarifyReq) returns (GetVarifyRsp) {}
+
 }
+
+
 
 message GetVarifyReq {
+
   string email = 1;
+
 }
+
+
 
 message GetVarifyRsp {
+
   int32 error = 1;
+
   string email = 2;
+
   string code = 3;
+
 }
+
+
 
 message GetChatServerReq {
+
   int32 uid = 1;
+
 }
+
+
 
 message GetChatServerRsp {
+
   int32 error = 1;
+
   string host = 2;
+
   string port = 3;
+
   string token = 4;
+
 }
+
+
 
 message LoginReq{
+
 	int32 uid = 1;
+
 	string token= 2;
+
 }
+
+
 
 message LoginRsp {
+
 	int32 error = 1;
+
 	int32 uid = 2;
+
 	string token = 3;
+
 }
+
+
 
 service StatusService {
+
 	rpc GetChatServer (GetChatServerReq) returns (GetChatServerRsp) {}
+
 	rpc Login(LoginReq) returns(LoginRsp);
+
 }
+
+
 
 message AddFriendReq {
+
 	int32  applyuid = 1;
+
 	string name = 2;
+
 	string desc = 3;
+
 	string icon = 4;
+
 	string nick = 5;
+
 	int32  sex = 6;
+
 	int32  touid = 7;
+
 }
+
+
 
 message AddFriendRsp {
+
 	int32 error = 1;
+
 	int32 applyuid = 2;
+
 	int32 touid = 3;
+
 }
+
+
 
 message RplyFriendReq {
+
 	int32 rplyuid = 1;
+
 	bool  agree = 2;
+
 	int32 touid = 3;
+
 }
+
+
 
 message RplyFriendRsp {
+
 	int32 error = 1;
+
 	int32 rplyuid = 2;
+
 	int32 touid = 3;
+
 }
+
+
 
 message SendChatMsgReq{
+
 		int32 fromuid = 1;
+
 		int32 touid = 2;
+
 		string message = 3;
+
 }
+
+
 
 message SendChatMsgRsp{
+
 		int32 error = 1;
+
 		int32 fromuid = 2;
+
 		int32 touid = 3;
+
 }
+
+
 
 message AddFriendMsg{
+
 	int32 sender_id = 1;
+
 	string unique_id = 2;
+
 	int32 msg_id = 3;
+
 	int32 thread_id = 4;
+
 	string msgcontent = 5;
+
 	int32 status = 6;
+
 	int32 msg_type = 7;
+
 	int64 total_size = 8;
+
 	string md5 = 9;
+
 }
+
+
 
 message AuthFriendReq{
+
 	int32 fromuid = 1;
+
 	int32 touid = 2;
+
 	repeated AddFriendMsg textmsgs = 3;
+
 }
+
+
 
 message AuthFriendRsp{
+
 	int32 error = 1;
+
 	int32 fromuid = 2;
+
 	int32 touid = 3;
+
 }
+
+
 
 message TextChatMsgReq {
+
 	int32 fromuid = 1;
+
     int32 touid = 2;
+
 	int32 thread_id = 3;
+
 	repeated TextChatData textmsgs = 4;
+
 }
+
+
 
 message TextChatData{
+
 	string unique_id = 1;
+
 	int32 msg_id = 2;
+
 	string msgcontent = 3;
+
 	string chat_time = 4;
-	// ÏûÏ¢ÀàĞÍ£º0=ÎÄ±¾ 1=Í¼Æ¬ 2=ÎÄ¼ş¡£
-	// msgcontent µÄº¬ÒåËæÖ®±ä»¯£ºÎÄ±¾´æÕıÎÄ£¬Í¼Æ¬/ÎÄ¼ş´æ¡¾·şÎñÆ÷ÉÏµÄÏà¶ÔÂ·¾¶¡¿¡£
+
+	// æ¶ˆæ¯ç±»å‹ï¼š0=æ–‡æœ¬ 1=å›¾ç‰‡ 2=æ–‡ä»¶ã€‚
+
+	// msgcontent çš„å«ä¹‰éšä¹‹å˜åŒ–ï¼šæ–‡æœ¬å­˜æ­£æ–‡ï¼Œå›¾ç‰‡/æ–‡ä»¶å­˜ã€æœåŠ¡å™¨ä¸Šçš„ç›¸å¯¹è·¯å¾„ã€‘ã€‚
+
 	int32 msg_type = 5;
-	// ÎÄ¼ş×Ö½ÚÊıÓë md5£¨Í¼Æ¬/ÎÄ¼şÓÃ£¬ÎÄ±¾Îª 0 / ¿Õ£©
+
+	// æ–‡ä»¶å­—èŠ‚æ•°ä¸ md5ï¼ˆå›¾ç‰‡/æ–‡ä»¶ç”¨ï¼Œæ–‡æœ¬ä¸º 0 / ç©ºï¼‰
+
 	int64 total_size = 6;
+
 	string md5 = 7;
+
 }
+
+
 
 message TextChatMsgRsp {
+
 	int32 error = 1;
+
 	int32 fromuid = 2;
+
 	int32 touid = 3; 
+
 	int32 thread_id = 4;
+
 	repeated TextChatData textmsgs = 5;
+
 }
+
+
 
 message KickUserReq{
+
 	int32 uid = 1;
+
 }
+
+
 
 message KickUserRsp{
+
 	int32 error = 1;
+
 	int32 uid = 2;
+
 }
 
-service ChatService {
-	rpc NotifyAddFriend(AddFriendReq) returns (AddFriendRsp) {}
-	rpc RplyAddFriend(RplyFriendReq) returns (RplyFriendRsp) {}
-	rpc SendChatMsg(SendChatMsgReq) returns (SendChatMsgRsp) {}
-	rpc NotifyAuthFriend(AuthFriendReq) returns (AuthFriendRsp) {}
-	rpc NotifyTextChatMsg(TextChatMsgReq) returns (TextChatMsgRsp){}
-	rpc NotifyKickUser(KickUserReq) returns (KickUserRsp){}
+
+
+
+message AddGroupNotifyReq {
+	int32 touid = 1;
+	int32 thread_id = 2;
+	string name = 3;
+	int32 owner_id = 4;
+	repeated int32 members = 5;
+	int32 operator_uid = 6;
 }
+
+message AddGroupNotifyRsp {
+	int32 error = 1;
+	int32 thread_id = 2;
+}
+
+
+service ChatService {
+
+	rpc NotifyAddFriend(AddFriendReq) returns (AddFriendRsp) {}
+
+	rpc RplyAddFriend(RplyFriendReq) returns (RplyFriendRsp) {}
+
+	rpc SendChatMsg(SendChatMsgReq) returns (SendChatMsgRsp) {}
+
+	rpc NotifyAuthFriend(AuthFriendReq) returns (AuthFriendRsp) {}
+
+	rpc NotifyTextChatMsg(TextChatMsgReq) returns (TextChatMsgRsp){}
+
+	rpc NotifyKickUser(KickUserReq) returns (KickUserRsp){}
+	rpc NotifyAddGroup(AddGroupNotifyReq) returns (AddGroupNotifyRsp){}
+
+}
+

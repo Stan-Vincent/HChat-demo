@@ -90,6 +90,7 @@ enum MSG_IDS {
 	ID_CREATE_GROUP_CHAT_RSP = 1034,  //创建群聊回复
 	ID_ADD_GROUP_MEMBER_REQ = 1035,   //添加群成员请求
 	ID_ADD_GROUP_MEMBER_RSP = 1036,   //添加群成员回复
+	ID_NOTIFY_ADD_GROUP_REQ = 1037,  //群成员变更实时通知（建群/加人后推给被邀请成员）
       //加载聊天消息
 };
 

@@ -18,6 +18,7 @@
 #include "conuseritem.h"
 #include "lineitem.h"
 #include "tcpmgr.h"
+#include "toast.h"
 #include "usermgr.h"
 #include "imagemanager.h"
 #include <QPointer>
@@ -102,6 +103,8 @@ ChatDialog::ChatDialog(QWidget* parent) :
 	// 建群回包（1034）
 	connect(TcpMgr::GetInstance().get(), &TcpMgr::sig_create_group_rsp,
 		this, &ChatDialog::slot_create_group_rsp);
+	connect(TcpMgr::GetInstance().get(), &TcpMgr::sig_add_group_notify,
+		this, &ChatDialog::slot_add_group_notify);
 	QAction* searchAction = new QAction(ui->search_edit);
 	searchAction->setIcon(QIcon(":/res/search.png"));
 	ui->search_edit->addAction(searchAction, QLineEdit::LeadingPosition);
@@ -850,6 +853,36 @@ void ChatDialog::slot_create_group_rsp(int error, int thread_id, const QString& 
 	ui->chat_user_list->addItem(group_item);
 	ui->chat_user_list->setItemWidget(group_item, group_wid);
 	_chat_thread_items.insert(thread_id, group_item);
+}
+
+// 群成员变更实时通知（1037）。被邀请的成员无需重登即可在会话列表看到新群；
+//   已在群里的成员则刷新本地成员列表（用于群成员面板自动更新）。
+void ChatDialog::slot_add_group_notify(int thread_id, QString name, std::vector<int> members)
+{
+	if (thread_id <= 0) {
+		return;
+	}
+	auto thread = UserMgr::GetInstance()->GetChatThreadByThreadId(thread_id);
+	if (thread) {
+		// 已在列表：原地更新群信息（含成员），不重复加 UI
+		thread->SetGroupInfo(name, members);
+	} else {
+		// 新群：建会话并插入会话列表（镜像 slot_create_group_rsp，带去重）
+		if (_chat_thread_items.contains(thread_id)) {
+			return;
+		}
+		auto group_data = std::make_shared<ChatThreadData>(0, thread_id, 0);
+		group_data->SetGroupInfo(name, members);
+		UserMgr::GetInstance()->AddChatThreadData(group_data, 0);
+		auto* group_wid = new ChatUserWid();
+		group_wid->SetChatData(group_data);
+		QListWidgetItem* group_item = new QListWidgetItem;
+		group_item->setSizeHint(group_wid->sizeHint());
+		ui->chat_user_list->addItem(group_item);
+		ui->chat_user_list->setItemWidget(group_item, group_wid);
+		_chat_thread_items.insert(thread_id, group_item);
+	}
+	Toast::showToast(this, tr("你被加入群「%1」").arg(name), Toast::Info);
 }
 
 void ChatDialog::AddLBGroup(StateWidget* lb)

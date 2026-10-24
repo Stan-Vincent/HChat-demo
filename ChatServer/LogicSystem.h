@@ -35,7 +35,7 @@ private:
 	void HeartBeatHandler(std::shared_ptr<CSession> session, const short& msg_id, const string& msg_data);
 	bool isPureDigit(const std::string& str);
 	void GetUserByUid(std::string uid_str, Json::Value& rtvalue);
-	void GetUserByName(std::string name, Json::Value& rtvalue);
+	void GetUserByName(std::string name, Json::Value& rtvalue);
 	void GetUserByEmail(const std::string& email, Json::Value& rtvalue);
 	bool GetBaseInfo(std::string base_key, int uid, std::shared_ptr<UserInfo> &userinfo);
 	bool GetFriendApplyInfo(int to_uid, std::vector<std::shared_ptr<ApplyInfo>>& list);
@@ -52,6 +52,11 @@ private:
 	// ---- group chat ----
 	void CreateGroupChat(std::shared_ptr<CSession> session, const short& msg_id, const string& msg_data);
 	void AddGroupMembers(std::shared_ptr<CSession> session, const short& msg_id, const string& msg_data);
+	// 群成员变更实时通知：把新群推给 targets 里的在线成员（建群/加人后调用）。
+	// 离线用户跳过（下次登录 1018 拉会话时自然出现）；本服在线直发，跨服走 gRPC NotifyAddGroup。
+	void NotifyGroupAdd(const std::vector<int>& targets, int thread_id,
+		const std::string& name, int owner_id,
+		const std::vector<int>& members, int operator_uid);
 	std::thread _worker_thread;
 	std::queue<shared_ptr<LogicNode>> _msg_que;
 	std::mutex _mutex;

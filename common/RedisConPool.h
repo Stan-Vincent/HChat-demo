@@ -1,14 +1,14 @@
 #pragma once
-// å…±äº«çš„ Redis è¿æ¥æ± ï¼šChatServer / GateServer å…±ç”¨ä¸€ä»½å®ç°ã€‚
+// ¹²ÏíµÄ Redis Á¬½Ó³Ø£ºChatServer / GateServer ¹²ÓÃÒ»·İÊµÏÖ¡£
 //
-// èƒŒæ™¯ï¼šåŸæ¥æ˜¯ä¸¤ä»½ä¸åŒçš„å®ç°â€”â€”ChatServer ç‰ˆæœ‰ PING å·¡æ£€ + è¡¥é½ä½†æ— é€€é¿ã€
-// å·¡æ£€é—´éš” 60 ç§’ï¼›GateServer ç‰ˆä»€ä¹ˆéƒ½æ²¡æœ‰ï¼ˆRedis ä¸€æŠ–åŠ¨ï¼Œç™»å½•/éªŒè¯ç /èŠå¤©å…¨å¤±è´¥
-// ä¸”ä¸è‡ªæ„ˆï¼‰ã€‚å·²ç»Ÿä¸€åˆ°è¿™é‡Œï¼Œå¹¶ä¿®äº†ä¸¤ä¸ªé—®é¢˜ï¼š
-//   1) reconnect() é‡Œ `reply->type` æœªåˆ¤ NULLï¼ˆredisCommand å¤±è´¥æ—¶ reply ä¸º NULLï¼Œ
-//      ç›´æ¥è§£å¼•ç”¨ä¼šå´©ï¼‰â†’ å…ˆåˆ¤ç©ºå†åˆ¤ç±»å‹ï¼›
-//   2) å·¡æ£€é—´éš”ä» 60s é™åˆ°å¯é…ç½®ï¼ˆé»˜è®¤ 5sï¼‰ï¼ŒRedis æŠ–åŠ¨åæœ€å¤š 5s è‡ªæ„ˆï¼›
-//   3) è¡¥é½è¿æ¥æ”¹ä¸ºæŒ‡æ•°é€€é¿ï¼ˆ1sâ†’2sâ†’4sâ€¦ä¸Šé™ 30sï¼‰ï¼Œé¿å… Redis é‡å¯æ—¶
-//      æ‰€æœ‰æœåŠ¡é«˜é¢‘é‡è¿æŠŠå®ƒå†æ‰“çˆ†ã€‚
+// ±³¾°£ºÔ­À´ÊÇÁ½·İ²»Í¬µÄÊµÏÖ¡ª¡ªChatServer °æÓĞ PING Ñ²¼ì + ²¹Æëµ«ÎŞÍË±Ü¡¢
+// Ñ²¼ì¼ä¸ô 60 Ãë£»GateServer °æÊ²Ã´¶¼Ã»ÓĞ£¨Redis Ò»¶¶¶¯£¬µÇÂ¼/ÑéÖ¤Âë/ÁÄÌìÈ«Ê§°Ü
+// ÇÒ²»×ÔÓú£©¡£ÒÑÍ³Ò»µ½ÕâÀï£¬²¢ĞŞÁËÁ½¸öÎÊÌâ£º
+//   1) reconnect() Àï `reply->type` Î´ÅĞ NULL£¨redisCommand Ê§°ÜÊ± reply Îª NULL£¬
+//      Ö±½Ó½âÒıÓÃ»á±À£©¡ú ÏÈÅĞ¿ÕÔÙÅĞÀàĞÍ£»
+//   2) Ñ²¼ì¼ä¸ô´Ó 60s ½µµ½¿ÉÅäÖÃ£¨Ä¬ÈÏ 5s£©£¬Redis ¶¶¶¯ºó×î¶à 5s ×ÔÓú£»
+//   3) ²¹ÆëÁ¬½Ó¸ÄÎªÖ¸ÊıÍË±Ü£¨1s¡ú2s¡ú4s¡­ÉÏÏŞ 30s£©£¬±ÜÃâ Redis ÖØÆôÊ±
+//      ËùÓĞ·şÎñ¸ßÆµÖØÁ¬°ÑËüÔÙ´ò±¬¡£
 #include "hiredis.h"
 #include "logger.h"
 
@@ -22,13 +22,13 @@
 
 class RedisConPool {
 public:
-    // check_interval_secï¼šåå° PING å·¡æ£€é—´éš”ï¼ˆç§’ï¼‰ã€‚Redis æŠ–åŠ¨åæœ€é•¿è¿™ä¹ˆä¹…å¼€å§‹è‡ªæ„ˆã€‚
+    // check_interval_sec£ººóÌ¨ PING Ñ²¼ì¼ä¸ô£¨Ãë£©¡£Redis ¶¶¶¯ºó×î³¤ÕâÃ´¾Ã¿ªÊ¼×ÔÓú¡£
     RedisConPool(size_t poolSize, const char* host, int port, const char* pwd,
                  int check_interval_sec = 5)
         : poolSize_(poolSize), host_(host), port_(port), pwd_(pwd),
           b_stop_(false), fail_count_(0), check_interval_(check_interval_sec),
           backoff_sec_(1), backoff_skip_(0) {
-        // åˆæ¬¡å»ºè¿ï¼šå¤±è´¥çš„å…ˆè·³è¿‡ï¼Œç”±åå°å·¡æ£€è¡¥é½ï¼ˆè¿›ç¨‹å¯èƒ½åœ¨ Redis ä¹‹å‰èµ·æ¥ï¼‰
+        // ³õ´Î½¨Á¬£ºÊ§°ÜµÄÏÈÌø¹ı£¬ÓÉºóÌ¨Ñ²¼ì²¹Æë£¨½ø³Ì¿ÉÄÜÔÚ Redis Ö®Ç°ÆğÀ´£©
         for (size_t i = 0; i < poolSize_; ++i) {
             tryConnect();
         }
@@ -111,7 +111,7 @@ public:
     }
 
 private:
-    // å»ºä¸€æ¡æ–°è¿æ¥ï¼ˆå« AUTHï¼‰å¹¶å…¥æ± ã€‚æˆåŠŸè¿”å› trueã€‚
+    // ½¨Ò»ÌõĞÂÁ¬½Ó£¨º¬ AUTH£©²¢Èë³Ø¡£³É¹¦·µ»Ø true¡£
     bool tryConnect() {
         auto* context = redisConnect(host_.c_str(), port_);
         if (context == nullptr || context->err != 0) {
@@ -120,14 +120,8 @@ private:
             }
             return false;
         }
-        // è®¾è¶…æ—¶ï¼šRedis æ— å“åº”æ—¶ PING/AUTH ä¸ä¼šæ°¸ä¹…é˜»å¡ï¼ˆå¦åˆ™å·¡æ£€çº¿ç¨‹å¡æ­»ï¼‰
-        struct timeval tv;
-        tv.tv_sec = 2;
-        tv.tv_usec = 0;
-        redisSetTimeout(context, tv);
-
         auto* reply = (redisReply*)redisCommand(context, "AUTH %s", pwd_.c_str());
-        if (reply == nullptr) {                 // â˜… å…ˆåˆ¤ç©ºï¼ˆæ—§å®ç°ç›´æ¥è§£å¼•ç”¨ä¼šå´©ï¼‰
+        if (reply == nullptr) {                 // ¡ï ÏÈÅĞ¿Õ£¨¾ÉÊµÏÖÖ±½Ó½âÒıÓÃ»á±À£©
             redisFree(context);
             return false;
         }
@@ -141,7 +135,7 @@ private:
         return true;
     }
 
-    // PING æ¢æ´»ï¼štrue = è¿æ¥å¥åº·
+    // PING Ì½»î£ºtrue = Á¬½Ó½¡¿µ
     bool ping(redisContext* context) {
         auto* reply = (redisReply*)redisCommand(context, "PING");
         if (reply == nullptr || context->err) {
@@ -165,7 +159,7 @@ private:
         }
     }
 
-    // é€ä¸ª PING å·¡æ£€ï¼›åè¿æ¥é”€æ¯å¹¶è®¡æ•°ï¼Œå†æŒ‰éœ€è¡¥é½ï¼ˆå—æŒ‡æ•°é€€é¿çº¦æŸï¼‰ã€‚
+    // Öğ¸ö PING Ñ²¼ì£»»µÁ¬½ÓÏú»Ù²¢¼ÆÊı£¬ÔÙ°´Ğè²¹Æë£¨ÊÜÖ¸ÊıÍË±ÜÔ¼Êø£©¡£
     void checkThreadPro() {
         size_t pool_size = 0;
         {
@@ -192,7 +186,7 @@ private:
             return;
         }
 
-        // é€€é¿ä¸­ï¼šè·³è¿‡æœ¬è½®è¡¥é½ï¼ˆRedis é‡å¯æ—¶åˆ«é«˜é¢‘é‡è¿æŠŠå®ƒå†æ‰“çˆ†ï¼‰
+        // ÍË±ÜÖĞ£ºÌø¹ı±¾ÂÖ²¹Æë£¨Redis ÖØÆôÊ±±ğ¸ßÆµÖØÁ¬°ÑËüÔÙ´ò±¬£©
         if (backoff_skip_ > 0) {
             --backoff_skip_;
             return;
@@ -212,7 +206,7 @@ private:
             backoff_sec_ = 1;
             backoff_skip_ = 0;
         } else {
-            // ä¸€æ¬¡éƒ½æ²¡æˆåŠŸï¼šé€€é¿ç¿»å€ï¼ŒæŒ‰å·¡æ£€é—´éš”æ¢ç®—è¦è·³è¿‡å‡ è½®
+            // Ò»´Î¶¼Ã»³É¹¦£ºÍË±Ü·­±¶£¬°´Ñ²¼ì¼ä¸ô»»ËãÒªÌø¹ı¼¸ÂÖ
             backoff_skip_ = (backoff_sec_ / check_interval_);
             backoff_sec_ = (backoff_sec_ * 2 > 30) ? 30 : backoff_sec_ * 2;
             LOG_WARN("redis pool: reconnect failed, backoff to {}s", backoff_sec_);

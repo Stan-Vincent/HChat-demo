@@ -27,12 +27,14 @@ CL_INCLUDES = [
     r"D:\Program Files\mysql-connector-c++-26.7.0-winx64\include",
     r"D:\software\boost_1_92_0",
 ]
-# 每个服务端自己的目录 + 共享 common
+# 源码是平铺结构：GateServer/*.cpp、ChatServer/*.cpp，共享 common。
+# 这里只列"相对当前服务目录（ROOT/<svc>）的额外 include"，运行时统一再加上 /I.（服务自身目录）
+# 与 /I../common 系列。
 PER_SERVICE = {
-    'GateServer':   [r"GateServer", r"common", r"common\third_party\spdlog\include"],
-    'ChatServer':   [r"ChatServer", r"common", r"common\third_party\spdlog\include"],
-    'ChatServer2':  [r"ChatServer2", r"common", r"common\third_party\spdlog\include"],
-    'StatusServer': [r"StatusServer", r"common", r"common\third_party\spdlog\include"],
+    'GateServer':   [r"../common", r"../common/third_party/spdlog/include"],
+    'ChatServer':   [r"../common", r"../common/third_party/spdlog/include"],
+    'ChatServer2':  [r"../common", r"../common/third_party/spdlog/include"],
+    'StatusServer': [r"../common", r"../common/third_party/spdlog/include"],
 }
 
 
@@ -41,18 +43,20 @@ def check(files):
         print("FAIL 找不到 vcvars64.bat:", VCVARS)
         return 2
 
-    # 按所属服务端分组 include
+    # 按所属服务端分组（约定入参形如 Service/file.cpp）
     groups = {}
     for f in files:
-        top = f.replace('\\', '/').split('/')[0]
+        parts = f.replace('\\', '/').split('/')
+        top = parts[0]
+        rel = '/'.join(parts[1:]) if len(parts) > 1 else parts[0]
         if top not in PER_SERVICE:
             print("FAIL 无法识别 %s 属于哪个服务（应为 GateServer/ChatServer/...）" % f)
             return 2
-        groups.setdefault(top, []).append(f)
+        groups.setdefault(top, []).append(rel)
 
     total_err = 0
     for svc, group in groups.items():
-        inc = ['/I' + p for p in PER_SERVICE[svc]] + ['/I' + p for p in CL_INCLUDES]
+        inc = ['/I.'] + ['/I' + p for p in PER_SERVICE[svc]] + ['/I' + p for p in CL_INCLUDES]
         for f in group:
             cmd = ('"%s" >nul 2>&1 && cd /d %s && cl /c /nologo /EHsc /std:c++17 '
                    '/DFMT_UNICODE=0 /W3 /permissive- %s %s'
@@ -61,7 +65,7 @@ def check(files):
             out = (r.stdout + r.stderr).decode('utf-8', 'replace')
             errs = [l for l in out.splitlines() if 'error C' in l]
             total_err += len(errs)
-            name = os.path.join(svc, f)
+            name = svc + '/' + f
             if errs:
                 print('[FAIL] %s  (%d errors)' % (name, len(errs)))
                 for l in errs[:6]:

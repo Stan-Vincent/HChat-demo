@@ -87,6 +87,8 @@ signals:
     // 加群成员回包（1036）：error + thread_id（服务端只回这两个，
     // 本次邀请成功的 uid 由发送方自己记住，见 GroupMemberDlg::_pending_added）
     void sig_add_group_member_rsp(int error, int thread_id);
+    // 群成员变更实时通知（1037）：建群/加人后推给被邀请成员，payload 含完整成员列表
+    void sig_add_group_notify(int thread_id, QString name, std::vector<int> members);
     void sig_friend_apply(std::shared_ptr<AddFriendApply>);
     void sig_add_auth_friend(std::shared_ptr<AuthInfo>);
     void sig_auth_rsp(std::shared_ptr<AuthRsp>);
