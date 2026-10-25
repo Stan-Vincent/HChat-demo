@@ -8,5 +8,12 @@
     "mysql-connector-cpp",
     "jsoncpp",
     "spdlog"
+  ],
+  "builtin-baseline": "0c2a9ace1964b818b15f7ae50ba1c42404918a7b",
+  "overrides": [
+    { "name": "protobuf", "version": "6.33.4" },
+    { "name": "grpc", "version": "1.71.0" },
+    { "name": "abseil", "version": "20250127.1" },
+    { "name": "mysql-connector-cpp", "version": "8.0.32" }
   ]
 }
