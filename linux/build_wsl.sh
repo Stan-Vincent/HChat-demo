@@ -17,6 +17,9 @@ SRC=/home/xxxl/HCat_src
 WIN_REPO=/mnt/d/QTcode/HChat
 LINUX="$REPO/linux"
 
+# root 读 /mnt/d 下属 uid1000(Windows 用户) 的仓库会触发 git dubious-ownership 保护，通配放行
+git config --global --add safe.directory '*' 2>/dev/null || true
+
 echo "== 1) 克隆/更新 pristine 仓库到 WSL 原生 FS =="
 if [ ! -d "$REPO/.git" ]; then
   git clone "$WIN_REPO" "$REPO"
@@ -38,8 +41,7 @@ python3 "$LINUX/transcode_gbk_to_utf8.py" \
   "$SRC/GateServer" "$SRC/ChatServer" "$SRC/StatusServer" "$SRC/common"
 
 echo "== 4) 应用 Linux 移植补丁（幂等）=="
-python3 "$LINUX/apply_port.py" \
-  "$SRC/GateServer" "$SRC/ChatServer" "$SRC/StatusServer"
+python3 "$LINUX/apply_port.py" "$SRC"
 
 echo "== 5) cmake 配置 + 编译（-j2）=="
 cmake -S "$SRC" -B "$SRC/build"
