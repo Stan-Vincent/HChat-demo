@@ -61,21 +61,24 @@ static void dumpStack(FILE* fp)
     SymSetOptions(SYMOPT_UNDNAME | SYMOPT_DEFERRED_LOADS);
     SymInitialize(hProcess, NULL, TRUE);
 
+    HMODULE hMod = GetModuleHandleW(NULL);
+    fprintf(fp, "module base: %p  (frame offset = 地址 - 基址，可用 addr2line 定位)\n", (void*)hMod);
     void* frames[64];
     int n = CaptureStackBackTrace(0, 64, frames, NULL);
     fprintf(fp, "call stack (%d frames):\n", n);
     for (int k = 0; k < n; ++k) {
         DWORD64 disp = 0;
+        unsigned long long off = (unsigned long long)((DWORD64)frames[k] - (DWORD64)hMod);
         SYMBOL_INFOW sym = { 0 };
         sym.SizeOfStruct = sizeof(SYMBOL_INFOW);
         sym.MaxNameLen = MAX_SYM_NAME;
         if (SymFromAddrW(hProcess, (DWORD64)frames[k], &disp, &sym) == TRUE) {
             char name[512] = { 0 };
             wcstombs(name, sym.Name, sizeof(name) - 1);
-            fprintf(fp, "  #%02d %p  %s + 0x%llX\n", k, frames[k], name,
+            fprintf(fp, "  #%02d %p off=0x%llX  %s + 0x%llX\n", k, frames[k], off, name,
                 (unsigned long long)disp);
         } else {
-            fprintf(fp, "  #%02d %p  <no symbol>\n", k, frames[k]);
+            fprintf(fp, "  #%02d %p off=0x%llX  <no symbol>\n", k, frames[k], off);
         }
     }
     SymCleanup(hProcess);
