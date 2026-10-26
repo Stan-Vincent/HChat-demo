@@ -735,7 +735,7 @@ void ChatDialog::clearSessionState()
 	ui->friend_apply_page->clearAll();
 
 	// ★ 搜索结果列表：换号后残留上一次搜索出来的用户
-	ui->search_list->clear();
+	ui->search_list->Reset();   // 用 Reset 保留"搜索添加好友"固定入口，只清残留搜索结果
 
 	// ★ 心跳定时器停掉：回登录页后 UserMgr 已被 Clear，再发心跳也没有意义
 	//   （而且定时器回调里 user_info 会是空指针，虽然已判空，但没必要跑）。

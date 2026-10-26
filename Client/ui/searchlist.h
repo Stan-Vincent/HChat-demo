@@ -21,6 +21,8 @@ public:
     SearchList(QWidget *parent = nullptr);
     void CloseFindDlg();
     void SetSearchEdit(QWidget* edit);
+    // 退出重登后重建固定项（顶部占位 + "搜索添加好友"入口），并清掉残留搜索结果
+    void Reset();
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override {
         // 检查事件是否是鼠标悬浮进入或离开
@@ -54,9 +56,9 @@ private:
     void addTipItem();
     std::shared_ptr<QDialog> _find_dlg;
     QWidget* _search_edit;
-    LoadingDlg * _loadingDialog;
-    // ★ 搜索请求的超时兜底：发出请求后启动，超过 SEARCH_TIMEOUT_MS 没回包就
-    //   强制收掉loading。否则一旦服务端没回包，界面会永久卡在转圈。
+    LoadingDlg * _loadingDialog;
+    // ★ 搜索请求的超时兜底：发出请求后启动，超过 SEARCH_TIMEOUT_MS 没回包就
+    //   强制收掉loading。否则一旦服务端没回包，界面会永久卡在转圈。
     QTimer* _search_timeout = nullptr;
 private slots:
     void slot_item_clicked(QListWidgetItem *item);

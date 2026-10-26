@@ -41,6 +41,17 @@ void SearchList::SetSearchEdit(QWidget* edit) {
     _search_edit = edit;
 }
 
+void SearchList::Reset()
+{
+    // 清掉上一次搜索残留的结果项，再重建两个固定项（顶部占位 + "搜索添加好友"入口）。
+    //   ★ 以前 clearSessionState 直接调 clear()，会把 addTipItem() 建的"加好友/搜索"
+    //     固定项一起删掉，而登录后没有任何地方重建 —— 表现为退出重登后搜索列表空白、
+    //     连"加好友"入口都没了。这里统一用 Reset()，保证固定结构始终存在。
+    this->clear();
+    _find_dlg.reset();      // 释放可能残留的 FindSuccessDlg 引用
+    addTipItem();
+}
+
 void SearchList::waitPending(bool pending)
 {
     if (pending) {
