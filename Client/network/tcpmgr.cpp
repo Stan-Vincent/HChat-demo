@@ -322,9 +322,12 @@ void TcpMgr::initHandlers()
             return;
         }
 
-        // ★ 重连登录：AppendFriendList / AppendApplyList 是【追加】语义，
-        //   不清的话好友列表和申请列表会翻倍。token 要留着（刚用它登录成功）。
-        if (_b_reconnecting) {
+        // ★ 每次登录（首次 / 重连）都必须先清 UserMgr 再灌本次数据：
+        //   AppendFriendList / AppendApplyList 是【追加】语义，若 _friend_list
+        //   里还残留上一个账号的好友，新账号登录就会把旧好友带出来——典型现象：
+        //   刚注册的全新账号，联系人里却显示老账号的好友（首次登录此前不清）。
+        //   token 要留着（刚用它登录成功，而 Clear 会清 token，故先存后恢复）。
+        {
             QString token = UserMgr::GetInstance()->GetToken();
             UserMgr::GetInstance()->Clear();
             UserMgr::GetInstance()->SetToken(token);

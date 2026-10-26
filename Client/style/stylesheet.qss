@@ -943,6 +943,22 @@ QPushButton[role="ghost"] {
 }
 QPushButton[role="ghost"]:hover { border-color: #4c5fd7; color: #4c5fd7; }
 QPushButton[role="ghost"]:pressed { background-color: #f0f2fd; }
+
+/* 注册成功页「立即返回」：objectName=return_btn 的遗留描边规则(#return_btn,行710)
+   的 ID 优先级会压过 [role=primary]，这里用更高优先级(ID+属性)显式改成主按钮样式，
+   与「确认」按钮一致；仅在 role=primary 时生效，不影响 reset 对话框的 return_btn(role=link)。 */
+QPushButton#return_btn[role="primary"] {
+    background-color: #4c5fd7;
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    padding: 0 24px;
+    font-size: 12pt;
+    font-weight: bold;
+}
+QPushButton#return_btn[role="primary"]:hover { background-color: #3f4fc4; }
+QPushButton#return_btn[role="primary"]:pressed { background-color: #3543a8; }
+
 /* ============================================================
    上传进度条（ChatPage 输入框上方，objectName=upload_bar）
    细条形态：6px 高、圆角、主色填充。不确定进度时 Qt 会显示
