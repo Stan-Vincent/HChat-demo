@@ -1,0 +1,6 @@
+<RCC>
+  <qresource prefix="/t">
+    <file>chat_icon.svg</file>
+    <file>search.png</file>
+  </qresource>
+</RCC>
