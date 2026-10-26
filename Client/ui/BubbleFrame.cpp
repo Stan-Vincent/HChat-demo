@@ -53,9 +53,9 @@ void BubbleFrame::paintEvent(QPaintEvent *e)
     }
     else
     {
-        // 自己消息的气泡底色：珊瑚橘浅调 #ffd0b8。
+        // 自己消息的气泡底色：珊瑚橘浅调 #EEF0FB。
         // 原来是微信绿 rgb(158,234,106)，换珊瑚橘主色后一并统一。
-        // 用浅调而不是主色 #ff7a45：气泡文字是黑色子控件（TextBubble 的
+        // 用浅调而不是主色 #4C5FD7：气泡文字是黑色子控件（TextBubble 的
         // QTextEdit 透明底），浅底深字才可读；主色+白字需要同时改文字色，牵扯大。
         QColor bk_color(255,208,184);
         painter.setBrush(QBrush(bk_color));

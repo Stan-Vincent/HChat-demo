@@ -319,7 +319,7 @@ void LoginDialog::initHead()
     QLabel *title = new QLabel("HCat", this);
     title->setObjectName("app_title");
     title->setAlignment(Qt::AlignCenter);
-    title->setStyleSheet("QLabel#app_title{color:#ff7a45;font-size:20px;"
+    title->setStyleSheet("QLabel#app_title{color:#4C5FD7;font-size:20px;"
                          "font-weight:bold;background:transparent;border:none;}");
     ui->verticalLayout_2->insertWidget(2, title);
 

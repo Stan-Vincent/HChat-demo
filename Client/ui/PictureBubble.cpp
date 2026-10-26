@@ -158,7 +158,7 @@ void PictureBubble::applyPixmap(const QPixmap &pix)
     // 图片已经过 QPainter 缩放到目标尺寸，不需要 QLabel 再缩放；关掉 scaledContents
     // 避免任何二次拉伸/走样。
     _lb->setScaledContents(false);
-    // 去掉占位灰底：圆角 pixmap 的透明角应该露出气泡底色（自己#ffd0b8/对方白），
+    // 去掉占位灰底：圆角 pixmap 的透明角应该露出气泡底色（自己#EEF0FB/对方白），
     // 而不是占位灰 #f0f0f0。
     _lb->setStyleSheet("QLabel{background:transparent;border-radius:8px;}");
 

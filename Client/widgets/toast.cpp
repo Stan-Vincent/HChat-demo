@@ -24,9 +24,9 @@ Toast::Toast(QWidget *parent, const QString &text, Type type, int durationMs)
     QString accent;
     switch (type) {
     case Success: accent = "#34c759"; break;
-    case Warning: accent = "#ff9a3c"; break;
+    case Warning: accent = "#C9913B"; break;
     case Error:   accent = "#f14e4e"; break;
-    default:      accent = "#ff7a45"; break;
+    default:      accent = "#4C5FD7"; break;
     }
     setStyleSheet(QString(
         "QWidget#toast{background:rgba(255,255,255,0.97);border-radius:10px;"

@@ -166,13 +166,13 @@ void installHoverColorForRole(QWidget* w, const QString& role, int duration)
         QString radius = (w->objectName() == "login_btn") ? "22px" : "10px";
         QString st = QString("border:none;border-radius:%1;color:#ffffff;"
                              "font-size:12pt;font-weight:bold;").arg(radius);
-        installHoverColor(w, QColor("#ff7a45"), QColor("#ff9a6b"), duration, st);
+        installHoverColor(w, QColor("#4C5FD7"), QColor("#6B7CE8"), duration, st);
     }
     else if (role == "ghost") {
         // ghost hover：边框/文字转橙（与 §9 ghost:hover 一致），背景做白→淡橙轻微过渡。
-        QString st = "background-color:#ffffff;border:1px solid #ff7a45;"
-                     "color:#ff7a45;border-radius:6px;padding:0 16px;font-size:14px;";
-        installHoverColor(w, QColor("#ffffff"), QColor("#fff3ec"), duration, st);
+        QString st = "background-color:#ffffff;border:1px solid #4C5FD7;"
+                     "color:#4C5FD7;border-radius:6px;padding:0 16px;font-size:14px;";
+        installHoverColor(w, QColor("#ffffff"), QColor("#F0F2FD"), duration, st);
     }
     // link：保持透明背景文字，不动背景，跳过。
 }

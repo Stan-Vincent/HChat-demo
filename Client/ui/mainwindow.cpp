@@ -79,9 +79,9 @@ public:
         QString accent;
         switch (level) {
         case Success: accent = "#34c759"; break;
-        case Warning: accent = "#ff9a3c"; break;
+        case Warning: accent = "#C9913B"; break;
         case Error:   accent = "#f14e4e"; break;
-        default:      accent = "#ff7a45"; break;
+        default:      accent = "#4C5FD7"; break;
         }
         setStyleSheet(QString(
             "QWidget#net_status_banner{background:rgba(255,255,255,0.97);"
@@ -350,7 +350,7 @@ void MainWindow::applyMainWidgetBackground()
     if (_ui_status == CHAT_UI) {
         bg = "#ffffff";
     } else {
-        bg = "qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #fff8f3, stop:1 #ffe9d8)";
+        bg = "qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #F0F2FD, stop:1 #E3E7FA)";
     }
     _main_widget->setStyleSheet(
         QString("QWidget#main_widget{background:%1;border-radius:%2px;}")

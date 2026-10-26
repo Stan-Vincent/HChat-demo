@@ -103,8 +103,8 @@ void EmojiPanel::buildUi()
             background: #f3f3f3; color: #666;
             border-top-left-radius: 6px; border-top-right-radius: 6px; margin-right: 2px;
         }
-        QTabBar::tab:selected { background: #ffffff; color: #ff7a45; font-weight: bold; }
-        QTabBar::tab:hover { color: #ff7a45; }
+        QTabBar::tab:selected { background: #ffffff; color: #4C5FD7; font-weight: bold; }
+        QTabBar::tab:hover { color: #4C5FD7; }
     )");
     root->addWidget(tabs);
 
@@ -133,7 +133,7 @@ QWidget* EmojiPanel::buildCategoryPage(const QVector<QString> &emojis)
         btn->setCursor(Qt::PointingHandCursor);
         btn->setFont(QFont("Segoe UI Emoji", 18));
         btn->setStyleSheet("QPushButton{border:none;border-radius:6px;background:#ffffff;}"
-                           "QPushButton:hover{background:#fff0e9;}");
+                           "QPushButton:hover{background:#F0F2FD;}");
         connect(btn, &QPushButton::clicked, this, [this, e = emojis[i]]() {
             emit sig_emoji_selected(e);
         });
@@ -155,7 +155,7 @@ void EmojiPanel::paintEvent(QPaintEvent *event)
     path.addRoundedRect(rect().adjusted(1, 1, -1, -1), 10, 10);
     p.fillPath(path, QColor("#ffffff"));
     // 1px 浅灰细边，替代原先的投影，弱化边缘
-    p.setPen(QPen(QColor("#e3e3e3"), 1));
+    p.setPen(QPen(QColor("#E4E6EB"), 1));
     p.drawPath(path);
 }
 

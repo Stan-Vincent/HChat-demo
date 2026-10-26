@@ -83,8 +83,8 @@ void TextBubble::initStyleSheet(ChatRole role)
     //   合成——局部重绘（如 hover 时间胶囊显示/隐藏触发条目重绘）时，
     //   抗锯齿边缘会与"透明"混合，文字整体发灰发虚，且不会自愈。
     //   底色与气泡同色 + 同圆角(9px)，视觉上完全无缝。
-    //   Self=珊瑚 #ffd0b8（与 BubbleFrame 一致），Other=白。
-    const QString bg = (role == ChatRole::Self) ? "#ffd0b8" : "#ffffff";
+    //   Self=珊瑚 #EEF0FB（与 BubbleFrame 一致），Other=白。
+    const QString bg = (role == ChatRole::Self) ? "#EEF0FB" : "#ffffff";
     m_pTextEdit->setStyleSheet(
         QString("QTextEdit{background:%1;border:none;border-radius:9px;}").arg(bg));
 }
@@ -107,11 +107,11 @@ void TextBubble::initSelectionPalette()
     //   只靠默认调色板时：QTextEdit 失焦后（典型操作：右键菜单"全选"→
     //   点一下别处关闭菜单），Qt 用 Inactive 组的默认灰色 Highlight 渲染
     //   残留选区——表现为"选中的文字变灰"。
-    //   三组统一主色系：主动态 #ff7a45，失焦/禁用态 #ff9a6b（只变浅不变灰），
+    //   三组统一主色系：主动态 #4C5FD7，失焦/禁用态 #6B7CE8（只变浅不变灰），
     //   选中文字一律白色。选中功能保留（复制消息文字是基本操作）。
     QPalette pal = m_pTextEdit->palette();
-    const QColor kSelActive(255, 122, 69);    // #ff7a45 主色
-    const QColor kSelInactive(255, 154, 107); // #ff9a6b 主色浅调
+    const QColor kSelActive(76, 95, 215);    // #4C5FD7 主色
+    const QColor kSelInactive(107, 124, 232); // #6B7CE8 主色浅调
     const QColor kSelText(255, 255, 255);     // 选中文字：白
     pal.setColor(QPalette::Active,   QPalette::Highlight,       kSelActive);
     pal.setColor(QPalette::Active,   QPalette::HighlightedText, kSelText);

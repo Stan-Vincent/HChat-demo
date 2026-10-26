@@ -233,9 +233,9 @@ void ChatView::ensureNewMsgButton()
     _new_msg_btn->setObjectName("new_msg_btn");
     _new_msg_btn->setCursor(Qt::PointingHandCursor);
     _new_msg_btn->setStyleSheet(
-        QString("QPushButton{background:#ffffff;color:#ff7a45;border:1px solid #e3e3e3;"
+        QString("QPushButton{background:#ffffff;color:#4C5FD7;border:1px solid #E4E6EB;"
                 "border-radius:14px;padding:6px 12px;font-size:12px;}"
-                "QPushButton:hover{background:#fff3ed;}"));
+                "QPushButton:hover{background:#F0F2FD;}"));
     _new_msg_btn->hide();
     connect(_new_msg_btn, &QPushButton::clicked, this, &ChatView::scrollToBottom);
 }
