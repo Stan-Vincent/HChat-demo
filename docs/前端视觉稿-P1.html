@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HChat 前端视觉稿 · P1（静靛）</title>
+<style>
+  :root{
+    --accent:#4C5FD7; --accent-hover:#3F4FC4; --accent-press:#3543A8; --accent-soft:#EEF0FB;
+    --bg-page:#F5F6F8; --bg-card:#FFFFFF; --bg-hover:#ECEDEF;
+    --t1:#1A1A1A; --t2:#6B6F76; --t3:#A0A4AB; --border:#E4E6EB; --danger:#E5484D;
+    --r-ctl:6px; --r-card:10px;
+    --sh-card:0 2px 8px rgba(0,0,0,.06); --sh-pop:0 4px 16px rgba(0,0,0,.10);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+    background:#2C2C2E; color:var(--t1); font-size:13px; line-height:1.6;
+    min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:24px;
+  }
+  .cap{color:#B4B2A9;font-size:12px;text-align:center;max-width:880px}
+  .cap b{color:#E8E6DF;font-weight:500}
+  .win{width:880px;height:560px;background:var(--bg-card);border-radius:12px;box-shadow:0 12px 48px rgba(0,0,0,.35);display:flex;flex-direction:column;overflow:hidden}
+
+  /* 轻量标题栏 */
+  .titlebar{height:40px;background:var(--bg-card);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 8px 0 16px;flex:none}
+  .tb-title{font-size:14px;font-weight:500;color:var(--t1)}
+  .tb-ctrl{display:flex;gap:2px}
+  .ctrl{width:34px;height:28px;border-radius:var(--r-ctl);display:flex;align-items:center;justify-content:center;color:var(--t2);cursor:pointer}
+  .ctrl:hover{background:var(--bg-hover)}
+  .ctrl.close:hover{background:var(--danger);color:#fff}
+  .ctrl svg{width:12px;height:12px}
+
+  .body{flex:1;display:flex;min-height:0}
+  /* 左栏 */
+  .rail{width:60px;background:var(--bg-page);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:14px;flex:none}
+  .rail .me{width:36px;height:36px;border-radius:8px;background:#8AA1D1;color:#fff;font-size:13px;display:flex;align-items:center;justify-content:center;font-weight:500;margin-bottom:6px}
+  .rico{width:38px;height:38px;border-radius:var(--r-ctl);display:flex;align-items:center;justify-content:center;color:var(--t2);cursor:pointer}
+  .rico:hover{background:var(--bg-hover);color:var(--t1)}
+  .rico.active{background:var(--accent-soft);color:var(--accent)}
+  .rico svg{width:20px;height:20px}
+  .rail .grow{flex:1}
+
+  /* 会话列表 */
+  .list{width:240px;border-right:1px solid var(--border);display:flex;flex-direction:column;flex:none}
+  .search{margin:12px;height:32px;border-radius:var(--r-ctl);background:var(--bg-page);display:flex;align-items:center;gap:8px;padding:0 10px;color:var(--t3)}
+  .search svg{width:15px;height:15px}
+  .li{display:flex;gap:10px;padding:10px 12px;cursor:pointer;align-items:center}
+  .li:hover{background:var(--bg-page)}
+  .li.active{background:var(--accent-soft)}
+  .ava{width:36px;height:36px;border-radius:8px;color:#fff;font-size:13px;display:flex;align-items:center;justify-content:center;font-weight:500;flex:none}
+  .li-m{min-width:0;flex:1}
+  .li-n{font-size:13px;font-weight:500;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .li.active .li-n{color:var(--accent)}
+  .li-p{font-size:12px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .li-t{font-size:11px;color:var(--t3);flex:none}
+
+  /* 聊天区 */
+  .chat{flex:1;background:var(--bg-page);display:flex;flex-direction:column;min-width:0}
+  .msgs{flex:1;overflow:hidden;padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+  .tdiv{align-self:center;font-size:11px;color:var(--t3);background:var(--bg-hover);border-radius:9px;padding:2px 10px;margin:2px 0}
+  .msg{display:flex;gap:10px;align-items:flex-start}
+  .msg.self{flex-direction:row-reverse}
+  .mb{max-width:60%;display:flex;flex-direction:column;gap:2px}
+  .msg.self .mb{align-items:flex-end}
+  .mn{font-size:11px;color:var(--t3);padding:0 4px}
+  .bub{padding:10px 14px;border-radius:10px;font-size:13px;color:var(--t1)}
+  .msg.other .bub{background:var(--bg-card);border:1px solid var(--border);border-top-left-radius:2px}
+  .msg.self .bub{background:var(--accent-soft);border-top-right-radius:2px}
+  .msg.self + .msg.self{margin-top:-8px}
+  .bub.file{display:flex;align-items:center;gap:10px;min-width:200px}
+  .bub.file .fic{width:34px;height:34px;border-radius:8px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;flex:none}
+  .bub.file .fic svg{width:17px;height:17px}
+  .fname{font-weight:500}
+  .fsize{font-size:11px;color:var(--t3)}
+
+  /* 输入区 */
+  .input{flex:none;background:var(--bg-card);border-top:1px solid var(--border);padding:10px 14px;display:flex;align-items:center;gap:10px}
+  .tool{display:flex;gap:6px;color:var(--t2)}
+  .tool .ti{width:30px;height:30px;border-radius:var(--r-ctl);display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .tool .ti:hover{background:var(--bg-hover);color:var(--accent)}
+  .tool svg{width:19px;height:19px}
+  .field{flex:1;height:32px;color:var(--t3);display:flex;align-items:center}
+  .send{height:32px;padding:0 18px;border-radius:var(--r-ctl);background:var(--accent);color:#fff;font-weight:500;display:flex;align-items:center;cursor:pointer}
+  .send:hover{background:var(--accent-hover)}
+</style>
+</head>
+<body>
+  <div class="win">
+    <div class="titlebar">
+      <div class="tb-title">上善若水</div>
+      <div class="tb-ctrl">
+        <span class="ctrl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/></svg></span>
+        <span class="ctrl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="5" width="14" height="14" rx="1"/></svg></span>
+        <span class="ctrl close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+      </div>
+    </div>
+    <div class="body">
+      <div class="rail">
+        <div class="me">xl</div>
+        <div class="rico active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.4 8.6 8.6 0 0 1-3.8-.9L3 21l1.9-5.2a8.4 8.4 0 0 1-.9-3.8A8.4 8.4 0 0 1 12.5 3 8.4 8.4 0 0 1 21 11.5z"/></svg></div>
+        <div class="rico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <div class="grow"></div>
+        <div class="rico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+      </div>
+      <div class="list">
+        <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><span>搜索</span></div>
+        <div class="li active"><div class="ava" style="background:#A3B18A">群</div><div class="li-m"><div class="li-n">C++技术交流群</div><div class="li-p">[文件] report.pdf</div></div><div class="li-t">14:32</div></div>
+        <div class="li"><div class="ava" style="background:#8AA1D1">xl</div><div class="li-m"><div class="li-n">甜菜</div><div class="li-p">在吗</div></div><div class="li-t">13:58</div></div>
+        <div class="li"><div class="ava" style="background:#D4A5A5">AA</div><div class="li-m"><div class="li-n">AAA</div><div class="li-p">[图片]</div></div><div class="li-t">12:07</div></div>
+        <div class="li"><div class="ava" style="background:#B5A8C9">Pe</div><div class="li-m"><div class="li-n">Peter</div><div class="li-p">周末去打羽毛球吗</div></div><div class="li-t">昨天</div></div>
+        <div class="li"><div class="ava" style="background:#9FB8B2">wi</div><div class="li-m"><div class="li-n">wind</div><div class="li-p">好的，收到</div></div><div class="li-t">昨天</div></div>
+        <div class="li"><div class="ava" style="background:#C9ADA7">li</div><div class="li-m"><div class="li-n">lihua</div><div class="li-p">这个 bug 我修了</div></div><div class="li-t">周一</div></div>
+      </div>
+      <div class="chat">
+        <div class="msgs">
+          <div class="tdiv">14:32</div>
+          <div class="msg other"><div class="ava" style="background:#A3B18A">群</div><div class="mb"><div class="mn">甜菜</div><div class="bub">新版本的后端我部署到 Linux 上了，界面也重做了</div></div></div>
+          <div class="msg self"><div class="ava" style="background:#8AA1D1">xl</div><div class="mb"><div class="bub">可以啊，比之前清爽多了</div></div></div>
+          <div class="msg self"><div class="ava"></div><div class="mb"><div class="bub">标题栏不那条大橙带舒服👌</div></div></div>
+          <div class="msg other"><div class="ava" style="background:#A3B18A">群</div><div class="mb"><div class="mn">AAA</div><div class="bub file"><span class="fic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></span><span><span class="fname">report.pdf</span><br><span class="fsize">2.3 MB</span></span></div></div></div>
+        </div>
+        <div class="input">
+          <div class="tool">
+            <span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 14s1.2 2 3.5 2 3.5-2 3.5-2M9 9h.01M15 9h.01"/></svg></span>
+            <span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span>
+          </div>
+          <div class="field">说点什么…</div>
+          <div class="send">发送</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="cap">HChat P1 视觉稿 · <b>静靛 #4C5FD7</b> ｜ 轻量标题栏（白底细线）｜ 低饱和头像 ｜ 自己气泡浅底深字、对方白底描边 ｜ 线性图标<br>此为 HTML 预览稿；确认后我照此改 Qt（QSS tokens + 标题栏 + 气泡 + 头像色板）</div>
+</body>
+</html>
