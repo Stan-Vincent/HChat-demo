@@ -265,7 +265,7 @@ void MainWindow::setupFrameless()
     // 标题栏：顶部一条，承载窗口按钮；其空白区域可作拖拽热区
     _title_bar = new QWidget(_main_widget);
     _title_bar->setObjectName("title_bar");
-    _title_bar->setFixedHeight(34);
+    _title_bar->setFixedHeight(40);
     QHBoxLayout *tbl = new QHBoxLayout(_title_bar);
     tbl->setContentsMargins(10, 0, 4, 0);   // 右边留 4px，避免圆角遮罩裁到按钮
     tbl->setSpacing(0);                      // 按钮紧挨着，像 QQ 一样

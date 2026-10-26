@@ -112,7 +112,7 @@
          </size>
         </property>
         <property name="styleSheet">
-         <string notr="true">border-image: url(:/res/tipclose.png);</string>
+         <string notr="true">border-image: url(:/res/tipclose.svg);</string>
         </property>
         <property name="text">
          <string/>

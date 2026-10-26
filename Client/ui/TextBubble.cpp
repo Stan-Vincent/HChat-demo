@@ -86,7 +86,7 @@ void TextBubble::initStyleSheet(ChatRole role)
     //   Self=珊瑚 #EEF0FB（与 BubbleFrame 一致），Other=白。
     const QString bg = (role == ChatRole::Self) ? "#EEF0FB" : "#ffffff";
     m_pTextEdit->setStyleSheet(
-        QString("QTextEdit{background:%1;border:none;border-radius:9px;}").arg(bg));
+        QString("QTextEdit{background:%1;border:none;border-radius:10px;}").arg(bg));
 }
 
 void TextBubble::clearSelection()

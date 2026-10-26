@@ -106,14 +106,14 @@ ChatDialog::ChatDialog(QWidget* parent) :
 	connect(TcpMgr::GetInstance().get(), &TcpMgr::sig_add_group_notify,
 		this, &ChatDialog::slot_add_group_notify);
 	QAction* searchAction = new QAction(ui->search_edit);
-	searchAction->setIcon(QIcon(":/res/search.png"));
+	searchAction->setIcon(QIcon(":/res/search.svg"));
 	ui->search_edit->addAction(searchAction, QLineEdit::LeadingPosition);
 	ui->search_edit->setPlaceholderText(QStringLiteral("搜索"));
 
 
 	// 创建一个清除动作并设置图标
 	QAction* clearAction = new QAction(ui->search_edit);
-	clearAction->setIcon(QIcon(":/res/close_transparent.png"));
+	clearAction->setIcon(QIcon(":/res/close_transparent.svg"));
 	// 初始时不显示清除图标
 	// 将清除动作添加到LineEdit的末尾位置
 	ui->search_edit->addAction(clearAction, QLineEdit::TrailingPosition);
@@ -121,10 +121,10 @@ ChatDialog::ChatDialog(QWidget* parent) :
 	// 当需要显示清除图标时，更改为实际的清除图标
 	connect(ui->search_edit, &QLineEdit::textChanged, [clearAction](const QString& text) {
 		if (!text.isEmpty()) {
-			clearAction->setIcon(QIcon(":/res/close_search.png"));
+			clearAction->setIcon(QIcon(":/res/close_search.svg"));
 		}
 		else {
-			clearAction->setIcon(QIcon(":/res/close_transparent.png")); // 文本为空时，切换回透明图标
+			clearAction->setIcon(QIcon(":/res/close_transparent.svg")); // 文本为空时，切换回透明图标
 		}
 
 		});
@@ -132,7 +132,7 @@ ChatDialog::ChatDialog(QWidget* parent) :
 	// 连接清除动作的触发信号到槽函数，用于清除文本
 	connect(clearAction, &QAction::triggered, [this, clearAction]() {
 		ui->search_edit->clear();
-		clearAction->setIcon(QIcon(":/res/close_transparent.png")); // 清除文本后，切换回透明图标
+		clearAction->setIcon(QIcon(":/res/close_transparent.svg")); // 清除文本后，切换回透明图标
 		ui->search_edit->clearFocus();
 		//清除按钮被按下则不显示搜索框
 		ShowSearch(false);

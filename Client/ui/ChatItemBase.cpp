@@ -16,7 +16,7 @@ ChatItemBase::ChatItemBase(ChatRole role, QWidget *parent)
     m_pNameLabel->setFixedHeight(20);
     m_pIconLabel    = new QLabel();
     m_pIconLabel->setScaledContents(true);
-    m_pIconLabel->setFixedSize(42, 42);
+    m_pIconLabel->setFixedSize(32, 32);   // P1 §3：头像 32px（圆角由 avatarutil 生成）
     m_pBubble       = new QWidget();
     QGridLayout *pGLayout = new QGridLayout();
     pGLayout->setVerticalSpacing(3);
@@ -96,14 +96,14 @@ void ChatItemBase::setStatus(int status)
 {
     m_status = status;
     if(status == MsgStatus::UN_READ){
-        m_pStatusLabel->setPixmap(QPixmap(":/res/unread.png"));
+        m_pStatusLabel->setPixmap(QPixmap(":/res/unread.svg"));
         m_pStatusLabel->setCursor(Qt::ArrowCursor);
         m_pStatusLabel->setToolTip("");
         return ;
     }
 
     if(status == MsgStatus::SEND_FAILED){
-        m_pStatusLabel->setPixmap(QPixmap(":/res/send_fail.png"));
+        m_pStatusLabel->setPixmap(QPixmap(":/res/send_fail.svg"));
         // ★ 失败态：状态图标变成可点击的"重发"入口（手型 + 提示）
         m_pStatusLabel->setCursor(Qt::PointingHandCursor);
         m_pStatusLabel->setToolTip(tr("发送失败，点击重新发送"));
@@ -111,7 +111,7 @@ void ChatItemBase::setStatus(int status)
     }
 
     if(status == MsgStatus::READED){
-        m_pStatusLabel->setPixmap(QPixmap(":/res/readed.png"));
+        m_pStatusLabel->setPixmap(QPixmap(":/res/readed.svg"));
         m_pStatusLabel->setCursor(Qt::ArrowCursor);
         m_pStatusLabel->setToolTip("");
         return ;

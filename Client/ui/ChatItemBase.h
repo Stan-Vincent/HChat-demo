@@ -20,6 +20,7 @@ public:
     void setTime(const QString &timeText);
     // 设置本条消息的客户端唯一id，供发送失败重发时定位气泡
     void setUniqueId(const QString &unique_id);
+    ChatRole role() const { return m_role; }   // 供 ChatView 按发送者分组控制间距
 signals:
     // 点击"发送失败"图标时发出，携带该消息的 unique_id
     void sig_resend(const QString &unique_id);

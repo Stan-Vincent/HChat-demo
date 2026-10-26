@@ -106,7 +106,7 @@ private:
     // 圆角半径 / 四周留白（给阴影显示）/ 标题栏高度
     static constexpr int kCornerRadius = 16;
     static constexpr int kShadowMargin = 15;
-    static constexpr int kTitleBarHeight = 34;
+    static constexpr int kTitleBarHeight = 40;
 
     void setupFrameless();                  // 去系统边框 + 透明 + 圆角容器 + 阴影 + 标题栏
     void applyRoundedMask();                 // 给 _main_widget 做圆角遮罩（裁掉方角锯齿）

@@ -4,6 +4,7 @@
 #include <QVBoxLayout>
 #include <QTimer>
 #include <QPushButton>
+#include "global.h"   // ChatRole 用于按发送者分组控制间距
 
 class ChatView : public QWidget
 {
@@ -47,6 +48,9 @@ private:
     // 用户翻历史期间累计的新消息条数（浮标文案）
     int _pending_new = 0;
     QPushButton* _new_msg_btn = nullptr;
+    // P1 §3 间距：记录上一条"消息"的发送者，决定本条上方空隙（同人 4px / 换人 12px）
+    ChatRole _last_msg_role = ChatRole::Other;
+    bool _has_last = false;
 };
 
 #endif // CHATVIEW_H

@@ -51,7 +51,7 @@ void ContactUserList::addContactUserList()
 
     _add_friend_item = new ConUserItem();
     _add_friend_item->setObjectName("new_friend_item");
-    _add_friend_item->SetInfo(0,tr("新的朋友"),":/res/add_friend.png");
+    _add_friend_item->SetInfo(0,tr("新的朋友"),":/res/add_friend.svg");
     _add_friend_item->SetItemType(ListItemType::APPLY_FRIEND_ITEM);
     QListWidgetItem *add_item = new QListWidgetItem;
     //qCDebug(lcUser) <<"chat_user_wid sizeHint is " << chat_user_wid->sizeHint();

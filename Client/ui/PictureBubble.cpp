@@ -118,7 +118,7 @@ void PictureBubble::initEmpty(ChatRole role)
     // 占位：一块固定大小的灰底，避免气泡在图片到达前高度为 0 造成列表跳动。
     // qss 圆角只影响 label 自身背景，不影响 setPixmap 的内容，所以真正的图片圆角
     // 在 applyPixmap() 里对 pixmap 做裁剪（见下）。
-    _lb->setStyleSheet("QLabel{background:#f0f0f0;border-radius:8px;color:#999999;}");
+    _lb->setStyleSheet("QLabel{background:#f0f0f0;border-radius:10px;color:#999999;}");
     _lb->setFixedSize(PIC_MAX_WIDTH, PIC_MAX_HEIGHT);
     _lb->setAlignment(Qt::AlignCenter);
     _lb->setText("...");
@@ -160,17 +160,17 @@ void PictureBubble::applyPixmap(const QPixmap &pix)
     _lb->setScaledContents(false);
     // 去掉占位灰底：圆角 pixmap 的透明角应该露出气泡底色（自己#EEF0FB/对方白），
     // 而不是占位灰 #f0f0f0。
-    _lb->setStyleSheet("QLabel{background:transparent;border-radius:8px;}");
+    _lb->setStyleSheet("QLabel{background:transparent;border-radius:10px;}");
 
     // 圆角裁剪：QLabel 的 qss border-radius 裁不了 setPixmap 的内容，
     // 必须把 pixmap 本身画进带圆角裁剪路径的透明 pixmap 里。
-    // 半径与气泡圆角(9px)呼应，视觉上图片像"嵌"在气泡里。
+    // 半径与气泡圆角(10px)呼应，视觉上图片像"嵌"在气泡里。
     QPixmap rounded(scaled.size());
     rounded.fill(Qt::transparent);
     QPainter painter(&rounded);
     painter.setRenderHint(QPainter::Antialiasing, true);
     QPainterPath clip;
-    clip.addRoundedRect(QRectF(0, 0, scaled.width(), scaled.height()), 8, 8);
+    clip.addRoundedRect(QRectF(0, 0, scaled.width(), scaled.height()), 10, 10);
     painter.setClipPath(clip);
     painter.drawPixmap(0, 0, scaled);
     painter.end();

@@ -61,3 +61,14 @@ test/beast_proto/curl_resp.txt
 test/_logs/
 test/_db_backup/*.sql
 .workbuddy/
+
+# ---------- Client 构建产物与 Qt uic 生成物（不应入库） ----------
+# Qt uic 根据 .ui 生成的头文件，构建期自动重新生成
+Client/ui_*.h
+# Windows 资源编译器产物（应用图标/版本信息）
+Client/Hcat_resource.rc
+# 客户端可执行构建输出目录
+Client/bin/
+# 本地构建日志（历史误提交过 rebuild_client.log，新日志统一忽略）
+Client/build_*.log
+Client/rebuild_client.log

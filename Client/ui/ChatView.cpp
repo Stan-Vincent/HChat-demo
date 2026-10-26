@@ -6,6 +6,7 @@
 #include <QApplication>
 #include <QDebug>
 #include "TextBubble.h"
+#include "ChatItemBase.h"   // 按发送者分组控制间距
 
 #include <QTimer>
 #include <QStyleOption>
@@ -27,6 +28,7 @@ ChatView::ChatView(QWidget *parent)
     w->setObjectName("chat_bg");
     w->setAutoFillBackground(true);
     QVBoxLayout *pHLayout_1 = new QVBoxLayout();
+    pHLayout_1->setSpacing(0);   // P1 §3：空隙由插入的 QSpacerItem 精确控制，不用默认间距
     pHLayout_1->addWidget(new QWidget(), 100000);
     w->setLayout(pHLayout_1);
     m_pScrollArea->setWidget(w);    //应该时在QSCrollArea构造后执行 才对
@@ -64,7 +66,22 @@ void ChatView::appendChatItem(QWidget *item)
    QScrollBar *bar = m_pScrollArea->verticalScrollBar();
    _auto_scroll = (bar->maximum() - bar->value()) <= kStickBottomPx;
 
-   vl->insertWidget(vl->count()-1, item);
+   // ★ P1 §3 间距：同一人连续消息 4px、换人 12px（日期分隔等非 ChatItemBase 不计）。
+   //   空隙放在本 item【上方】（=上一条与本条之间），由两者发送者决定。
+   int gap = 0;
+   if (ChatItemBase *ci = qobject_cast<ChatItemBase *>(item)) {
+       if (_has_last) {
+           gap = (_last_msg_role == ci->role()) ? 4 : 12;
+       }
+       _last_msg_role = ci->role();
+       _has_last = true;
+   }
+   vl->insertWidget(vl->count()-1, item);            // 先插 item（紧贴底部 stretch 之前）
+   if (gap > 0) {
+       // 再在 item 之前插空隙（即 item 上方）。插入后 item 位于倒数第二，故 index=count-2。
+       vl->insertItem(vl->count()-2,
+                      new QSpacerItem(1, gap, QSizePolicy::Minimum, QSizePolicy::Fixed));
+   }
    isAppended = true;
 }
 
@@ -97,6 +114,7 @@ void ChatView::removeAllItem()
     // 切会话：清掉"新消息"浮标与计数，否则会带着上一个会话的计数过来
     _pending_new = 0;
     _auto_scroll = true;
+    _has_last = false;   // 重置间距分组，避免跨会话把上一条的发送者带过来
     updateNewMsgButton();
 }
 

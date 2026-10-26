@@ -124,15 +124,15 @@ QDialog#ResetDialog {
 }
 
 /* 密码可见性图标：六状态（4 个图片状态，press 复用 hover） */
-#pass_visible[state='unvisible']        { border-image: url(:/res/unvisible.png); }
-#pass_visible[state='unvisible_hover']  { border-image: url(:/res/unvisible_hover.png); }
-#pass_visible[state='visible']          { border-image: url(:/res/visible.png); }
-#pass_visible[state='visible_hover']    { border-image: url(:/res/visible_hover.png); }
+#pass_visible[state='unvisible']        { border-image: url(:/res/unvisible.svg); }
+#pass_visible[state='unvisible_hover']  { border-image: url(:/res/unvisible_hover.svg); }
+#pass_visible[state='visible']          { border-image: url(:/res/visible.svg); }
+#pass_visible[state='visible_hover']    { border-image: url(:/res/visible_hover.svg); }
 
-#confirm_visible[state='unvisible']       { border-image: url(:/res/unvisible.png); }
-#confirm_visible[state='unvisible_hover'] { border-image: url(:/res/unvisible_hover.png); }
-#confirm_visible[state='visible']         { border-image: url(:/res/visible.png); }
-#confirm_visible[state='visible_hover']   { border-image: url(:/res/visible_hover.png); }
+#confirm_visible[state='unvisible']       { border-image: url(:/res/unvisible.svg); }
+#confirm_visible[state='unvisible_hover'] { border-image: url(:/res/unvisible_hover.svg); }
+#confirm_visible[state='visible']         { border-image: url(:/res/visible.svg); }
+#confirm_visible[state='visible_hover']   { border-image: url(:/res/visible_hover.svg); }
 
 /* 注册成功 / 重置成功 的提示文字 */
 #tip_lb, #tip2_lb {
@@ -184,26 +184,26 @@ QDialog#ResetDialog {
 /* 侧边栏按钮：聊天 / 联系人 / 设置 各六状态（图片控制）
    ★ 选中态（selected_*）用 hover 的浅灰圆图而不是 press 的橙圆图：
      深色侧边栏上浅灰圆已经能区分选中/未选中，再套一圈主题色太跳。 */
-#side_chat_lb[state='normal']           { border-image: url(:/res/chat_icon.png); }
-#side_chat_lb[state='hover']            { border-image: url(:/res/chat_icon_hover.png); }
-#side_chat_lb[state='pressed']          { border-image: url(:/res/chat_icon_press.png); }
-#side_chat_lb[state='selected_normal']  { border-image: url(:/res/chat_icon_hover.png); }
-#side_chat_lb[state='selected_hover']   { border-image: url(:/res/chat_icon_hover.png); }
-#side_chat_lb[state='selected_pressed'] { border-image: url(:/res/chat_icon_hover.png); }
+#side_chat_lb[state='normal']           { border-image: url(:/res/chat_icon.svg); }
+#side_chat_lb[state='hover']            { border-image: url(:/res/chat_icon_hover.svg); }
+#side_chat_lb[state='pressed']          { border-image: url(:/res/chat_icon_press.svg); }
+#side_chat_lb[state='selected_normal']  { border-image: url(:/res/chat_icon_hover.svg); }
+#side_chat_lb[state='selected_hover']   { border-image: url(:/res/chat_icon_hover.svg); }
+#side_chat_lb[state='selected_pressed'] { border-image: url(:/res/chat_icon_hover.svg); }
 
-#side_contact_lb[state='normal']           { border-image: url(:/res/contact_list.png); }
-#side_contact_lb[state='hover']            { border-image: url(:/res/contact_list_hover.png); }
-#side_contact_lb[state='pressed']          { border-image: url(:/res/contact_list_press.png); }
-#side_contact_lb[state='selected_normal']  { border-image: url(:/res/contact_list_hover.png); }
-#side_contact_lb[state='selected_hover']   { border-image: url(:/res/contact_list_hover.png); }
-#side_contact_lb[state='selected_pressed'] { border-image: url(:/res/contact_list_hover.png); }
+#side_contact_lb[state='normal']           { border-image: url(:/res/contact_list.svg); }
+#side_contact_lb[state='hover']            { border-image: url(:/res/contact_list_hover.svg); }
+#side_contact_lb[state='pressed']          { border-image: url(:/res/contact_list_press.svg); }
+#side_contact_lb[state='selected_normal']  { border-image: url(:/res/contact_list_hover.svg); }
+#side_contact_lb[state='selected_hover']   { border-image: url(:/res/contact_list_hover.svg); }
+#side_contact_lb[state='selected_pressed'] { border-image: url(:/res/contact_list_hover.svg); }
 
-#side_settings_lb[state='normal']           { border-image: url(:/res/settings.png); }
-#side_settings_lb[state='hover']            { border-image: url(:/res/settings_hover.png); }
-#side_settings_lb[state='pressed']          { border-image: url(:/res/settings_press.png); }
-#side_settings_lb[state='selected_normal']  { border-image: url(:/res/settings_hover.png); }
-#side_settings_lb[state='selected_hover']   { border-image: url(:/res/settings_hover.png); }
-#side_settings_lb[state='selected_pressed'] { border-image: url(:/res/settings_hover.png); }
+#side_settings_lb[state='normal']           { border-image: url(:/res/settings.svg); }
+#side_settings_lb[state='hover']            { border-image: url(:/res/settings_hover.svg); }
+#side_settings_lb[state='pressed']          { border-image: url(:/res/settings_press.svg); }
+#side_settings_lb[state='selected_normal']  { border-image: url(:/res/settings_hover.svg); }
+#side_settings_lb[state='selected_hover']   { border-image: url(:/res/settings_hover.svg); }
+#side_settings_lb[state='selected_pressed'] { border-image: url(:/res/settings_hover.svg); }
 
 /* ---------- 3.2 搜索栏 ---------- */
 #search_wid {
@@ -227,9 +227,9 @@ QDialog#ResetDialog {
 }
 
 /* 添加群组按钮（原 QSS 中重复定义两次，这里只留一份） */
-#add_btn[state='normal'] { border-image: url(:/res/add_friend_normal.png); }
-#add_btn[state='hover']  { border-image: url(:/res/add_friend_hover.png); }
-#add_btn[state='press']  { border-image: url(:/res/add_friend_hover.png); }
+#add_btn[state='normal'] { border-image: url(:/res/add_friend_normal.svg); }
+#add_btn[state='hover']  { border-image: url(:/res/add_friend_hover.svg); }
+#add_btn[state='press']  { border-image: url(:/res/add_friend_hover.svg); }
 
 /* ---------- 3.3 会话 / 联系人 / 搜索 列表 ---------- */
 #chat_user_list,
@@ -343,17 +343,17 @@ QDialog#ResetDialog {
 #send_btn[state='press']  { background: #d0d3d9; color: #4c5fd7; font-size: 16px; border-radius: 20px; }
 
 /* 表情 / 文件按钮（三状态） */
-#emo_lb[state='normal'] { border-image: url(:/res/smile.png); }
-#emo_lb[state='hover']  { border-image: url(:/res/smile_hover.png); }
-#emo_lb[state='press']  { border-image: url(:/res/smile_press.png); }
+#emo_lb[state='normal'] { border-image: url(:/res/smile.svg); }
+#emo_lb[state='hover']  { border-image: url(:/res/smile_hover.svg); }
+#emo_lb[state='press']  { border-image: url(:/res/smile_press.svg); }
 
-#file_lb[state='normal'] { border-image: url(:/res/filedir.png); }
-#file_lb[state='hover']  { border-image: url(:/res/filedir_hover.png); }
-#file_lb[state='press']  { border-image: url(:/res/filedir_press.png); }
+#file_lb[state='normal'] { border-image: url(:/res/filedir.svg); }
+#file_lb[state='hover']  { border-image: url(:/res/filedir_hover.svg); }
+#file_lb[state='press']  { border-image: url(:/res/filedir_press.svg); }
 
 /* ---------- 3.5 消息类型图标（表情 / 文件 / 发送） ---------- */
-#add_tip  { border-image: url(:/res/addtip.png); }
-#right_tip{ border-image: url(:/res/right_tip.png); }
+#add_tip  { border-image: url(:/res/addtip.svg); }
+#right_tip{ border-image: url(:/res/right_tip.svg); }
 #message_tip {
     text-align: center;
     font-size: 12pt;
@@ -431,17 +431,17 @@ ApplyFriendItem #addBtn[state='press']  { background-color: #d0d3d9; color: #4c5
 }
 
 /* 发消息 / 视频 / 语音 按钮 */
-#msg_chat[state='normal']   { border-image: url(:/res/msg_chat_normal.png); }
-#msg_chat[state='hover']    { border-image: url(:/res/msg_chat_hover.png); }
-#msg_chat[state='press']    { border-image: url(:/res/msg_chat_press.png); }
+#msg_chat[state='normal']   { border-image: url(:/res/msg_chat_normal.svg); }
+#msg_chat[state='hover']    { border-image: url(:/res/msg_chat_hover.svg); }
+#msg_chat[state='press']    { border-image: url(:/res/msg_chat_press.svg); }
 
-#video_chat[state='normal'] { border-image: url(:/res/video_chat_normal.png); }
-#video_chat[state='hover']  { border-image: url(:/res/video_chat_hover.png); }
-#video_chat[state='press']  { border-image: url(:/res/video_chat_press.png); }
+#video_chat[state='normal'] { border-image: url(:/res/video_chat_normal.svg); }
+#video_chat[state='hover']  { border-image: url(:/res/video_chat_hover.svg); }
+#video_chat[state='press']  { border-image: url(:/res/video_chat_press.svg); }
 
-#voice_chat[state='normal'] { border-image: url(:/res/voice_chat_normal.png); }
-#voice_chat[state='hover']  { border-image: url(:/res/voice_chat_hover.png); }
-#voice_chat[state='press']  { border-image: url(:/res/voice_chat_press.png); }
+#voice_chat[state='normal'] { border-image: url(:/res/voice_chat_normal.svg); }
+#voice_chat[state='hover']  { border-image: url(:/res/voice_chat_hover.svg); }
+#voice_chat[state='press']  { border-image: url(:/res/voice_chat_press.svg); }
 
 /* ============================================================================
  * 5. 添加好友 / 认证好友
@@ -479,7 +479,7 @@ ApplyFriendItem #addBtn[state='press']  { background-color: #d0d3d9; color: #4c5
     font-size: 14px;
 }
 #apply_wid #more_lb {
-    border-image: url(:/res/arowdown.png);
+    border-image: url(:/res/arowdown.svg);
 }
 
 /* 标签（六状态） */
@@ -512,12 +512,12 @@ ApplyFriendItem #addBtn[state='press']  { background-color: #d0d3d9; color: #4c5
 }
 
 /* 关闭按钮（六状态，都用同一个图） */
-#close_lb[state='normal']         { border-image: url(:/res/tipclose.png); }
-#close_lb[state='hover']          { border-image: url(:/res/tipclose.png); }
-#close_lb[state='pressed']        { border-image: url(:/res/tipclose.png); }
-#close_lb[state='select_normal']  { border-image: url(:/res/tipclose.png); }
-#close_lb[state='select_hover']   { border-image: url(:/res/tipclose.png); }
-#close_lb[state='select_pressed'] { border-image: url(:/res/tipclose.png); }
+#close_lb[state='normal']         { border-image: url(:/res/tipclose.svg); }
+#close_lb[state='hover']          { border-image: url(:/res/tipclose.svg); }
+#close_lb[state='pressed']        { border-image: url(:/res/tipclose.svg); }
+#close_lb[state='select_normal']  { border-image: url(:/res/tipclose.svg); }
+#close_lb[state='select_hover']   { border-image: url(:/res/tipclose.svg); }
+#close_lb[state='select_pressed'] { border-image: url(:/res/tipclose.svg); }
 
 /* 确定 / 取消 按钮 */
 #apply_sure_wid #sure_btn[state='normal'] { background: #ecedef; color: #4c5fd7; font-size: 16px; border-radius: 20px; }
@@ -569,7 +569,7 @@ LoadingDlg #status_lb {
 
 /* 红点（未读提示） */
 #red_point {
-    border-image: url(:/res/red_point.png);
+    border-image: url(:/res/red_point.svg);
 }
 
 /* 滚动条（垂直 + 水平统一美化） */
@@ -790,28 +790,26 @@ QProgressBar::chunk {
 /* ============================================================================
  * 8. 无边框窗口：标题栏与窗口按钮
  *
- * ★ 主题色只给 MainWindow 的 #title_bar（承载窗口按钮的那 34px 窄条）——
- *   这就是"title 栏为特征色"的本意。聊天页的会话标题区 #title_wid 保持白底，
- *   否则橙、白两条一样粗，视觉上橙色用得太重（仿 QQ 也应是"一条"而不是"一块"）。
+ * ★ P1 §2 批准的"轻量标题栏"：白底 + 1px 底框，主色仅作强调，去大色块。
+ *   承载窗口按钮的 #title_bar 改为白底（bg-card），底部 1px border 分隔；
+ *   聊天页会话标题区 #title_lb 维持深色文字，落在白底上更克制现代。
  * ========================================================================= */
 
-/* 标题栏：主色底（窄条，只到窗口按钮那一行）
-   ★ 用 #6b7ce8（token 里的 hover 档）而不是 #4c5fd7：标题栏是大面积色块，
-     饱和度高会显得暗、刺眼；淡一档更接近 QQ 那种明亮柔和的主题色。
-     想再淡/再深只需改这一个值。 */
+/* 标题栏：白底轻量条（P1 §2：去大色块，主色仅作强调） */
 #title_bar {
-    background-color: #6b7ce8;
+    background-color: #FFFFFF;
+    border-bottom: 1px solid #E4E6EB;
 }
 
-/* 会话标题区：保持白底（默认继承 main_widget），标题文字用深色 */
+/* 会话标题区：白底，标题文字深色（P1 §2：14px / 500） */
 #title_lb {
-    color: #1f1f1f;
-    font-size: 18px;
-    font-weight: normal;
+    color: #1A1A1A;
+    font-size: 14px;
+    font-weight: 500;
 }
 
 /* 窗口按钮（最小化 / 最大化 / 关闭 / 小窗右上角按钮）通用样式。
-   大窗按钮坐在橙色标题栏上：字符改白，hover 用半透明白而非灰底。 */
+   白底标题栏：字符改深灰 #1A1A1A；小窗浮动按钮另有更具体的深色覆盖。 */
 QPushButton#win_min,
 QPushButton#win_max,
 QPushButton#win_close,
@@ -819,7 +817,7 @@ QPushButton#win_min_small,
 QPushButton#win_close_small {
     background-color: transparent;
     border: none;
-    color: #ffffff;
+    color: #1A1A1A;
     font-size: 13px;
     border-radius: 6px;
     padding: 0;
@@ -832,11 +830,11 @@ QPushButton#win_close_small {
 }
 QPushButton#win_min:hover,
 QPushButton#win_max:hover {
-    background-color: rgba(255, 255, 255, 0.32);
+    background-color: #ECEDEF;
 }
 QPushButton#win_min:pressed,
 QPushButton#win_max:pressed {
-    background-color: rgba(0, 0, 0, 0.18);
+    background-color: #E4E6EB;
 }
 /* 小窗 hover 仍用灰底（白底页面上） */
 QPushButton#win_min_small:hover {
