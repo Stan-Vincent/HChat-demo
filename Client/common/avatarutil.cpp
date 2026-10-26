@@ -18,16 +18,16 @@ QPixmap MakeLetterAvatar(const QString& text, int px, int seed)
         letter = letter.toUpper();
     }
 
-    // 8 色色板：中间饱和度，深浅主题都不违和；seed 决定取哪色
+    // 8 色低饱和色板（去"玩具感"，P1 设计系统）；seed 决定取哪色
     static const QColor kPalette[] = {
-        QColor(0x5B, 0x8F, 0xF9),   // 蓝
-        QColor(0x5A, 0xD8, 0xA6),   // 绿
-        QColor(0xF6, 0xBD, 0x16),   // 黄
-        QColor(0xE8, 0x68, 0x4A),   // 橙红
-        QColor(0x6D, 0xC8, 0xEC),   // 青
-        QColor(0x92, 0x70, 0xCA),   // 紫
-        QColor(0xFF, 0x9D, 0x4D),   // 橙
-        QColor(0x26, 0x9A, 0x99),   // teal
+        QColor(0x8A, 0xA1, 0xD1),   // 雾蓝
+        QColor(0xA3, 0xB1, 0x8A),   // 苔绿
+        QColor(0xD4, 0xA5, 0xA5),   // 藕粉
+        QColor(0xB5, 0xA8, 0xC9),   // 薰衣草
+        QColor(0xC9, 0xAD, 0xA7),   // 奶茶
+        QColor(0x9F, 0xB8, 0xB2),   // 青灰
+        QColor(0xCB, 0xB8, 0x9D),   // 沙金
+        QColor(0xA0, 0xA8, 0xB0),   // 石板灰
     };
     const int count = int(sizeof(kPalette) / sizeof(kPalette[0]));
     int idx = (seed < 0 ? -seed : seed) % count;
@@ -47,7 +47,7 @@ QPixmap MakeLetterAvatar(const QString& text, int px, int seed)
     font.setBold(true);
     font.setPixelSize(qMax(8, int(px * 0.46)));
     painter.setFont(font);
-    painter.setPen(Qt::white);
+    painter.setPen(QColor(0x2A, 0x2E, 0x35));  // 深墨字：低饱和浅底上白字对比不足
     painter.drawText(QRectF(0, 0, px, px), Qt::AlignCenter, letter);
 
     return pix;
