@@ -136,10 +136,13 @@ QMap<QString, std::shared_ptr<ChatDataBase>>& ChatThreadData::GetMsgUnRspRef() {
 void AuthInfo::SetChatDatas(std::vector<std::shared_ptr<TextChatData>> chat_datas)
 {
     _chat_datas = chat_datas;
-    _thread_id = _chat_datas[0]->GetThreadId();
+    // Guard against empty/null: a brand-new friendship has no prior chat messages,
+    // so chat_datas is empty. Indexing [0] was out-of-bounds -> nullptr deref ->
+    // crash (signal 11) right after accepting/adding a friend.
+    _thread_id = (_chat_datas.empty() || !_chat_datas[0]) ? 0 : _chat_datas[0]->GetThreadId();
 }
 
 void AuthRsp::SetChatDatas(std::vector<std::shared_ptr<TextChatData>> chat_datas) {
     _chat_datas = chat_datas;
-    _thread_id = _chat_datas[0]->GetThreadId();
+    _thread_id = (_chat_datas.empty() || !_chat_datas[0]) ? 0 : _chat_datas[0]->GetThreadId();
 }
