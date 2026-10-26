@@ -69,6 +69,7 @@
 ## 高频坑（详见工程备忘对应章节）
 - Client：`_handlers[id]` 前必须 `contains(id)`（否则 `bad_function_call`）；换账号/登出要**清数据+清UI+登录重灌**三层。
 - **联系人空白真因 = 分页游标 `_contact_loaded` 未复位**（`reloadFriendItems()` 前调 `ResetContactLoadedCount()`）。
+- **图标空白真因 = exe 裸奔靠 PATH 加载 Qt**（本机有官方6.5.3/MSYS2 6.11/anaconda 三提供者）——已用 `test/deploy_qt_runtime.sh` 把 Qt 6.5.3 运行时部署到 `Client/bin/` **和 Creator shadow build 目录**（用户实际从 IDE 运行，两个都要！10-26）；**删 build 目录/换机/升级 Qt 后必须重跑该脚本**。改图标格式若涉及"内建→插件"(PNG→SVG)，必查 imageformats 插件。
 - 重连：disconnected 里**先 `StartReconnect()` 再 emit**；token 唯一来源=GateServer 登录回包；心跳定时器必须判空 user_info。
 - 上传：流式原始字节（非 base64）；三层上限 1GB/1MB/300MB；**上限挡不住慢速** → 加最低速率+总时长；
   拒绝上传先排空 body（drain）再响应；Beast `body_limit` 必须在 `async_read` 前设。
@@ -84,3 +85,15 @@
 
 ## 协作约定
 用户 C++ 后端方向、中文交流；要**直接结论 + 证据**、结构化表格；反感反复编译失败循环。
+
+## 云部署已跑通（10-26）
+- 阿里云 47.96.16.175(Ubuntu24.04/2C2G) 跑全套后端：5 个 systemd unit `hchat-{gate,chat1,chat2,status,varify}` + MySQL(3308)/Redis(6380，密码 `Hcat@2026Secure`，仅 127.0.0.1)。公网仅开 8080/8990/8991。
+- 产物：WSL `linux/build_wsl.sh` 出静态二进制（protobuf/grpc 静态；动态仅 libmysqlcppconn.so.9 + Boost1.83/zstd/ssl）。`test/deploy_to_cloud.sh` rsync→`/opt/hchat`，`test/server_systemd_setup.sh`、`test/server_varify_setup.sh` 一键装。
+- **StatusServer 的 `[chatserver1/2] Host` 必须=公网IP（下发给客户端），`[Mysql]/[Redis]` 必须留 127.0.0.1**（曾用全局 sed 误改，改为按 section awk 精确替换）。VarifyServer `config.json` 的 `redis.passwd` 要对齐本机密码。
+- 客户端联调：改**运行目录** `config.ini` 的 `[GateServer] host` 为公网 IP（运行时读取，**无需重编**），测完改回 localhost。
+
+## ★ WSL 调用四坑（10-26 实战）
+1. **MSYS 路径转换**：Git Bash 把裸参数 `/mnt/d/...` 改写成 `PortableGit/mnt/d/...` → 加 `MSYS_NO_PATHCONV=1`，或把路径塞进 `bash -c '...'` 的引号里。
+2. **`$` 提前展开**：`wsl -- bash -c '...$VAR...'` 里 `$VAR` 被外层 Git Bash 展开成空 → 用 `\$` 转义，或把脚本写成文件再 `bash file`（最稳）。
+3. **root 遗留物**：之前 sudo 构建在 `~/HCat_src`、`~/build_wsl.log` 留 root 文件，xxxl `rm -rf` 报 Permission denied → 先 `wsl -u root` 清理/chown 再跑。
+4. **脚本自替换竞态**：`build_wsl.sh` 第1步 `git reset --hard` 会替换脚本自身，运行中的 bash 读旧 inode → 第44行可能跑旧版（把子目录当 root 传给 apply_port.py，等于没打补丁，编译报 `sw/redis++/redis++.h` 找不到）。**先把 ~/HCat 预同步到 HEAD，让 reset 成空操作**即可避免。
