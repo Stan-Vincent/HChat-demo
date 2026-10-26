@@ -212,7 +212,7 @@ QDialog#ResetDialog {
 }
 #search_edit {
     border: 1px solid #e4e6eb;
-    border-radius: 6px;
+    border-radius: 10px;
     background: #ffffff;
     padding: 3px 8px;
     selection-background-color: #d5daf6;
@@ -365,11 +365,11 @@ QDialog#ResetDialog {
 
 /* 分组标题（"新的朋友" / "联系人"） */
 #GroupTipItem {
-    background-color: #eaeaea;
+    background-color: #ECEDEF;
     border: none;
 }
 #GroupTipItem QLabel {
-    color: #2e2f30;
+    color: #1A1A1A;
     font-size: 12px;
     border: none;
 }
@@ -407,7 +407,7 @@ QDialog#ResetDialog {
 /* 申请项 */
 ApplyFriendItem {
     background-color: #f1f2f3;
-    border-bottom: 2px solid #dbd9d9;
+    border-bottom: 1px solid #E4E6EB;
 }
 ApplyFriendItem #user_chat_lb {
     color: #a2a2a2;
