@@ -492,6 +492,17 @@ void ChatDialog::slot_load_chat_thread(bool load_more, int last_thread_id,
 			continue;
 		}
 
+		// ★ 再过滤"对方不是好友 / 已注销 / 脏数据"的孤儿私聊线程：
+		//   ChatUserWid::SetChatData 里 GetFriendById 查不到对方时会直接 return，
+		//   控件就保留 .ui 模板文字("Contact Name / Recent Message / 12:00")，
+		//   会话列表里于是冒出一个假条目（如测试时和陌生人开的会话）。
+		//   这里在建模前就跳过，等价于每次登录自动"刷掉"不存在的会话。
+		if (UserMgr::GetInstance()->GetFriendById(other_uid) == nullptr) {
+			qCDebug(lcChat) << "slot_load_chat_thread: skip non-friend thread, thread_id ="
+				<< cti->_thread_id << " other_uid =" << other_uid;
+			continue;
+		}
+
 		auto chat_thread_data = std::make_shared<ChatThreadData>(other_uid, cti->_thread_id, 0);
 		UserMgr::GetInstance()->AddChatThreadData(chat_thread_data, other_uid);
 
