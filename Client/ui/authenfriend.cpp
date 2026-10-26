@@ -27,9 +27,9 @@ AuthenFriend::AuthenFriend(QWidget *parent) :
 
     _tip_cur_point = QPoint(5, 5);
 
-    _tip_data = { "同学","家人","菜鸟教程","C++ Primer","Rust 程序设计",
-                             "父与子学Python","nodejs开发指南","go 语言开发指南",
-                                "游戏伙伴","金融投资","微信读书","拼多多拼友" };
+    _tip_data = { "同学","家人","朋友","同事","闺蜜","室友",
+                             "游戏伙伴","运动搭子","邻居",
+                                "亲戚","客户","其他" };
 
     connect(ui->more_lb, &ClickedOnceLabel::clicked, this, &AuthenFriend::ShowMoreLabel);
     InitTipLbs();
