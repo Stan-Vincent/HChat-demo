@@ -9,7 +9,7 @@ SRC="${HCAT_SRC:-/home/xxxl/HCat_src}"
 ST=/tmp/hchat_deploy
 # 敏感信息从环境变量读取，避免硬编码真实服务器 IP / 私钥路径
 SERVER_IP="${HCAT_SERVER_IP:?请先 export HCAT_SERVER_IP=服务器公网IP}"
-SSH_KEY="${HCAT_SSH_KEY:-$HOME/.ssh/hchat_aliyun}"
+SSH_KEY="${HCAT_SSH_KEY:-$HOME/.ssh/hchat_aliyun_new}"
 SERVER="root@${SERVER_IP}"
 
 echo "== 1) 暂存到 $ST（二进制+各自 config.ini+连接器 so）=="
