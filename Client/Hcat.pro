@@ -1,4 +1,4 @@
-QT += widgets network
+QT += widgets network svg
 
 CONFIG += c++17
 
@@ -20,6 +20,7 @@ DESTDIR = ./bin
 SOURCES += \
     main.cpp \
     ui/BubbleFrame.cpp \
+    ui/SvgIconButton.cpp \
     ui/ChatItemBase.cpp \
     ui/ChatView.cpp \
     ui/FileBubble.cpp \
@@ -79,6 +80,7 @@ SOURCES += \
 
 HEADERS += \
     ui/BubbleFrame.h \
+    ui/SvgIconButton.h \
     ui/ChatItemBase.h \
     ui/ChatView.h \
     ui/FileBubble.h \

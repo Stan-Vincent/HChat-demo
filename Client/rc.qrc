@@ -28,8 +28,6 @@
         <file>res/contact_list_hover.svg</file>
         <file>res/contact_list_press.svg</file>
         <file>res/filedir.svg</file>
-        <file>res/filedir_hover.svg</file>
-        <file>res/filedir_press.svg</file>
         <file>res/msg_chat_hover.svg</file>
         <file>res/msg_chat_normal.svg</file>
         <file>res/msg_chat_press.svg</file>
@@ -44,8 +42,6 @@
         <file>res/settings_select_hover.svg</file>
         <file>res/settings_select_press.svg</file>
         <file>res/smile.svg</file>
-        <file>res/smile_hover.svg</file>
-        <file>res/smile_press.svg</file>
         <file>res/tipclose.svg</file>
         <file>res/unread.svg</file>
         <file>res/unvisible.svg</file>

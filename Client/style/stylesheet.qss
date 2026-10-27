@@ -342,14 +342,7 @@ QDialog#ResetDialog {
 #send_btn[state='hover']  { background: #dfe1e6; color: #4c5fd7; font-size: 16px; border-radius: 20px; }
 #send_btn[state='press']  { background: #d0d3d9; color: #4c5fd7; font-size: 16px; border-radius: 20px; }
 
-/* 表情 / 文件按钮（三状态） */
-#emo_lb[state='normal'] { border-image: url(:/res/smile.svg); }
-#emo_lb[state='hover']  { border-image: url(:/res/smile_hover.svg); }
-#emo_lb[state='press']  { border-image: url(:/res/smile_press.svg); }
-
-#file_lb[state='normal'] { border-image: url(:/res/filedir.svg); }
-#file_lb[state='hover']  { border-image: url(:/res/filedir_hover.svg); }
-#file_lb[state='press']  { border-image: url(:/res/filedir_press.svg); }
+/* 表情 / 文件按钮：图标由 SvgIconButton 自绘（单 SVG + 描边换色），不再走 QSS border-image */
 
 /* ---------- 3.5 消息类型图标（表情 / 文件 / 发送） ---------- */
 #add_tip  { border-image: url(:/res/addtip.svg); }

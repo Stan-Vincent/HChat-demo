@@ -155,7 +155,7 @@
           </spacer>
          </item>
          <item>
-          <widget class="ClickedLabel" name="emo_lb">
+          <widget class="SvgIconButton" name="emo_lb">
            <property name="minimumSize">
             <size>
              <width>25</width>
@@ -190,7 +190,7 @@
           </spacer>
          </item>
          <item>
-          <widget class="ClickedLabel" name="file_lb">
+          <widget class="SvgIconButton" name="file_lb">
            <property name="minimumSize">
             <size>
              <width>30</width>
@@ -365,6 +365,11 @@
    <class>ClickedLabel</class>
    <extends>QLabel</extends>
    <header>clickedlabel.h</header>
+  </customwidget>
+  <customwidget>
+   <class>SvgIconButton</class>
+   <extends>QLabel</extends>
+   <header>SvgIconButton.h</header>
   </customwidget>
   <customwidget>
    <class>MessageTextEdit</class>

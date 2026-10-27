@@ -18,6 +18,7 @@
 #include "logcategory.h"
 #include "toast.h"
 #include "clickedlabel.h"
+#include "SvgIconButton.h"
 #include "FileBubble.h"
 #include <QFileDialog>
 #include <QFileInfo>
@@ -68,14 +69,16 @@ ChatPage::ChatPage(QWidget *parent) :
     ui->receive_btn->setEnabled(false);
     ui->send_btn->SetState("normal","hover","press");
 
-    //设置图标样式
-    ui->emo_lb->SetState("normal","hover","press","normal","hover","press");
-    ui->file_lb->SetState("normal","hover","press","normal","hover","press");
+    //设置图标样式（P2 §3：单 SVG + 描边换色，不再依赖 *_hover/_press 多文件）
+    ui->emo_lb->setSvg(":/res/smile.svg");
+    ui->emo_lb->setColors("#6B6F76", "#4C5FD7", "#4C5FD7");
+    ui->file_lb->setSvg(":/res/filedir.svg");
+    ui->file_lb->setColors("#6B6F76", "#4C5FD7", "#4C5FD7");
 
     // 表情功能：把已有的表情按钮接上 EmojiPanel 弹出层
     _emo_panel = new EmojiPanel(this);
     _emo_panel->hide();
-    connect(ui->emo_lb, &ClickedLabel::clicked, this, &ChatPage::slot_toggle_emoji_panel);
+    connect(ui->emo_lb, &SvgIconButton::clicked, this, &ChatPage::slot_toggle_emoji_panel);
     connect(_emo_panel, &EmojiPanel::sig_emoji_selected, this, &ChatPage::slot_insert_emoji);
 
     // ---------- 上传进度条 ----------
@@ -96,7 +99,7 @@ ChatPage::ChatPage(QWidget *parent) :
     connect(_emo_panel, &EmojiPanel::sig_panel_hidden, this, &ChatPage::slot_emo_panel_hidden);
 
     // 文件功能：文件夹图标 → 打开文件选择框（多选），选中的文件插入输入框
-    connect(ui->file_lb, &ClickedLabel::clicked, this, &ChatPage::slot_pick_file);
+    connect(ui->file_lb, &SvgIconButton::clicked, this, &ChatPage::slot_pick_file);
     _nam = new QNetworkAccessManager(this);   // 文件消息下载用
 
     // ★ 回车发送。MessageTextEdit::keyPressEvent 里其实早就实现了：
@@ -141,8 +144,7 @@ void ChatPage::slot_insert_emoji(const QString &emoji)
 
 void ChatPage::slot_emo_panel_hidden()
 {
-    // 面板因点击外部/Esc/再次点击按钮而关闭时，把表情按钮状态复位成 Normal
-    ui->emo_lb->ResetNormalState();
+    // 面板因点击外部/Esc/再次点击按钮而关闭时，表情按钮状态复位（SvgIconButton 无持久态，无需显式复位）
 }
 
 void ChatPage::slot_pick_file(QString, ClickLbState)
