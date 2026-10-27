@@ -1,0 +1,6 @@
+qVersion=6.5.3
+appDir=D:/QTcode/HChat/Client/build/Desktop_Qt_6_5_3_MinGW_64_bit-Debug/bin
+QT_PLUGIN_PATH=
+supportedFormats=bmp cur gif ico jpeg jpg pbm pgm png ppm svg svgz xbm xpm 
+pixmapLoad null=0 w=24
+stateWidgetRenderPx=462
