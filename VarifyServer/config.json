@@ -1,12 +1,12 @@
 {
     "email": {
-      "user": "19178223162@163.com",
-      "pass": "VFnwmdku5LArXmSm"
+      "user": "<VERIFY_EMAIL>",
+      "pass": "<EMAIL_PASSWORD>"
     },
     "redis":{
       "host": "127.0.0.1",
       "port": 6380,
-      "passwd": "123456"
+      "passwd": "<REDIS_PASSWORD>"
 
     }
 }

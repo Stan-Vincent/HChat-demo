@@ -45,7 +45,7 @@ UID_OUTSIDER = 5     # 局外人，用来验证越权被拒
 UID_LATER = 6        # 后面被拉进群的人
 
 OWNER_EMAIL = os.environ.get('HCAT_OWNER_EMAIL', '0@1.com')
-MEMBER_EMAIL = os.environ.get('HCAT_MEMBER_EMAIL', '19178223162@163.com')
+MEMBER_EMAIL = os.environ.get('HCAT_MEMBER_EMAIL', 'seed@hchat.demo')
 OUTSIDER_EMAIL = os.environ.get('HCAT_OUTSIDER_EMAIL', '1@qq.com')
 
 STATE = {}           # 用例之间共享：建出来的 thread_id 等

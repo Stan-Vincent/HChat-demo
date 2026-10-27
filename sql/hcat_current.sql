@@ -236,7 +236,7 @@ CREATE TABLE `user` (
 
 LOCK TABLES `user` WRITE;
 /*!40000 ALTER TABLE `user` DISABLE KEYS */;
-INSERT INTO `user` VALUES (1,2,'mimimi','0@1.com','745230','河南神','你才不幸福',1,'upload/1792585256903_da79caba34d0a360.png'),(2,3,'xxxl','19178223162@163.com','745230','甜菜','HI!',1,'upload/1791688785510_20fe3108a2a817d0.png'),(10,5,'10599','1@qq.com','745230','上善若水','我是说唱皮特',2,'upload/1791703483561_59a7d487ac0dcfd6.png'),(11,6,'11699','1@1.com','745230','2246','6767676767',0,':/res/head_2.jpg'),(12,7,'16799','2@1.com','745230','叫我胡歌','我徒弟呢？！',0,':/res/head_3.jpg'),(13,8,'13899','3@1.com','745230','Peter','I‘m Peter',0,':/res/head_4.jpg');
+INSERT INTO `user` VALUES (1,2,'mimimi','0@1.com','745230','河南神','你才不幸福',1,'upload/1792585256903_da79caba34d0a360.png'),(2,3,'xxxl','seed@hchat.demo','745230','甜菜','HI!',1,'upload/1791688785510_20fe3108a2a817d0.png'),(10,5,'10599','1@qq.com','745230','上善若水','我是说唱皮特',2,'upload/1791703483561_59a7d487ac0dcfd6.png'),(11,6,'11699','1@1.com','745230','2246','6767676767',0,':/res/head_2.jpg'),(12,7,'16799','2@1.com','745230','叫我胡歌','我徒弟呢？！',0,':/res/head_3.jpg'),(13,8,'13899','3@1.com','745230','Peter','I‘m Peter',0,':/res/head_4.jpg');
 /*!40000 ALTER TABLE `user` ENABLE KEYS */;
 UNLOCK TABLES;
 

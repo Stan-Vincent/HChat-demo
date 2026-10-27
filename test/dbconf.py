@@ -2,7 +2,7 @@
 """测试脚本共用的 MySQL 连接信息：直接从 GateServer/config.ini 的 [Mysql] 段读。
 
 ★ 为什么要有这个文件
-    gate_e2e_test.py 里原本把口令写死成 `-p123456`，而真实口令是 Hcat@2026Secure。
+    gate_e2e_test.py 里原本把口令写死成 `-p123456`，而真实口令见 GateServer/config.ini（已与服务器 Redis/MySQL 对齐）。
     结果不是报错，而是**静默降级**：pick_uid() 连不上库 -> 退回 uid=2，
     "备份原资料"也失败 -> 测完不还原，把用户资料改成 e2e_* 就跑了。
     这种"测试通过了但其实啥也没验"比直接失败更坑。所以统一来这里问 config.ini 要。

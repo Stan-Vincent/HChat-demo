@@ -5,6 +5,7 @@ const emailModule = require('./email');
 const const_module = require('./const');
 const message_proto = require('./proto');
 const redis_module = require('./redis')
+const config = require('./config.json')
 
 
 //async：声明这是异步函数，里面能用 await
@@ -37,7 +38,7 @@ async function GetVarifyCode(call, callback) {
         let text_str =  '您的验证码为'+ uniqueId +'请三分钟内完成注册'
         //发送邮件
         let mailOptions = {
-            from: '19178223162@163.com',
+            from: config.email.user,
             to: call.request.email,
             subject: '验证码',
             text: text_str,

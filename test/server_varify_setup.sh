@@ -5,7 +5,8 @@ set -e
 cd /opt/hchat/VarifyServer
 
 echo "== 1) 修正 config.json 的 redis 密码（对齐本机 Redis）=="
-sed -i 's/"passwd": *"[^"]*"/"passwd": "Hcat@2026Secure"/' config.json
+REDIS_PW="${HCAT_REDIS_PW:?请先 export HCAT_REDIS_PW=你的Redis密码}"
+sed -i "s/\"passwd\": *\"[^\"]*\"/\"passwd\": \"$REDIS_PW\"/" config.json
 grep -nA4 '"redis"' config.json | head -8
 
 echo "== 2) npm install（生产依赖，纯 JS 无需编译）=="
