@@ -72,3 +72,7 @@ Client/bin/
 # 本地构建日志（历史误提交过 rebuild_client.log，新日志统一忽略）
 Client/build_*.log
 Client/rebuild_client.log
+
+# ---------- 本地私密文档（含真实服务器 IP / 密码 / 密钥，禁止入库） ----------
+# 真实凭据版放这里，仅本机可见；仓库只保留 docs/ 下的脱敏模板版
+docs/private_docs/
