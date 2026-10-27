@@ -98,7 +98,7 @@
        <number>0</number>
       </property>
       <item>
-       <widget class="ClickedLabel" name="close_lb">
+       <widget class="SvgIconButton" name="close_lb">
         <property name="minimumSize">
          <size>
           <width>15</width>
@@ -110,9 +110,6 @@
           <width>15</width>
           <height>15</height>
          </size>
-        </property>
-        <property name="styleSheet">
-         <string notr="true">border-image: url(:/res/tipclose.svg);</string>
         </property>
         <property name="text">
          <string/>
@@ -126,9 +123,9 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>ClickedLabel</class>
+   <class>SvgIconButton</class>
    <extends>QLabel</extends>
-   <header>clickedlabel.h</header>
+   <header>SvgIconButton.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

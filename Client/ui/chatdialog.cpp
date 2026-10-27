@@ -27,6 +27,7 @@
 #include <QInputDialog>
 #include <QMessageBox>
 #include "logcategory.h"
+#include "SvgIconButton.h"
 
 
 ChatDialog::ChatDialog(QWidget* parent) :
@@ -37,12 +38,13 @@ ChatDialog::ChatDialog(QWidget* parent) :
 {
 	ui->setupUi(this);
 
-	ui->add_btn->SetState("normal", "hover", "press");
-	ui->add_btn->setProperty("state", "normal");
+	ui->add_btn->setSvg(":/res/add_friend_normal.svg");
+	ui->add_btn->setColors("#6B6F76","#4C5FD7","#4C5FD7");
+	ui->add_btn->setIconSize(QSize(24,24));
 
 	//★ 「添加好友」按钮：点它切到搜索模式，然后可以按 uid / 昵称 / 邮箱搜人。
 	//  原来只设了样式状态、漏了 connect，所以这个按钮点了毫无反应。
-	connect(ui->add_btn, &QPushButton::clicked, this, [this]() {
+	connect(ui->add_btn, &SvgIconButton::clicked, this, [this]() {
 		qCDebug(lcChat) << "add_btn clicked, switch to search mode";
 		ShowSearch(true);
 		ui->search_edit->setFocus();

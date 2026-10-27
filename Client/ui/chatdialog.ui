@@ -277,7 +277,7 @@
           </spacer>
          </item>
          <item>
-          <widget class="ClickedBtn" name="add_btn">
+          <widget class="SvgIconButton" name="add_btn">
            <property name="minimumSize">
             <size>
              <width>24</width>
@@ -344,9 +344,9 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>ClickedBtn</class>
-   <extends>QPushButton</extends>
-   <header location="global">clickedbtn.h</header>
+   <class>SvgIconButton</class>
+   <extends>QLabel</extends>
+   <header location="global">SvgIconButton.h</header>
   </customwidget>
   <customwidget>
    <class>CustomizeEdit</class>

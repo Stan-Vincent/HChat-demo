@@ -1,4 +1,5 @@
 #include "friendinfopage.h"
+#include "SvgIconButton.h"
 #include "ui_friendinfopage.h"
 #include "imagemanager.h"
 #include <QPointer>
@@ -21,9 +22,19 @@ FriendInfoPage::FriendInfoPage(QWidget *parent) :
     // update remark rsp
     connect(TcpMgr::GetInstance().get(), &TcpMgr::sig_update_friend_back,
             this, &FriendInfoPage::slot_update_back_rsp);
-    ui->msg_chat->SetState("normal","hover","press");
-    ui->video_chat->SetState("normal","hover","press");
-    ui->voice_chat->SetState("normal","hover","press");
+    ui->msg_chat->setSvg(":/res/msg_chat_normal.svg");
+    ui->msg_chat->setColors("#6B6F76","#4C5FD7","#4C5FD7");
+    ui->msg_chat->setIconSize(QSize(50,50));
+    ui->video_chat->setSvg(":/res/video_chat_normal.svg");
+    ui->video_chat->setColors("#6B6F76","#4C5FD7","#4C5FD7");
+    ui->video_chat->setIconSize(QSize(50,50));
+    ui->voice_chat->setSvg(":/res/voice_chat_normal.svg");
+    ui->voice_chat->setColors("#6B6F76","#4C5FD7","#4C5FD7");
+    ui->voice_chat->setIconSize(QSize(50,50));
+    // msg_chat 点击跳转聊天：原靠 connectSlotsByName 自动连 on_msg_chat_clicked，
+    // 升级为 SvgIconButton 后信号签名为 clicked(QString, ClickLbState)，改为显式连接
+    connect(ui->msg_chat, &SvgIconButton::clicked, this,
+            [this](const QString&, ClickLbState) { on_msg_chat_clicked(); });
 }
 
 FriendInfoPage::~FriendInfoPage()

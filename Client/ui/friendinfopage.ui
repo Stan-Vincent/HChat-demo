@@ -372,7 +372,7 @@
        </spacer>
       </item>
       <item>
-       <widget class="ClickedBtn" name="msg_chat">
+       <widget class="SvgIconButton" name="msg_chat">
         <property name="minimumSize">
          <size>
           <width>50</width>
@@ -407,7 +407,7 @@
        </spacer>
       </item>
       <item>
-       <widget class="ClickedBtn" name="voice_chat">
+       <widget class="SvgIconButton" name="voice_chat">
         <property name="minimumSize">
          <size>
           <width>50</width>
@@ -442,7 +442,7 @@
        </spacer>
       </item>
       <item>
-       <widget class="ClickedBtn" name="video_chat">
+       <widget class="SvgIconButton" name="video_chat">
         <property name="minimumSize">
          <size>
           <width>50</width>
@@ -493,9 +493,9 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>ClickedBtn</class>
-   <extends>QPushButton</extends>
-   <header>clickedbtn.h</header>
+   <class>SvgIconButton</class>
+   <extends>QLabel</extends>
+   <header>SvgIconButton.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

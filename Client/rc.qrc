@@ -13,7 +13,6 @@
         <file>res/female.png</file>
         <file>res/male.png</file>
         <file>res/add_friend.svg</file>
-        <file>res/add_friend_hover.svg</file>
         <file>res/add_friend_normal.svg</file>
         <file>res/addtip.svg</file>
         <file>res/arowdown.svg</file>
@@ -28,9 +27,7 @@
         <file>res/contact_list_hover.svg</file>
         <file>res/contact_list_press.svg</file>
         <file>res/filedir.svg</file>
-        <file>res/msg_chat_hover.svg</file>
         <file>res/msg_chat_normal.svg</file>
-        <file>res/msg_chat_press.svg</file>
         <file>res/readed.svg</file>
         <file>res/red_point.svg</file>
         <file>res/right_tip.svg</file>
@@ -45,14 +42,8 @@
         <file>res/tipclose.svg</file>
         <file>res/unread.svg</file>
         <file>res/unvisible.svg</file>
-        <file>res/unvisible_hover.svg</file>
-        <file>res/video_chat_hover.svg</file>
         <file>res/video_chat_normal.svg</file>
-        <file>res/video_chat_press.svg</file>
         <file>res/visible.svg</file>
-        <file>res/visible_hover.svg</file>
-        <file>res/voice_chat_hover.svg</file>
         <file>res/voice_chat_normal.svg</file>
-        <file>res/voice_chat_press.svg</file>
     </qresource>
 </RCC>

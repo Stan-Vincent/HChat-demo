@@ -339,7 +339,7 @@
     </layout>
    </item>
   </layout>
-  <widget class="ClickedLabel" name="pass_visible">
+  <widget class="SvgIconButton" name="pass_visible">
    <property name="geometry">
     <rect>
      <x>0</x>
@@ -370,6 +370,11 @@
    <class>ClickedLabel</class>
    <extends>QLabel</extends>
    <header>clickedlabel.h</header>
+  </customwidget>
+  <customwidget>
+   <class>SvgIconButton</class>
+   <extends>QLabel</extends>
+   <header>SvgIconButton.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

@@ -123,16 +123,8 @@ QDialog#ResetDialog {
     color: #e5484d;
 }
 
-/* 密码可见性图标：六状态（4 个图片状态，press 复用 hover） */
-#pass_visible[state='unvisible']        { border-image: url(:/res/unvisible.svg); }
-#pass_visible[state='unvisible_hover']  { border-image: url(:/res/unvisible_hover.svg); }
-#pass_visible[state='visible']          { border-image: url(:/res/visible.svg); }
-#pass_visible[state='visible_hover']    { border-image: url(:/res/visible_hover.svg); }
-
-#confirm_visible[state='unvisible']       { border-image: url(:/res/unvisible.svg); }
-#confirm_visible[state='unvisible_hover'] { border-image: url(:/res/unvisible_hover.svg); }
-#confirm_visible[state='visible']         { border-image: url(:/res/visible.svg); }
-#confirm_visible[state='visible_hover']   { border-image: url(:/res/visible_hover.svg); }
+/* 密码可见性图标：已迁移为 SvgIconButton，由 setSvg(unvisible) + setCheckedSvg(visible)
+   加描边换色自绘（见 logindialog.cpp / registerdialog.cpp），不再用 border-image */
 
 /* 注册成功 / 重置成功 的提示文字 */
 #tip_lb, #tip2_lb {
@@ -226,10 +218,8 @@ QDialog#ResetDialog {
     background: #f0f2fd;
 }
 
-/* 添加群组按钮（原 QSS 中重复定义两次，这里只留一份） */
-#add_btn[state='normal'] { border-image: url(:/res/add_friend_normal.svg); }
-#add_btn[state='hover']  { border-image: url(:/res/add_friend_hover.svg); }
-#add_btn[state='press']  { border-image: url(:/res/add_friend_hover.svg); }
+/* 添加好友按钮：已迁移为 SvgIconButton，图标由 setSvg(add_friend_normal) + 描边换色自绘
+   （见 chatdialog.cpp），不再用 border-image */
 
 /* ---------- 3.3 会话 / 联系人 / 搜索 列表 ---------- */
 #chat_user_list,
@@ -423,18 +413,8 @@ ApplyFriendItem #addBtn[state='press']  { background-color: #d0d3d9; color: #4c5
     font-size: 14px;
 }
 
-/* 发消息 / 视频 / 语音 按钮 */
-#msg_chat[state='normal']   { border-image: url(:/res/msg_chat_normal.svg); }
-#msg_chat[state='hover']    { border-image: url(:/res/msg_chat_hover.svg); }
-#msg_chat[state='press']    { border-image: url(:/res/msg_chat_press.svg); }
-
-#video_chat[state='normal'] { border-image: url(:/res/video_chat_normal.svg); }
-#video_chat[state='hover']  { border-image: url(:/res/video_chat_hover.svg); }
-#video_chat[state='press']  { border-image: url(:/res/video_chat_press.svg); }
-
-#voice_chat[state='normal'] { border-image: url(:/res/voice_chat_normal.svg); }
-#voice_chat[state='hover']  { border-image: url(:/res/voice_chat_hover.svg); }
-#voice_chat[state='press']  { border-image: url(:/res/voice_chat_press.svg); }
+/* 发消息 / 视频 / 语音 按钮：已迁移为 SvgIconButton，图标由 setSvg + 描边换色自绘
+   （见 friendinfopage.cpp），不再用 border-image */
 
 /* ============================================================================
  * 5. 添加好友 / 认证好友
@@ -504,13 +484,8 @@ ApplyFriendItem #addBtn[state='press']  { background-color: #d0d3d9; color: #4c5
     background: #fdfdfd;
 }
 
-/* 关闭按钮（六状态，都用同一个图） */
-#close_lb[state='normal']         { border-image: url(:/res/tipclose.svg); }
-#close_lb[state='hover']          { border-image: url(:/res/tipclose.svg); }
-#close_lb[state='pressed']        { border-image: url(:/res/tipclose.svg); }
-#close_lb[state='select_normal']  { border-image: url(:/res/tipclose.svg); }
-#close_lb[state='select_hover']   { border-image: url(:/res/tipclose.svg); }
-#close_lb[state='select_pressed'] { border-image: url(:/res/tipclose.svg); }
+/* 关闭按钮：已迁移为 SvgIconButton，图标由 setSvg(tipclose) + 描边换色自绘
+   （见 friendlabel.cpp），不再用 border-image */
 
 /* 确定 / 取消 按钮 */
 #apply_sure_wid #sure_btn[state='normal'] { background: #ecedef; color: #4c5fd7; font-size: 16px; border-radius: 20px; }

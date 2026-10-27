@@ -7,6 +7,7 @@
 #include <QRegularExpression>
 #include "logcategory.h"
 #include "animutil.h"
+#include "SvgIconButton.h"
 
 RegisterDialog::RegisterDialog(QWidget *parent) :
     QDialog(parent),
@@ -59,31 +60,29 @@ RegisterDialog::RegisterDialog(QWidget *parent) :
     ui->pass_visible->setCursor(Qt::PointingHandCursor);
     ui->confirm_visible->setCursor(Qt::PointingHandCursor);
 
-    ui->pass_visible->SetState("unvisible","unvisible_hover","","visible",
-                               "visible_hover","");
+    ui->pass_visible->setSvg(":/res/unvisible.svg");
+    ui->pass_visible->setCheckedSvg(":/res/visible.svg");
+    ui->pass_visible->setColors("#6B6F76","#4C5FD7","#4C5FD7");
+    ui->pass_visible->setIconSize(QSize(24,24));
 
-    ui->confirm_visible->SetState("unvisible","unvisible_hover","","visible",
-                                  "visible_hover","");
+    ui->confirm_visible->setSvg(":/res/unvisible.svg");
+    ui->confirm_visible->setCheckedSvg(":/res/visible.svg");
+    ui->confirm_visible->setColors("#6B6F76","#4C5FD7","#4C5FD7");
+    ui->confirm_visible->setIconSize(QSize(24,24));
     //连接点击事件
 
-    connect(ui->pass_visible, &ClickedLabel::clicked, this, [this]() {
-        auto state = ui->pass_visible->GetCurState();
-        if(state == ClickLbState::Normal){
-            ui->pass_edit->setEchoMode(QLineEdit::Password);
-        }else{
-            ui->pass_edit->setEchoMode(QLineEdit::Normal);
-        }
-        qCDebug(lcUser) << "Label was clicked!";
+    connect(ui->pass_visible, &SvgIconButton::clicked, this, [this]() {
+        bool b_visible = (ui->pass_edit->echoMode() == QLineEdit::Normal);
+        ui->pass_edit->setEchoMode(b_visible ? QLineEdit::Password : QLineEdit::Normal);
+        ui->pass_visible->setChecked(!b_visible);  // 同步切换睁眼/闭眼图标
+        qCDebug(lcUser) << "pass_visible clicked";
     });
 
-    connect(ui->confirm_visible, &ClickedLabel::clicked, this, [this]() {
-        auto state = ui->confirm_visible->GetCurState();
-        if(state == ClickLbState::Normal){
-            ui->confirm_edit->setEchoMode(QLineEdit::Password);
-        }else{
-            ui->confirm_edit->setEchoMode(QLineEdit::Normal);
-        }
-        qCDebug(lcUser) << "Label was clicked!";
+    connect(ui->confirm_visible, &SvgIconButton::clicked, this, [this]() {
+        bool b_visible = (ui->confirm_edit->echoMode() == QLineEdit::Normal);
+        ui->confirm_edit->setEchoMode(b_visible ? QLineEdit::Password : QLineEdit::Normal);
+        ui->confirm_visible->setChecked(!b_visible);  // 同步切换睁眼/闭眼图标
+        qCDebug(lcUser) << "confirm_visible clicked";
     });
 
     // 创建定时器

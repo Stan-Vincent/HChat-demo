@@ -1,4 +1,5 @@
 #include "friendlabel.h"
+#include "SvgIconButton.h"
 #include "ui_friendlabel.h"
 #include <QDebug>
 
@@ -7,9 +8,11 @@ FriendLabel::FriendLabel(QWidget *parent) :
     ui(new Ui::FriendLabel)
 {
     ui->setupUi(this);
-    ui->close_lb->SetState("normal","hover","pressed",
-                           "selected_normal","selected_hover","selected_pressed");
-    connect(ui->close_lb, &ClickedLabel::clicked, this, &FriendLabel::slot_close);
+    ui->close_lb->setSvg(":/res/tipclose.svg");
+    ui->close_lb->setColors("#6B6F76","#4C5FD7","#4C5FD7");
+    ui->close_lb->setIconSize(QSize(15,15));
+    connect(ui->close_lb, &SvgIconButton::clicked, this,
+            [this](const QString&, ClickLbState) { slot_close(); });
 }
 
 FriendLabel::~FriendLabel()

@@ -8,6 +8,7 @@
 #include <QPainter>
 #include <QPainterPath>
 #include "clickedlabel.h"
+#include "SvgIconButton.h"
 #include "animutil.h"
 #include <QLineEdit>
 #include <QCheckBox>
@@ -124,15 +125,18 @@ LoginDialog::LoginDialog(QWidget *parent) :
 
     // 密码显示/隐藏图标（与注册页 pass_visible 完全一致：同样 20x20、同一套图标）
     ui->pass_visible->setCursor(Qt::PointingHandCursor);
-    ui->pass_visible->SetState("unvisible", "unvisible_hover", "",
-                               "visible", "visible_hover", "");
-    connect(ui->pass_visible, &ClickedLabel::clicked, this, [this]() {
+    ui->pass_visible->setSvg(":/res/unvisible.svg");
+    ui->pass_visible->setCheckedSvg(":/res/visible.svg");
+    ui->pass_visible->setColors("#6B6F76","#4C5FD7","#4C5FD7");
+    ui->pass_visible->setIconSize(QSize(24,24));
+    connect(ui->pass_visible, &SvgIconButton::clicked, this, [this]() {
         // 双保险：自动填入状态下即使信号到达也不切换明文
         if (!ui->pass_visible->isEnabled()) {
             return;
         }
         bool b_visible = (ui->pass_edit->echoMode() == QLineEdit::Normal);
         ui->pass_edit->setEchoMode(b_visible ? QLineEdit::Password : QLineEdit::Normal);
+        ui->pass_visible->setChecked(!b_visible);  // 同步切换睁眼/闭眼图标
         qCDebug(lcUser) << "pass_visible clicked, echoMode =" << ui->pass_edit->echoMode();
     });
 

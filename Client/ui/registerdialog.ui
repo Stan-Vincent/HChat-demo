@@ -152,7 +152,7 @@
             </widget>
            </item>
            <item>
-            <widget class="ClickedLabel" name="pass_visible">
+            <widget class="SvgIconButton" name="pass_visible">
              <property name="minimumSize">
               <size>
                <width>24</width>
@@ -200,7 +200,7 @@
             </widget>
            </item>
            <item>
-            <widget class="ClickedLabel" name="confirm_visible">
+            <widget class="SvgIconButton" name="confirm_visible">
              <property name="minimumSize">
               <size>
                <width>24</width>
@@ -458,13 +458,13 @@
   </layout>
  </widget>
  <customwidgets>
-   <customwidget>
-    <class>ClickedLabel</class>
-    <extends>QLabel</extends>
-    <header>clickedlabel.h</header>
-   </customwidget>
-   <customwidget>
-    <class>TimerBtn</class>
+  <customwidget>
+   <class>SvgIconButton</class>
+   <extends>QLabel</extends>
+   <header>SvgIconButton.h</header>
+  </customwidget>
+  <customwidget>
+   <class>TimerBtn</class>
     <extends>QPushButton</extends>
     <header>timerbtn.h</header>
    </customwidget>
