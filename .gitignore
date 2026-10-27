@@ -76,3 +76,13 @@ Client/rebuild_client.log
 # ---------- 本地私密文档（含真实服务器 IP / 密码 / 密钥，禁止入库） ----------
 # 真实凭据版放这里，仅本机可见；仓库只保留 docs/ 下的脱敏模板版
 docs/private_docs/
+
+# ---------- 真实配置文件（含数据库/Redis/邮箱密码与服务器 IP，禁止入库） ----------
+# 仓库只保留 *.example 占位模板；本地把 .example 复制为同名文件并填入真实值，
+# 该文件被 gitignore，不会进入任何提交（含历史）。部署用 deploy_to_cloud.sh 注入。
+GateServer/config.ini
+ChatServer/config.ini
+ChatServer2/config.ini
+StatusServer/config.ini
+Client/config.ini
+VarifyServer/config.json

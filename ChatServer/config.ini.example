@@ -1,5 +1,4 @@
-[GateServer]
-Port = 8080
+; 复制本文件为 config.ini 并填入真实值；config.ini 已被 gitignore，不会入库
 [VarifyServer]
 Host = 127.0.0.1
 Port = 50051
@@ -7,10 +6,10 @@ Port = 50051
 Host = 127.0.0.1
 Port = 50052
 [SelfServer]
-Name = chatserver2
+Name = chatserver1
 Host = 0.0.0.0
-Port  = 8991
-RPCPort = 50056
+Port  = 8990
+RPCPort = 50055
 [Mysql]
 Host = 127.0.0.1
 Port = 3308
@@ -22,8 +21,8 @@ Host = 127.0.0.1
 Port = 6380
 Passwd = <DB_REDIS_PASSWORD>
 [PeerServer]
-Servers = chatserver1
-[chatserver1]
-Name = chatserver1
+Servers = chatserver2
+[chatserver2]
+Name = chatserver2
 Host = 127.0.0.1
-Port = 50055
+Port = 50056

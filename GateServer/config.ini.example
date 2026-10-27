@@ -1,3 +1,4 @@
+; 复制本文件为 config.ini 并填入真实值；config.ini 已被 gitignore，不会入库
 [GateServer]
 Port=8080
 [VarifyServer]
