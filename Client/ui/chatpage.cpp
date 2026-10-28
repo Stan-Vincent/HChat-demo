@@ -316,6 +316,9 @@ void ChatPage::SetChatData(std::shared_ptr<ChatThreadData> chat_data) {
     _unrsp_item_map.clear();
     _resend_ctx.clear();   // 切换会话：作废上一段会话的可重发上下文（旧气泡已被销毁）
     _rendered_ids.clear(); // 去重表随列表一起作废
+    // ★ P3 动效：切会话的历史消息是批量加载，关闭入场动画避免一堆气泡同时展开掉帧；
+    //   实时收发的消息（AppendChatMsg 在循环外被调用）仍走动画。
+    ui->chat_data_list->setItemAnimate(false);
     for(auto & msg : chat_data->GetMsgMapRef()){
         AppendChatMsg(msg);
     }
@@ -323,6 +326,7 @@ void ChatPage::SetChatData(std::shared_ptr<ChatThreadData> chat_data) {
     for (auto& msg : chat_data->GetMsgUnRspRef()) {
         AppendChatMsg(msg);
     }
+    ui->chat_data_list->setItemAnimate(true);
 
     // ★ 人性化：切到某个会话后光标直接落在输入框，不用再点一下才能打字。
     //   只在页面可见时抢焦点，避免加载阶段的隐藏调用干扰别的输入控件。

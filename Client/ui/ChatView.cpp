@@ -7,6 +7,7 @@
 #include <QDebug>
 #include "TextBubble.h"
 #include "ChatItemBase.h"   // 按发送者分组控制间距
+#include "animutil.h"       // P3 动效：新消息入场高度展开
 
 #include <QTimer>
 #include <QStyleOption>
@@ -77,6 +78,9 @@ void ChatView::appendChatItem(QWidget *item)
        _has_last = true;
    }
    vl->insertWidget(vl->count()-1, item);            // 先插 item（紧贴底部 stretch 之前）
+   if (_animate_items) {
+       AnimUtil::revealItem(item);   // P3 动效：新消息从高度 0 展开入场
+   }
    if (gap > 0) {
        // 再在 item 之前插空隙（即 item 上方）。插入后 item 位于倒数第二，故 index=count-2。
        vl->insertItem(vl->count()-2,

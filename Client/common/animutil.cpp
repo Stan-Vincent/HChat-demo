@@ -323,4 +323,26 @@ void installHoverLift(QWidget* w, int liftPx)
     new HoverLiftFilter(w, liftPx, w);
 }
 
+// ============================================================
+//  消息气泡入场（高度展开，无 GraphicsEffect）
+// ============================================================
+void revealItem(QWidget* w, int duration)
+{
+    if (!w) return;
+    // 取内容自然高度作为展开终点；还没布局好（height<=0）就跳过动画，正常显示。
+    const int target = w->sizeHint().height();
+    if (target <= 0) return;
+    w->setMaximumHeight(0);
+    auto* anim = new QPropertyAnimation(w, "maximumHeight", w);
+    anim->setDuration(duration);
+    anim->setStartValue(0);
+    anim->setEndValue(target);
+    anim->setEasingCurve(QEasingCurve::OutCubic);
+    QObject::connect(anim, &QPropertyAnimation::finished, w, [w]() {
+        // 还原上限，允许后续内容（图片下载回填 / 状态变更）把控件撑高
+        w->setMaximumHeight(QWIDGETSIZE_MAX);
+    });
+    anim->start(QAbstractAnimation::DeleteWhenStopped);
+}
+
 } // namespace AnimUtil

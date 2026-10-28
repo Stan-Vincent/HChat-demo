@@ -51,6 +51,12 @@ private:
     // P1 §3 间距：记录上一条"消息"的发送者，决定本条上方空隙（同人 4px / 换人 12px）
     ChatRole _last_msg_role = ChatRole::Other;
     bool _has_last = false;
+
+    // P3 动效：新消息入场动画开关。历史批量加载（SetChatData）时临时关闭，避免一堆气泡同时展开掉帧；
+    // 实时收发的消息（AppendChatMsg 在循环外被调用）仍走动画。
+    bool _animate_items = true;
+public:
+    void setItemAnimate(bool on) { _animate_items = on; }
 };
 
 #endif // CHATVIEW_H

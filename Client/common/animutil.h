@@ -47,6 +47,11 @@ void shakeWidget(QWidget* w, int duration = 400);
 // 同样用临时 pos 动画，不影响布局最终状态。
 void installHoverLift(QWidget* w, int liftPx = 2);
 
+// 消息气泡入场：高度由 0 展开到自然高度（不使用 GraphicsEffect，规避与
+// _main_widget 阴影 effect 的嵌套崩溃；尺寸变化由布局自然接管）。
+// 适用于聊天列表里的 ChatItemBase 等被 _main_widget 阴影祖先包裹的控件。
+void revealItem(QWidget* w, int duration = 220);
+
 }
 
 #endif // ANIMUTIL_H

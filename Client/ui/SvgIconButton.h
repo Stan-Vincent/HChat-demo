@@ -2,6 +2,7 @@
 #define SVGICONBUTTON_H
 
 #include <QLabel>
+#include <QVariantAnimation>
 #include "global.h"   // ClickLbState
 
 /*
@@ -13,6 +14,7 @@
  *   - 支持 checked 第二张图（如密码可见的「睁眼」）与 selected 底色圆（侧边栏选中）；
  *   - 高 DPI：按 devicePixelRatio 渲染，缩放清晰不糊；
  *   - 信号 clicked(const QString&, ClickLbState) 与 ClickedLabel 同签名，可原地替换。
+ *   - P3 动效：normal/hover/press 切换时描边色做 ~120ms 交叉淡化（图标 morph 的取色过渡）。
  */
 class SvgIconButton : public QLabel
 {
@@ -42,7 +44,7 @@ public:
     void setSelectedColor(const QString &color) { _selectedColor = color; }
 
     // 图标绘制尺寸；缺省取控件当前尺寸
-    void setIconSize(const QSize &sz) { _iconSize = sz; reload(); }
+    void setIconSize(const QSize &sz) { _iconSize = sz; rebuild(); }
     QSize sizeHint() const override;
 
 signals:
@@ -56,7 +58,15 @@ protected:
     void mouseReleaseEvent(QMouseEvent *event) override;
 
 private:
-    void reload();                                    // 依据当前状态重绘 pixmap
+    // 选择当前该用的描边色（依 normal/hover/press 状态）
+    QColor stateColor() const;
+    // 依当前状态重绘（选 svg / 选中底色 / 用 _displayColor 描边）
+    void rebuild();
+    // 用指定描边色渲染 pixmap（不含状态判定，供动画逐帧调用）
+    void render(const QColor &color);
+    // 计算目标色并做 ~120ms 交叉淡化到该色
+    void updateColor();
+
     static QString loadSvg(const QString &path);       // 从 qrc 读 SVG 源
     static QString recolor(const QString &svg,
                            const QString &color);      // 替换 stroke / fill 颜色
@@ -72,6 +82,9 @@ private:
     bool    _pressed = false;
     bool    _checked = false;
     bool    _selected = false;
+
+    QColor _displayColor;                 // 当前显示中的描边色（动画过程中为中间值）
+    QVariantAnimation* _colorAnim = nullptr;
 };
 
 #endif // SVGICONBUTTON_H

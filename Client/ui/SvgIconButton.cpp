@@ -6,24 +6,38 @@
 #include <QEnterEvent>
 #include <QMouseEvent>
 #include <QRegularExpression>
+#include <QVariantAnimation>
 
 SvgIconButton::SvgIconButton(QWidget *parent)
     : QLabel(parent)
 {
     setCursor(Qt::PointingHandCursor);
     setScaledContents(false);
+
+    // P3 动效：normal/hover/press 描边色交叉淡化
+    _colorAnim = new QVariantAnimation(this);
+    _colorAnim->setDuration(120);
+    _colorAnim->setEasingCurve(QEasingCurve::InOutQuad);
+    connect(_colorAnim, &QVariantAnimation::valueChanged, this, [this](const QVariant& v) {
+        _displayColor = v.value<QColor>();
+        render(_displayColor);
+    });
+    connect(_colorAnim, &QVariantAnimation::finished, this, [this]() {
+        _displayColor = stateColor();
+        render(_displayColor);
+    });
 }
 
 void SvgIconButton::setSvg(const QString &pathInQrc)
 {
     _svgNormal = loadSvg(pathInQrc);
-    reload();
+    rebuild();
 }
 
 void SvgIconButton::setCheckedSvg(const QString &pathInQrc)
 {
     _svgChecked = loadSvg(pathInQrc);
-    reload();
+    rebuild();
 }
 
 void SvgIconButton::setColors(const QString &normal,
@@ -33,19 +47,19 @@ void SvgIconButton::setColors(const QString &normal,
     _colorNormal = normal;
     _colorHover  = hover;
     _colorPress  = press;
-    reload();
+    rebuild();
 }
 
 void SvgIconButton::setChecked(bool on)
 {
     _checked = on;
-    reload();
+    rebuild();
 }
 
 void SvgIconButton::setSelected(bool on)
 {
     _selected = on;
-    reload();
+    rebuild();
 }
 
 QSize SvgIconButton::sizeHint() const
@@ -73,15 +87,44 @@ QString SvgIconButton::recolor(const QString &svg, const QString &color)
     return out;
 }
 
-void SvgIconButton::reload()
+QColor SvgIconButton::stateColor() const
+{
+    if (_pressed)  return QColor(_colorPress);
+    if (_hovered)  return QColor(_colorHover);
+    return QColor(_colorNormal);
+}
+
+void SvgIconButton::rebuild()
+{
+    // 首次（_displayColor 未初始化）用当前状态色；后续保持当前显示色，由 updateColor 过渡。
+    if (!_displayColor.isValid()) {
+        _displayColor = stateColor();
+    }
+    render(_displayColor);
+    updateColor();
+}
+
+void SvgIconButton::updateColor()
+{
+    const QColor tgt = stateColor();
+    if (tgt == _displayColor) {
+        render(_displayColor);   // 已一致，确保重绘（如 setColors 改了色板）
+        return;
+    }
+    QColor from = _displayColor;
+    if (!from.isValid()) from = stateColor();
+    _colorAnim->stop();
+    _colorAnim->setStartValue(from);
+    _colorAnim->setEndValue(tgt);
+    _colorAnim->start();
+}
+
+void SvgIconButton::render(const QColor &color)
 {
     const QString src = (!_svgChecked.isEmpty() && _checked) ? _svgChecked : _svgNormal;
     if (src.isEmpty()) return;
 
-    const QString color = _pressed ? _colorPress
-                         : (_hovered ? _colorHover : _colorNormal);
-    const QString svg = recolor(src, color);
-
+    const QString svg = recolor(src, color.name());
     const qreal dpr = devicePixelRatioF();
     const QSize sz = _iconSize.isValid()
                          ? _iconSize
@@ -112,7 +155,7 @@ void SvgIconButton::reload()
 void SvgIconButton::enterEvent(QEnterEvent *event)
 {
     _hovered = true;
-    reload();
+    updateColor();
     QLabel::enterEvent(event);
 }
 
@@ -120,7 +163,7 @@ void SvgIconButton::leaveEvent(QEvent *event)
 {
     _hovered = false;
     _pressed = false;
-    reload();
+    updateColor();
     QLabel::leaveEvent(event);
 }
 
@@ -128,7 +171,7 @@ void SvgIconButton::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
         _pressed = true;
-        reload();
+        updateColor();
     }
     QLabel::mousePressEvent(event);
 }
@@ -138,7 +181,7 @@ void SvgIconButton::mouseReleaseEvent(QMouseEvent *event)
     if (event->button() == Qt::LeftButton) {
         const bool wasPressed = _pressed;
         _pressed = false;
-        reload();
+        updateColor();
         if (wasPressed) {
             emit clicked(QString(), ClickLbState::Normal);
         }
