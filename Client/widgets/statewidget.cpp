@@ -1,175 +1,88 @@
 #include "statewidget.h"
-#include <QPaintEvent>
-#include <QStyleOption>
-#include <QPainter>
-#include <QLabel>
-#include <QVBoxLayout>
+#include <QResizeEvent>
 
-StateWidget::StateWidget(QWidget *parent) : QWidget(parent),_curstate(ClickLbState::Normal)
+StateWidget::StateWidget(QWidget *parent)
+    : QWidget(parent), _curstate(ClickLbState::Normal),
+      _iconBtn(nullptr), _red_point(nullptr)
 {
     setCursor(Qt::PointingHandCursor);
-    //添加红点
+
+    // 图标自绘：SvgIconButton 接手 hover/press 换色 + 点击信号。
+    // 鼠标事件直接落在它身上（它是最上层子控件），StateWidget 不再处理，
+    // 点击经由 SvgIconButton::clicked 转发为 StateWidget::clicked(void)。
+    _iconBtn = new SvgIconButton(this);
+    // 选中底色圆：深色侧边栏上用浅灰圆区分选中（原 selected_* 态语义）
+    _iconBtn->setSelectedColor("#ECEDEF");
+    connect(_iconBtn, &SvgIconButton::clicked, this, [this] { emit clicked(); });
+
     AddRedPoint();
 }
 
-void StateWidget::paintEvent(QPaintEvent *event)
+void StateWidget::resizeEvent(QResizeEvent *event)
 {
-    QStyleOption opt;
-    opt.initFrom(this);
-    QPainter p(this);
-    style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
-    return;
-
-}
-
-// 处理鼠标点击事件
-void StateWidget::mousePressEvent(QMouseEvent* event)  {
-    if (event->button() == Qt::LeftButton) {
-        if(_curstate == ClickLbState::Selected){
-            qDebug()<<"PressEvent , already to selected press: "<< _selected_press;
-            //emit clicked();
-            // 调用基类的mousePressEvent以保证正常的事件处理
-            QWidget::mousePressEvent(event);
-            return;
-        }
-
-        if(_curstate == ClickLbState::Normal){
-            qDebug()<<"PressEvent , change to selected press: "<< _selected_press;
-            _curstate = ClickLbState::Selected;
-            setProperty("state",_selected_press);
-            reload_qss(this);
-            update();
-        }
-
-        return;
+    QWidget::resizeEvent(event);
+    if (_iconBtn) {
+        _iconBtn->setGeometry(0, 0, width(), height());
     }
-    // 调用基类的mousePressEvent以保证正常的事件处理
-    QWidget::mousePressEvent(event);
+    if (_red_point) {
+        const int s = qMin(14, width());                // 红点直径
+        _red_point->setGeometry(width() - s, 0, s, s);   // 右上角未读提示
+    }
 }
 
-void StateWidget::mouseReleaseEvent(QMouseEvent *event)
+// 依据当前态应用图标描边色 + 选中底色圆：
+//   Normal   —— 普通灰描边，无圆
+//   Selected —— 靛蓝描边 + 浅灰圆（原 chat_icon_hover.svg 语义）
+void StateWidget::applyColors()
 {
-    if (event->button() == Qt::LeftButton) {
-        if(_curstate == ClickLbState::Normal){
-            //qDebug()<<"ReleaseEvent , change to normal hover: "<< _normal_hover;
-            setProperty("state",_normal_hover);
-            reload_qss(this);
-            update();
-
-        }else{
-            //qDebug()<<"ReleaseEvent , change to select hover: "<< _selected_hover;
-            setProperty("state",_selected_hover);
-            reload_qss(this);
-            update();
-        }
-        emit clicked();
-        return;
+    if (_curstate == ClickLbState::Selected) {
+        _iconBtn->setColors(_colorHover, _colorHover, _colorPress);
+        _iconBtn->setSelected(true);
+    } else {
+        _iconBtn->setColors(_colorNormal, _colorHover, _colorPress);
+        _iconBtn->setSelected(false);
     }
-    // 调用基类的mousePressEvent以保证正常的事件处理
-    QWidget::mousePressEvent(event);
 }
 
-// 处理鼠标悬停进入事件
-void StateWidget::enterEvent(QEnterEvent* event) {
-    // 在这里处理鼠标悬停进入的逻辑
-    if(_curstate == ClickLbState::Normal){
-         //qDebug()<<"enter , change to normal hover: "<< _normal_hover;
-        setProperty("state",_normal_hover);
-        reload_qss(this);
-        update();
-
-    }else{
-         //qDebug()<<"enter , change to selected hover: "<< _selected_hover;
-        setProperty("state",_selected_hover);
-        reload_qss(this);
-        update();
-    }
-
-    QWidget::enterEvent(event);
-}
-
-// 处理鼠标悬停离开事件
-void StateWidget::leaveEvent(QEvent* event){
-    // 在这里处理鼠标悬停离开的逻辑
-    if(_curstate == ClickLbState::Normal){
-        // qDebug()<<"leave , change to normal : "<< _normal;
-        setProperty("state",_normal);
-        reload_qss(this);
-        update();
-
-    }else{
-        // qDebug()<<"leave , change to select normal : "<< _selected;
-        setProperty("state",_selected);
-        reload_qss(this);
-        update();
-    }
-    QWidget::leaveEvent(event);
-}
-
-void StateWidget::SetState(QString normal, QString hover, QString press,
-                            QString select, QString select_hover, QString select_press)
+void StateWidget::SetIcon(const QString &svgPath, const QSize &iconSize,
+                          const QString &normal, const QString &hover, const QString &press)
 {
-    _normal = normal;
-    _normal_hover = hover;
-    _normal_press = press;
+    _colorNormal = normal;
+    _colorHover  = hover;
+    _colorPress  = press;
 
-    _selected = select;
-    _selected_hover = select_hover;
-    _selected_press = select_press;
-
-    setProperty("state",normal);
-    reload_qss(this);
+    _iconBtn->setSvg(svgPath);
+    _iconBtn->setIconSize(iconSize);
+    applyColors();   // 初始 Normal 态
 }
 
-ClickLbState StateWidget::GetCurState(){
+ClickLbState StateWidget::GetCurState()
+{
     return _curstate;
 }
 
 void StateWidget::ClearState()
 {
     _curstate = ClickLbState::Normal;
-    setProperty("state",_normal);
-    reload_qss(this);
-    update();
+    applyColors();
 }
 
 void StateWidget::SetSelected(bool bselected)
 {
-    if(bselected){
-        _curstate = ClickLbState::Selected;
-        setProperty("state",_selected);
-        reload_qss(this);
-        update();
-        return;
-    }
-
-    _curstate = ClickLbState::Normal;
-    setProperty("state",_normal);
-    reload_qss(this);
-    update();
-    return;
-
+    _curstate = bselected ? ClickLbState::Selected : ClickLbState::Normal;
+    applyColors();
 }
 
 void StateWidget::AddRedPoint()
 {
-    //添加红点示意图
-    _red_point = new QLabel();
+    _red_point = new QLabel(this);
     _red_point->setObjectName("red_point");
-    QVBoxLayout* layout2 = new QVBoxLayout;
-    _red_point->setAlignment(Qt::AlignCenter);
-    layout2->addWidget(_red_point);
-    layout2->setContentsMargins(0, 0, 0, 0);
-    this->setLayout(layout2);
+    // 鼠标穿透：点击红点区域也当作点击图标（红点只是装饰提示）
+    _red_point->setAttribute(Qt::WA_TransparentForMouseEvents, true);
     _red_point->setVisible(false);
 }
 
 void StateWidget::ShowRedPoint(bool show)
 {
-    _red_point->setVisible(true);
+    if (_red_point) _red_point->setVisible(show);
 }
-
-
-
-
-

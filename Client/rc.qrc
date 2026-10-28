@@ -17,15 +17,9 @@
         <file>res/addtip.svg</file>
         <file>res/arowdown.svg</file>
         <file>res/chat_icon.svg</file>
-        <file>res/chat_icon_hover.svg</file>
-        <file>res/chat_icon_press.svg</file>
-        <file>res/chat_icon_select_hover.svg</file>
-        <file>res/chat_icon_select_press.svg</file>
         <file>res/close_search.svg</file>
         <file>res/close_transparent.svg</file>
         <file>res/contact_list.svg</file>
-        <file>res/contact_list_hover.svg</file>
-        <file>res/contact_list_press.svg</file>
         <file>res/filedir.svg</file>
         <file>res/msg_chat_normal.svg</file>
         <file>res/readed.svg</file>
@@ -34,10 +28,6 @@
         <file>res/search.svg</file>
         <file>res/send_fail.svg</file>
         <file>res/settings.svg</file>
-        <file>res/settings_hover.svg</file>
-        <file>res/settings_press.svg</file>
-        <file>res/settings_select_hover.svg</file>
-        <file>res/settings_select_press.svg</file>
         <file>res/smile.svg</file>
         <file>res/tipclose.svg</file>
         <file>res/unread.svg</file>

@@ -173,29 +173,9 @@ QDialog#ResetDialog {
     background-color: #2e2e2e;
 }
 
-/* 侧边栏按钮：聊天 / 联系人 / 设置 各六状态（图片控制）
-   ★ 选中态（selected_*）用 hover 的浅灰圆图而不是 press 的橙圆图：
-     深色侧边栏上浅灰圆已经能区分选中/未选中，再套一圈主题色太跳。 */
-#side_chat_lb[state='normal']           { border-image: url(:/res/chat_icon.svg); }
-#side_chat_lb[state='hover']            { border-image: url(:/res/chat_icon_hover.svg); }
-#side_chat_lb[state='pressed']          { border-image: url(:/res/chat_icon_press.svg); }
-#side_chat_lb[state='selected_normal']  { border-image: url(:/res/chat_icon_hover.svg); }
-#side_chat_lb[state='selected_hover']   { border-image: url(:/res/chat_icon_hover.svg); }
-#side_chat_lb[state='selected_pressed'] { border-image: url(:/res/chat_icon_hover.svg); }
-
-#side_contact_lb[state='normal']           { border-image: url(:/res/contact_list.svg); }
-#side_contact_lb[state='hover']            { border-image: url(:/res/contact_list_hover.svg); }
-#side_contact_lb[state='pressed']          { border-image: url(:/res/contact_list_press.svg); }
-#side_contact_lb[state='selected_normal']  { border-image: url(:/res/contact_list_hover.svg); }
-#side_contact_lb[state='selected_hover']   { border-image: url(:/res/contact_list_hover.svg); }
-#side_contact_lb[state='selected_pressed'] { border-image: url(:/res/contact_list_hover.svg); }
-
-#side_settings_lb[state='normal']           { border-image: url(:/res/settings.svg); }
-#side_settings_lb[state='hover']            { border-image: url(:/res/settings_hover.svg); }
-#side_settings_lb[state='pressed']          { border-image: url(:/res/settings_press.svg); }
-#side_settings_lb[state='selected_normal']  { border-image: url(:/res/settings_hover.svg); }
-#side_settings_lb[state='selected_hover']   { border-image: url(:/res/settings_hover.svg); }
-#side_settings_lb[state='selected_pressed'] { border-image: url(:/res/settings_hover.svg); }
+/* 侧边栏按钮：聊天 / 联系人 / 设置 三图标
+   已迁移为 StateWidget 内嵌的 SvgIconButton 自绘（单 SVG + 描边换色 + 选中浅灰圆），
+   见 widgets/statewidget.cpp 与 ui/chatdialog.cpp，不再用 border-image 与 *_hover/_press 冗余文件。 */
 
 /* ---------- 3.2 搜索栏 ---------- */
 #search_wid {

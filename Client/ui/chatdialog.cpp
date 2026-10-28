@@ -153,13 +153,11 @@ ChatDialog::ChatDialog(QWidget* parent) :
 	loadSelfAvatar();
 	ui->side_head_lb->setScaledContents(true); // 设置QLabel自动缩放图片内容以适应大小
 
-	ui->side_chat_lb->setProperty("state", "normal");
-
-	ui->side_chat_lb->SetState("normal", "hover", "pressed", "selected_normal", "selected_hover", "selected_pressed");
-
-	ui->side_contact_lb->SetState("normal", "hover", "pressed", "selected_normal", "selected_hover", "selected_pressed");
-
-	ui->side_settings_lb->SetState("normal", "hover", "pressed", "selected_normal", "selected_hover", "selected_pressed");
+	// 侧边栏三图标：迁移为 SvgIconButton 自绘单 SVG（见 StateWidget::SetIcon），
+	// 不再用六态 border-image；选中态由 SetSelected 画浅灰圆（下方 chat 初始选中）。
+	ui->side_chat_lb->SetIcon(":/res/chat_icon.svg");
+	ui->side_contact_lb->SetIcon(":/res/contact_list.svg");
+	ui->side_settings_lb->SetIcon(":/res/settings.svg");
 
 	AddLBGroup(ui->side_chat_lb);
 	AddLBGroup(ui->side_contact_lb);
