@@ -619,30 +619,20 @@ QProgressBar::chunk {
     font-size: 12pt;
 }
 
-/* 主按钮：绿色实心（统一 10px 圆角；登录主按钮单独覆盖为 22px 胶囊） */
-#login_btn, #submit_btn, #sure_btn, #up_btn {
-    background-color: #4c5fd7;
+/* 登录主按钮：22px 胶囊 + 靛蓝渐变（P1 §9 主色；登录主按钮单独覆盖为胶囊，刻意保留硬编码） */
+#login_btn {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                               stop:0 #5a6be0, stop:1 #4c5fd7);
     border: none;
-    border-radius: 10px;
+    border-radius: 22px;
     color: #ffffff;
     font-size: 12pt;
     font-weight: bold;
 }
-#login_btn {
-    border-radius: 22px;
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                               stop:0 #5a6be0, stop:1 #4c5fd7);
-}
-#submit_btn:hover, #sure_btn:hover, #up_btn:hover {
-    background-color: #3f4fc4;
-}
-/* 登录主按钮 hover：渐变提亮（与 #login_btn 基准渐变同方向） */
+/* 登录主按钮 hover：渐变提亮 */
 #login_btn:hover {
     background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
                                stop:0 #6b7ce8, stop:1 #5a6be0);
-}
-#submit_btn:pressed, #sure_btn:pressed, #up_btn:pressed {
-    background-color: #3543a8;
 }
 /* 登录主按钮按下：渐变压暗 */
 #login_btn:pressed {
@@ -653,6 +643,10 @@ QProgressBar::chunk {
     background-color: #cccccc;
     color: #888888;
 }
+
+/* 提交 / 确认 / 发送等主按钮（submit_btn / sure_btn）已统一走 §9 的 role="primary"
+   体系（6px 圆角、字体 500，符合 P1 §4 控件 token）；up_btn 走 role="ghost"。
+   三者不再用硬编码 #xxx_btn 选择器，避免与 role 冲突（up_btn 曾被 primary 组硬覆盖成蓝底）。 */
 
 /* 次要按钮：描边（统一 10px 圆角，与输入框风格一致） */
 #return_btn, #cancel_btn, #varify_btn, #find_btn, #logout_btn {
