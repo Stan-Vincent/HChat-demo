@@ -648,22 +648,9 @@ QProgressBar::chunk {
    体系（6px 圆角、字体 500，符合 P1 §4 控件 token）；up_btn 走 role="ghost"。
    三者不再用硬编码 #xxx_btn 选择器，避免与 role 冲突（up_btn 曾被 primary 组硬覆盖成蓝底）。 */
 
-/* 次要按钮：描边（统一 10px 圆角，与输入框风格一致） */
-#return_btn, #cancel_btn, #varify_btn, #find_btn, #logout_btn {
-    background-color: #ffffff;
-    border: 1px solid #cccccc;
-    border-radius: 10px;
-    color: #555555;
-    font-size: 12pt;
-}
-#return_btn:hover, #cancel_btn:hover, #varify_btn:hover, #find_btn:hover,
-#logout_btn:hover {
-    border: 1px solid #4c5fd7;
-    color: #4c5fd7;
-}
-#return_btn:pressed, #cancel_btn:pressed, #varify_btn:pressed, #logout_btn:pressed {
-    background-color: #ecedef;
-}
+/* 次要按钮（return/cancel/varify/logout 等）统一走 §9 的 [role] 体系：
+   cancel=ghost、return/varify/logout=link，由代码 setProperty("role",...)+reload_qss 驱动；
+   #find_btn 已是死引用（无对应控件），一并移除硬编码避免与 role 冲突。 */
 
 /* 「记住密码 / 自动登录」这类复选框 */
 #remember_pwd_chk, #auto_login_chk {
@@ -855,24 +842,8 @@ QPushButton[role="link"]:hover { color: #6b7ce8; text-decoration: underline; }
 QPushButton[role="link"]:pressed { color: #3543a8; }
 QPushButton[role="link"]:disabled { color: #bbbbbb; }
 
-/* 兜底：确保登录页注册按钮保持 QQ 式嵌入背景文字（role 选择器在某些 Qt 版本下不够稳） */
-QPushButton#reg_btn,
-QPushButton#reg_btn:hover,
-QPushButton#reg_btn:pressed,
-QPushButton#reg_btn:disabled {
-    background-color: transparent;
-    border: none;
-    outline: none;
-    padding: 0;
-    min-height: 0;
-}
-QPushButton#reg_btn {
-    color: #4c5fd7;
-    font-size: 11pt;
-}
-QPushButton#reg_btn:hover { color: #6b7ce8; text-decoration: underline; }
-QPushButton#reg_btn:pressed { color: #3543a8; }
-QPushButton#reg_btn:disabled { color: #bbbbbb; }
+/* reg_btn 已在 logindialog.cpp 设 role="link"，统一走 §9 link 体系（样式与上组完全一致）；
+   移除原硬编码兜底，收敛到 role（若真机发现 role 选择器不稳再回退此组）。 */
 
 /* ghost：描边浅底按钮（取消 / 上传等次次要操作） */
 QPushButton[role="ghost"] {
