@@ -61,6 +61,11 @@ protected:
 private:
     void showLoadingDlg(bool show = true);
     void loadSelfAvatar();
+    // P3 微交互「在线状态」点位：侧边栏自己头像右下角的连接状态点。
+    // initConnDot() 建点并贴到 side_head_lb 右下角；setConnState() 切色 + 脉动。
+    void initConnDot();
+    // 0 = 未连接（灰，静止） / 1 = 连接中·重连中（琥珀，急促脉动） / 2 = 在线（绿，缓慢呼吸）
+    void setConnState(int state);
     void AddLBGroup(StateWidget* lb); 
     void loadMoreChatUser();
     void ClearLabelState(StateWidget* lb);
@@ -81,6 +86,8 @@ private:
     int _cur_chat_thread_id;
     QTimer * _timer;
     LoadingDlg* _loading_dlg;
+    // 侧边栏头像右下角的连接状态点（P3 微交互「在线状态」点位）
+    QLabel* _conn_dot = nullptr;
     // 在途的加载请求数（链式加载，靠它配平加载框的开关）
     int _loading_req_count = 0;
     std::shared_ptr<ChatThreadData> _cur_load_chat;

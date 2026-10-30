@@ -28,6 +28,7 @@
 #include <QMessageBox>
 #include "logcategory.h"
 #include "SvgIconButton.h"
+#include "animutil.h"          // P3 微交互：连接状态点脉动
 
 
 ChatDialog::ChatDialog(QWidget* parent) :
@@ -152,6 +153,20 @@ ChatDialog::ChatDialog(QWidget* parent) :
 	// （头像加载已抽成 loadSelfAvatar()，登出重登时也要重新拉一次）
 	loadSelfAvatar();
 	ui->side_head_lb->setScaledContents(true); // 设置QLabel自动缩放图片内容以适应大小
+
+	// P3 微交互「在线状态」点位：头像右下角的连接状态点 + 跟随 TcpMgr 的连接事件。
+	// ★ ChatDialog 是常驻窗口，信号只连一次；退出登录时由 clearSessionState 置灰。
+	initConnDot();
+	connect(TcpMgr::GetInstance().get(), &TcpMgr::sig_con_success, this,
+		[this](bool bsuccess) { setConnState(bsuccess ? 2 : 0); });
+	connect(TcpMgr::GetInstance().get(), &TcpMgr::sig_connection_closed, this,
+		[this]() { setConnState(1); });          // 已断开 -> 进入自动重连窗口期
+	connect(TcpMgr::GetInstance().get(), &TcpMgr::sig_reconnect_retry, this,
+		[this](int, int) { setConnState(1); });
+	connect(TcpMgr::GetInstance().get(), &TcpMgr::sig_recon_success, this,
+		[this]() { setConnState(2); });
+	connect(TcpMgr::GetInstance().get(), &TcpMgr::sig_reconnect_failed, this,
+		[this]() { setConnState(0); });
 
 	// 侧边栏三图标：迁移为 SvgIconButton 自绘单 SVG（见 StateWidget::SetIcon），
 	// 不再用六态 border-image；选中态由 SetSelected 画浅灰圆（下方 chat 初始选中）。
@@ -749,6 +764,9 @@ void ChatDialog::clearSessionState()
 	_mode = ChatMode;
 	_state = ChatMode;
 	ui->stackedWidget->setCurrentWidget(ui->chat_page);
+
+	// 连接状态点置灰（P3）：登出/断线后不该继续显示"在线"绿点
+	setConnState(0);
 }
 
 // ★ 左侧自己的头像：从 UserMgr::_icon（URL）异步拉取。
@@ -775,6 +793,57 @@ void ChatDialog::loadSelfAvatar()
 				qCDebug(lcChat) << "ChatDialog load self avatar failed:" << err;
 			}
 		});
+}
+
+// ============================================================
+//  P3 微交互「在线状态」点位：头像右下角的连接状态点
+// ============================================================
+void ChatDialog::initConnDot()
+{
+	if (_conn_dot || !ui->side_head_lb) {
+		return;
+	}
+	// 挂在头像标签内部（子控件随头像一起移动/隐藏，不用自己算全局坐标）
+	_conn_dot = new QLabel(ui->side_head_lb);
+	_conn_dot->setObjectName("conn_dot");
+	_conn_dot->setFixedSize(12, 12);
+	_conn_dot->setAttribute(Qt::WA_TransparentForMouseEvents, true);  // 别挡住头像点击
+	// ★ 构造期布局还没激活，width() 未必是 35，用 .ui 里 min=max 的 maximumSize 定位更稳
+	QSize box = ui->side_head_lb->maximumSize();
+	if (box.width() <= 0 || box.width() > 500) {
+		box = ui->side_head_lb->size();      // 兜底：最大值没被固定时才用当前尺寸
+	}
+	_conn_dot->move(qMax(0, box.width() - _conn_dot->width()),
+	                qMax(0, box.height() - _conn_dot->height()));
+	_conn_dot->raise();
+
+	// 进入聊天页时 TCP 已经连上了（登录流程先连后跳），初值直接给"在线"
+	setConnState(2);
+}
+
+void ChatDialog::setConnState(int state)
+{
+	if (!_conn_dot) {
+		return;
+	}
+	const char* prop = (state == 2) ? "online"
+	                 : (state == 1) ? "connecting"
+	                                : "offline";
+	_conn_dot->setProperty("state", prop);
+	reload_qss(_conn_dot);           // 属性选择器变了要重新 polish 才生效
+
+	_conn_dot->setToolTip(state == 2 ? QString("已连接服务器")
+	                        : state == 1 ? QString("正在连接服务器…")
+	                                     : QString("未连接服务器"));
+
+	// 脉动：geometry 缩放（不用 GraphicsEffect —— 主窗口阴影祖先下嵌套会崩）
+	AnimUtil::stopRedDotPulse(_conn_dot);
+	if (state == 2) {
+		AnimUtil::startRedDotPulse(_conn_dot, 2600);   // 在线：缓慢"呼吸"
+	} else if (state == 1) {
+		AnimUtil::startRedDotPulse(_conn_dot, 900);    // 连接中：急促闪烁感
+	}
+	// offline：不脉动，保持静止灰点
 }
 
 // ★ 登录成功后由 MainWindow 调用：把【本次登录】账号的数据灌进常驻 widget。

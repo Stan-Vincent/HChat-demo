@@ -1,10 +1,10 @@
 #include "loadingdlg.h"
 #include "ui_loadingdlg.h"
 #include <QLabel>
-#include <QMovie>
-#include <QGraphicsOpacityEffect>
+#include <QHBoxLayout>
 #include <QGuiApplication>
 #include <QScreen>
+#include "spinner.h"
 
 LoadingDlg::LoadingDlg(QWidget *parent, QString tip):
     QDialog(parent),
@@ -29,11 +29,14 @@ LoadingDlg::LoadingDlg(QWidget *parent, QString tip):
     // 3. 半透明黑色背景（alpha = 128，大约 50% 透明度）
    // setStyleSheet("background-color: rgba(0, 0, 0, 128);");
 
-    QMovie *movie = new QMovie(":/res/loading.gif"); // 加载动画的资源文件
-    ui->loading_lb->setMovie(movie);
-    movie->start();
-    // 3. 告诉 QMovie：将解码后的每一帧缩放到 label大小
-    movie->setScaledSize(ui->loading_lb->size());
+    // ★ P3 微交互（「加载中」点位）：原来是 :/res/loading.gif + QMovie。
+    //   换成自绘 Spinner —— 分辨率无关（gif 放大到 200px 会发虚）、颜色跟主题
+    //   静靛走（原来灰阶）、不用解码线程也不占资源。仅在可见时旋转（见 Spinner）。
+    //   loading_lb 继续留在 .ui 里当锚点，只是被替换出布局并隐藏，不清洗 .ui 结构。
+    auto* spinner = new Spinner(this, 56);
+    ui->horizontalLayout->replaceWidget(ui->loading_lb, spinner);
+    ui->loading_lb->hide();
+
     ui->status_lb->setText(tip);
 }
 

@@ -345,4 +345,103 @@ void revealItem(QWidget* w, int duration)
     anim->start(QAbstractAnimation::DeleteWhenStopped);
 }
 
+// ============================================================
+//  弹出层向上展开（表情面板开关）
+// ============================================================
+void unfoldUp(QWidget* w, int duration)
+{
+    if (!w) return;
+
+    // ★ 目标尺寸与锚点：正常打开时算一次并记在属性上；快速连点（上一段动画还没跑完
+    //   就再次打开）时沿用记录值 —— 否则会拿"动画中间的高度/位置"当目标，
+    //   把面板永久压扁或挪位。属性在动画结束时清掉，下次打开重新按当前位置计算。
+    QSize full;
+    int bottom = 0;
+    const QVariant vFull = w->property("_unfold_full");
+    const QVariant vBottom = w->property("_unfold_bottom");
+    if (vFull.isValid() && vFull.canConvert<QSize>()
+        && vBottom.isValid() && vBottom.canConvert<int>()) {
+        full = vFull.toSize();
+        bottom = vBottom.toInt();
+        if (auto* old = w->findChild<QVariantAnimation*>("unfoldAnim")) {
+            old->stop();        // 两段动画同时改 geometry 会打架
+        }
+    } else {
+        // 用 setFixedSize 定过尺寸，size() 即使隐藏也是目标尺寸
+        full = w->size();
+        if (full.width() <= 0 || full.height() <= 0) { w->show(); return; }
+        bottom = w->geometry().y() + full.height();   // 调用方已 move 到最终位置
+        w->setProperty("_unfold_full", full);
+        w->setProperty("_unfold_bottom", bottom);
+    }
+    const int left = w->geometry().x();              // 水平位置由调用方 move() 决定，不参与动画
+
+    // 解除固定高度（宽度保持不变），从 1px 高度开始显示。
+    // ★ 注意：最大高度必须放开到 QWIDGETSIZE_MAX，只把"最小高度"降到 0；
+    //   如果连最大高度也设成 0，后面 setGeometry 的高度会被 max 夹回 0，
+    //   整个展开过程就变成"不动的 0 高度"（实测踩过）。
+    w->setMinimumSize(full.width(), 0);
+    w->setMaximumSize(full.width(), QWIDGETSIZE_MAX);
+    w->setGeometry(left, bottom - 1, full.width(), 1);
+    w->show();
+
+    // 用 QVariantAnimation 直接驱动 geometry，比动画 maximumHeight 更确定：
+    // 顶层窗口的 maximumHeight 收缩行为依赖平台实现，这里自己算高度。
+    auto* anim = new QVariantAnimation(w);
+    anim->setObjectName("unfoldAnim");
+    anim->setDuration(duration);
+    anim->setStartValue(1);
+    anim->setEndValue(full.height());
+    anim->setEasingCurve(QEasingCurve::OutCubic);
+    QObject::connect(anim, &QVariantAnimation::valueChanged, w,
+                     [w, left, bottom, fullW = full.width()](const QVariant& v) {
+        const int h = qMax(1, v.toInt());
+        w->setGeometry(left, bottom - h, fullW, h);   // 底边钉住，向上长
+    });
+    QObject::connect(anim, &QVariantAnimation::finished, w,
+                     [w, left, bottom, full]() {
+        // 交还固定尺寸并落到终点，避免残留临时 min/max 限制
+        w->setMinimumSize(full);
+        w->setMaximumSize(full);
+        w->setGeometry(left, bottom - full.height(), full.width(), full.height());
+        // 清掉本次记录：下次打开（可能换位置）按当时的 geometry 重新计算
+        w->setProperty("_unfold_full", QVariant());
+        w->setProperty("_unfold_bottom", QVariant());
+    });
+    anim->start(QAbstractAnimation::DeleteWhenStopped);
+}
+
+// ============================================================
+//  点击下压回弹（发送键等按钮的触感反馈）
+// ============================================================
+void pressBounce(QWidget* w, int dy, int duration)
+{
+    if (!w) return;
+    if (auto* old = w->findChild<QPropertyAnimation*>("pressBounceAnim")) {
+        old->stop();
+        old->deleteLater();
+    }
+
+    // 基准点取自布局给的位置；若布局已把控件挪走（窗口缩放/换会话），刷新基准
+    QPoint cur = w->pos();
+    QPoint base;
+    QVariant vb = w->property("_bounce_base");
+    if (vb.isValid() && vb.canConvert<QPoint>()) {
+        base = vb.toPoint();
+        if ((cur - base).manhattanLength() > 50) base = cur;
+    } else {
+        base = cur;
+    }
+    w->setProperty("_bounce_base", base);
+
+    auto* anim = new QPropertyAnimation(w, "pos", w);
+    anim->setObjectName("pressBounceAnim");
+    anim->setDuration(duration);
+    anim->setEasingCurve(QEasingCurve::OutCubic);
+    anim->setKeyValueAt(0.0, base);
+    anim->setKeyValueAt(0.45, base + QPoint(0, dy));
+    anim->setKeyValueAt(1.0, base);
+    anim->start(QAbstractAnimation::DeleteWhenStopped);
+}
+
 } // namespace AnimUtil

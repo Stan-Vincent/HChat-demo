@@ -52,6 +52,18 @@ void installHoverLift(QWidget* w, int liftPx = 2);
 // 适用于聊天列表里的 ChatItemBase 等被 _main_widget 阴影祖先包裹的控件。
 void revealItem(QWidget* w, int duration = 220);
 
+// 弹出层向上展开（表情面板等）：调用前调用方应已 move() 到目标位置，
+// 本函数以"当前底边"为锚点，把高度从 0 动画到自然高度 —— 观感是
+// 从按钮上方"长"出来。全程只改 geometry，不碰 GraphicsEffect
+// （EmojiPanel 是 Qt::Popup 不透明窗口 + 圆角遮罩，挂特效会踩
+//  UpdateLayeredWindowIndirect 失败的坑，见 emojipanel.cpp 注释）。
+void unfoldUp(QWidget* w, int duration = 180);
+
+// 点击"下压-回弹"：整体临时下移 dy 像素再回到基准位置（pos 动画，
+// 时长很短，结束后落回布局原本的位置）。用于发送键这类必须给触感的按钮。
+// 与 shakeWidget 同一套基准点修正逻辑，连续点击不会累积偏移。
+void pressBounce(QWidget* w, int dy = 2, int duration = 160);
+
 }
 
 #endif // ANIMUTIL_H

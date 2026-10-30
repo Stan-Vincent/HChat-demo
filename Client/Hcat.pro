@@ -63,6 +63,7 @@ SOURCES += \
     widgets/customizetextedit.cpp \
     widgets/emojipanel.cpp \
     widgets/imagecropperlabel.cpp \
+    widgets/spinner.cpp \
     widgets/statelabel.cpp \
     widgets/statewidget.cpp \
     widgets/timerbtn.cpp \
@@ -124,6 +125,7 @@ HEADERS += \
     widgets/emojipanel.h \
     widgets/imagecropperdialog.h \
     widgets/imagecropperlabel.h \
+    widgets/spinner.h \
     widgets/statelabel.h \
     widgets/statewidget.h \
     widgets/timerbtn.h \

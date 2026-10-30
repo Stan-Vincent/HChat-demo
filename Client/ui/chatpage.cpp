@@ -16,6 +16,7 @@
 #include <QUuid>
 #include <QPointer>
 #include "logcategory.h"
+#include "animutil.h"          // P3 微交互：表情面板展开 / 发送键下压回弹
 #include "toast.h"
 #include "clickedlabel.h"
 #include "SvgIconButton.h"
@@ -130,7 +131,11 @@ void ChatPage::slot_toggle_emoji_panel(QString, ClickLbState)
     int y = globalPos.y() - _emo_panel->height() - 6;
     if (y < 4) y = globalPos.y() + ui->emo_lb->height() + 6; // 上方不够则翻到下方
     _emo_panel->move(x, y);
-    _emo_panel->show();
+    // ★ P3 微交互：面板从按钮上方"展开"出现（底边钉住向上长），
+    //   替代原来的硬弹出。只改 geometry，不挂 GraphicsEffect
+    //   （Qt::Popup + 半透明 + 图形特效在本机 Windows 上会刷
+    //    "UpdateLayeredWindowIndirect failed"，见 emojipanel.cpp 顶部注释）。
+    AnimUtil::unfoldUp(_emo_panel);
 }
 
 void ChatPage::slot_insert_emoji(const QString &emoji)
@@ -757,6 +762,10 @@ void ChatPage::on_send_btn_clicked()
         pTextEdit->setFocus();
         return;
     }
+
+    // ★ P3 微交互：真的发出去了才给触感反馈（早退的路径不弹，避免"点了没发还抖"）。
+    //   下压 2px 后回弹，不改变布局最终位置。
+    AnimUtil::pressBounce(ui->send_btn);
 
     QString userName = user_info->GetDisplayName();
     QString userIcon = user_info->_icon;

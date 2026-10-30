@@ -177,6 +177,23 @@ QDialog#ResetDialog {
    已迁移为 StateWidget 内嵌的 SvgIconButton 自绘（单 SVG + 描边换色 + 选中浅灰圆），
    见 widgets/statewidget.cpp 与 ui/chatdialog.cpp，不再用 border-image 与 *_hover/_press 冗余文件。 */
 
+/* ---------- 3.1.1 在线状态指示点（P3 微交互「在线状态」点位） ----------
+   挂在侧边栏自己头像（side_head_lb）右下角，反映本机与 ChatServer 的 TCP 连接状态：
+   online=绿 / connecting=琥珀 / offline=灰。由 ChatDialog::setConnState 改 state 属性
+   后 reload_qss 生效；"呼吸"由 AnimUtil::startRedDotPulse 做 geometry 缩放（无特效依赖）。
+   外圈 2px 取侧边栏底色，看起来像从头像上挖出来的缺口。 */
+QLabel#conn_dot {
+    border-radius: 6px;
+    border: 2px solid #2e2e2e;
+    background-color: #8a8f99;
+}
+QLabel#conn_dot[state="online"] {
+    background-color: #35c46b;
+}
+QLabel#conn_dot[state="connecting"] {
+    background-color: #f0a11b;
+}
+
 /* ---------- 3.2 搜索栏 ---------- */
 #search_wid {
     background-color: #f7f7f7;
