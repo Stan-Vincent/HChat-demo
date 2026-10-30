@@ -99,6 +99,25 @@ void ChatView::insertChatItem(QWidget *before, QWidget *item)
 
 }
 
+// 把已渲染气泡里某一方的头像统一换掉（本人改完头像后立即生效，不用重登）。
+void ChatView::refreshRoleIcons(ChatRole role, const QPixmap& icon)
+{
+    if (icon.isNull()) return;
+    QVBoxLayout *layout = qobject_cast<QVBoxLayout *>(m_pScrollArea->widget()->layout());
+    if (layout == nullptr) return;
+
+    for (int i = 0; i < layout->count(); ++i) {
+        QLayoutItem *li = layout->itemAt(i);
+        if (li == nullptr) continue;
+        // 日期分隔条 / 间距 spacer 的 widget() 为空，qobject_cast 也会返回 null，一并跳过
+        if (auto *ci = qobject_cast<ChatItemBase *>(li->widget())) {
+            if (ci->role() == role) {
+                ci->setUserIcon(icon);
+            }
+        }
+    }
+}
+
 void ChatView::removeAllItem()
 {
     QVBoxLayout *layout = qobject_cast<QVBoxLayout *>(m_pScrollArea->widget()->layout());

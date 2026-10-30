@@ -81,6 +81,12 @@ private:
     // 建立对方用户uid和thread_id的映射关系
     QMap<int, int> _uid_to_thread_id;
 
+signals:
+    // ★ 本人资料（昵称 / 签名 / 头像）在本地被更新后发出。
+    //   凡是"展示自己"的位置都靠它刷新：侧边栏头像、资料页回填、已渲染气泡里
+    //   "我"的头像。少了这个信号，改完头像只有退出重登才看得到（原 bug）。
+    void sig_user_info_updated();
+
 public slots:
     void SlotAddFriendRsp(std::shared_ptr<AuthRsp> rsp);
     void SlotAddFriendAuth(std::shared_ptr<AuthInfo> auth_info);

@@ -32,6 +32,9 @@ public:
     void slot_resend(const QString& unique_id);
     // 服务端整体回包失败时，把仍在等待回执的消息全部标记成"发送失败"
     void FailAllPending();
+    // 本人改完头像后调用：把已渲染气泡里"我"的头像刷成新图。
+    // 只刷自己的气泡（对方的头像不归本地改），新气泡会自然用新头像。
+    void refreshSelfAvatars();
 protected:
     void paintEvent(QPaintEvent *event);
 private slots:

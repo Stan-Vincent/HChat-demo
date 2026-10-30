@@ -15,6 +15,10 @@ public:
     void prependChatItem(QWidget *item);                //头插
     void insertChatItem(QWidget *before, QWidget *item);//中间插
     void removeAllItem();
+    // 把已渲染的、属于 role 这一方（自己/对方）的头像统一换掉。
+    // 场景：本人改完头像后，历史气泡里"我"的头像不能等到重登才变。
+    // 非 ChatItemBase 的条目（日期分隔、spacer）自动跳过。
+    void refreshRoleIcons(ChatRole role, const QPixmap& icon);
     // 距底部多少像素内算"贴底"（贴底才自动跟随新消息）
     static constexpr int kStickBottomPx = 40;
 signals:

@@ -74,6 +74,10 @@ void UserMgr::UpdateLocalUserInfo(const QString& nick, const QString& desc,
         _user_info->_icon = icon;
     }
     _user_info->_sex = sex;
+
+    // ★ 通知界面刷新"自己"的展示位（侧边栏头像 / 资料页 / 已渲染气泡里我的头像）。
+    //   之前只改内存不发信号，改完头像要退出重登才生效 —— 用户以为没保存成功。
+    emit sig_user_info_updated();
 }
 
 void UserMgr::AppendApplyList(QJsonArray array)

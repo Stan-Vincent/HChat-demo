@@ -644,6 +644,28 @@ void ChatPage::FailAllPending()
     }
 }
 
+// 本人改完头像后调用：把已渲染气泡里"我"的头像换成新图。
+// 只取一次图、给多条气泡复用（每条气泡各发一次请求会打出 N 个 GET）。
+void ChatPage::refreshSelfAvatars()
+{
+    const QString icon = UserMgr::GetInstance()->GetIcon();
+    if (icon.isEmpty()) {
+        return;     // 没头像（用默认图）就不刷，避免把气泡刷成默认头像
+    }
+    QPointer<ChatPage> guard(this);
+    ImageManager::instance()->loadAvatar(
+        icon, [guard](bool ok, const QPixmap& pix, const QString& err) {
+            if (!guard) {
+                return;     // 下载途中切会话/登出
+            }
+            if (!ok || pix.isNull()) {
+                qCDebug(lcChat) << "refreshSelfAvatars: load avatar failed:" << err;
+                return;
+            }
+            guard->ui->chat_data_list->refreshRoleIcons(ChatRole::Self, pix);
+        });
+}
+
 void ChatPage::paintEvent(QPaintEvent *event)
 {
     QStyleOption opt;

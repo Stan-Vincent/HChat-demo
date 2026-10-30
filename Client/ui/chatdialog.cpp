@@ -168,6 +168,18 @@ ChatDialog::ChatDialog(QWidget* parent) :
 	connect(TcpMgr::GetInstance().get(), &TcpMgr::sig_reconnect_failed, this,
 		[this]() { setConnState(0); });
 
+	// ★ 本人资料更新（改昵称/签名/头像）后刷"刷新范围"：
+	//   原来提交成功只改了 UserMgr 里的内存，侧边栏头像要退出重登才变。
+	//   三处必须一起刷，缺一处用户就会觉得"没生效"：
+	//     1) 侧边栏自己的头像（side_head_lb）
+	//     2) 个人信息页（昵称/签名/头像回填）
+	//     3) 聊天页已渲染气泡里"我"的头像
+	connect(UserMgr::GetInstance().get(), &UserMgr::sig_user_info_updated, this, [this]() {
+		loadSelfAvatar();
+		ui->user_info_page->refreshUserInfo();
+		ui->chat_page->refreshSelfAvatars();
+	});
+
 	// 侧边栏三图标：迁移为 SvgIconButton 自绘单 SVG（见 StateWidget::SetIcon），
 	// 不再用六态 border-image；选中态由 SetSelected 画浅灰圆（下方 chat 初始选中）。
 	ui->side_chat_lb->SetIcon(":/res/chat_icon.svg");
