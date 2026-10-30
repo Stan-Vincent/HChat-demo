@@ -68,6 +68,10 @@
   测试 `test/redis_reconnect_test.py`（CLIENT PAUSE 模拟抖动）。⚠️ 需 VS 重编后才生效。
 ## 高频坑（详见工程备忘对应章节）
 - Client：`_handlers[id]` 前必须 `contains(id)`（否则 `bad_function_call`）；换账号/登出要**清数据+清UI+登录重灌**三层。
+- **动效只用几何/布局，禁新增 GraphicsEffect**（`_main_widget` 阴影祖先下嵌套必崩）。10-30 新增
+  `AnimUtil::unfoldUp`（弹层向上展开）/`pressBounce`（按钮下压回弹）+ `widgets/spinner`（自绘加载环）。
+  两个坑：①展开必须 `setMinimumSize(w,0)+setMaximumSize(w,QWIDGETSIZE_MAX)`，**只把 max 设 0 会被
+  setGeometry 夹成 0 高度**；②连点重入要用 `_unfold_full/_unfold_bottom` 属性记住目标，否则拿动画中间值当目标。
 - **联系人空白真因 = 分页游标 `_contact_loaded` 未复位**（`reloadFriendItems()` 前调 `ResetContactLoadedCount()`）。
 - **图标空白真因 = exe 裸奔靠 PATH 加载 Qt**（本机有官方6.5.3/MSYS2 6.11/anaconda 三提供者）——已用 `test/deploy_qt_runtime.sh` 把 Qt 6.5.3 运行时部署到 `Client/bin/` **和 Creator shadow build 目录**（用户实际从 IDE 运行，两个都要！10-26）；**删 build 目录/换机/升级 Qt 后必须重跑该脚本**。改图标格式若涉及"内建→插件"(PNG→SVG)，必查 imageformats 插件。
 - 重连：disconnected 里**先 `StartReconnect()` 再 emit**；token 唯一来源=GateServer 登录回包；心跳定时器必须判空 user_info。
