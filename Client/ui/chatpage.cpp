@@ -76,6 +76,15 @@ ChatPage::ChatPage(QWidget *parent) :
     ui->file_lb->setSvg(":/res/filedir.svg");
     ui->file_lb->setColors("#6B6F76", "#4C5FD7", "#4C5FD7");
 
+    // ★ 图标视觉对齐：原来 file_lb 的按钮盒是 30px、emo_lb 是 25px，而两个 SVG 都按
+    //   控件全尺寸渲染 —— 文件图标不但大一号，线宽也被等比放大（1.8 → 2.25px），
+    //   和笑脸摆在一起明显不协调。现在两个按钮盒统一 25px（点击区一致），
+    //   文件图标再按 24px 渲染并居中：方形图标比同高度的圆形"显大"，
+    //   缩 1px 后两者视觉重量才对得上。想再小一点改这里的 24 即可。
+    ui->emo_lb->setAlignment(Qt::AlignCenter);
+    ui->file_lb->setAlignment(Qt::AlignCenter);
+    ui->file_lb->setIconSize(QSize(24, 24));
+
     // 表情功能：把已有的表情按钮接上 EmojiPanel 弹出层
     _emo_panel = new EmojiPanel(this);
     _emo_panel->hide();
